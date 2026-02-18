@@ -1,0 +1,3 @@
+{
+  "extends": "@segmentation/config/tsconfig.base.json"
+}
