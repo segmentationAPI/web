@@ -29,7 +29,7 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
         },
         {
           onSuccess: () => {
-            router.push("/dashboard");
+            router.push("/");
             toast.success("Sign up successful");
           },
           onError: (error) => {
@@ -148,7 +148,7 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
         <Button
           variant="link"
           onClick={onSwitchToSignIn}
-          className="text-indigo-600 hover:text-indigo-800"
+          className="font-mono uppercase tracking-[0.12em] text-[#8ec9ff] hover:text-[#b8deff]"
         >
           Already have an account? Sign In
         </Button>

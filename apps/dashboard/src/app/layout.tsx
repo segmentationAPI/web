@@ -1,24 +1,26 @@
 import type { Metadata } from "next";
 
-import { Geist, Geist_Mono } from "next/font/google";
+import { Rajdhani, Space_Mono } from "next/font/google";
 
 import "../index.css";
 import Header from "@/components/header";
 import Providers from "@/components/providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const displayFont = Rajdhani({
+  variable: "--font-quantum-display",
+  weight: ["500", "600", "700"],
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const monoFont = Space_Mono({
+  variable: "--font-quantum-mono",
+  weight: ["400", "700"],
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "segmentation",
-  description: "segmentation",
+  title: "Segmentation API Dashboard",
+  description: "SAM3 usage, request history, API keys, and credit purchases.",
 };
 
 export default function RootLayout({
@@ -28,9 +30,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${displayFont.variable} ${monoFont.variable} antialiased dark`}>
         <Providers>
-          <div className="grid grid-rows-[auto_1fr] h-svh">
+          <div className="quantum-bg grid min-h-svh grid-rows-[auto_1fr]">
             <Header />
             {children}
           </div>
