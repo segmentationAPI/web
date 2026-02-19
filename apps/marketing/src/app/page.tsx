@@ -128,19 +128,6 @@ export default function HomePage() {
         </article>
       </section>
 
-      <section className="reveal" style={{ animationDelay: "220ms" }}>
-        <div className="glass-panel flex flex-wrap items-center justify-between gap-4 rounded-3xl px-5 py-4">
-          <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Built for teams at</p>
-          <div className="flex flex-wrap gap-2 text-sm">
-            {["Autonomy Labs", "Studio Nine", "Visionary Medical", "Orbital Ops"].map((label) => (
-              <span key={label} className="logo-chip">
-                {label}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section id="features" className="space-y-8">
         <div className="space-y-3 reveal" style={{ animationDelay: "300ms" }}>
           <p className="tone-chip">Why SegmentationAPI</p>
