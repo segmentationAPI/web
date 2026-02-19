@@ -5,7 +5,7 @@ import { env } from "@segmentation/env/server";
 export default function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/35 bg-background/70 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 py-4 sm:px-8">
+      <div className="mx-auto flex w-full max-w-300 items-center justify-between px-4 py-4 sm:px-8">
         <Link href="/" className="inline-flex items-center gap-3">
           <span className="grid h-9 w-9 place-items-center rounded-lg border border-border/80 bg-background/80 shadow-[0_0_24px_rgba(255,112,63,0.2)]">
             <span className="h-3.5 w-3.5 rotate-45 bg-primary" />

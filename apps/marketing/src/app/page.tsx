@@ -1,15 +1,7 @@
 import Link from "next/link";
 
 import { env } from "@segmentation/env/server";
-import {
-  ArrowRight,
-  Boxes,
-  Braces,
-  Cpu,
-  Radar,
-  ShieldCheck,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, Boxes, Braces, Cpu, Radar, ShieldCheck, Zap } from "lucide-react";
 
 const capabilityCards = [
   {
@@ -32,11 +24,13 @@ const capabilityCards = [
 const workflow = [
   {
     title: "Send frame, stream, or dataset",
-    detail: "Use direct upload, signed URLs, or webhook ingestion from your existing capture pipeline.",
+    detail:
+      "Use direct upload, signed URLs, or webhook ingestion from your existing capture pipeline.",
   },
   {
     title: "Prompt with points, boxes, or text",
-    detail: "Mix prompt modes in one request to build accurate masks with near-zero post-processing.",
+    detail:
+      "Mix prompt modes in one request to build accurate masks with near-zero post-processing.",
   },
   {
     title: "Receive mask + vectors instantly",
@@ -57,11 +51,8 @@ const sampleRequest = `curl -X POST \\
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-16 px-4 pb-24 pt-6 sm:px-8 lg:gap-24">
-      <section
-        id="top"
-        className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end"
-      >
+    <main className="mx-auto flex w-full max-w-300 flex-col gap-16 px-4 pb-24 pt-6 sm:px-8 lg:gap-24">
+      <section id="top" className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
         <div className="space-y-8 reveal" style={{ animationDelay: "120ms" }}>
           <div className="space-y-5">
             <h1 className="font-display text-4xl leading-tight tracking-tight sm:text-6xl">
@@ -69,8 +60,8 @@ export default function HomePage() {
             </h1>
             <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
               Build interactive editors, robotics pipelines, and video intelligence with a single
-              API. We run Meta&apos;s Segment Anything Model 3 behind an ultra-fast, production-ready
-              platform.
+              API. We run Meta&apos;s Segment Anything Model 3 behind an ultra-fast,
+              production-ready platform.
             </p>
           </div>
 
@@ -113,11 +104,20 @@ export default function HomePage() {
               </span>
             </div>
 
-            <div className="relative h-[310px] overflow-hidden rounded-[1.4rem] border border-border/70 bg-[#090b10]">
+            <div className="relative h-77.5 overflow-hidden rounded-[1.4rem] border border-border/70 bg-[#090b10]">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(255,112,63,0.14),transparent_35%),radial-gradient(circle_at_80%_80%,rgba(57,213,201,0.16),transparent_42%),linear-gradient(180deg,#0f1218_0%,#050608_100%)]" />
-              <div className="absolute left-[10%] top-[16%] h-[42%] w-[34%] border border-primary/70 bg-primary/25" style={{ clipPath: "polygon(12% 0,100% 16%,85% 100%,0 82%)" }} />
-              <div className="absolute left-[42%] top-[22%] h-[54%] w-[50%] border border-secondary/75 bg-secondary/20" style={{ clipPath: "polygon(0 12%,68% 0,100% 34%,90% 100%,18% 92%)" }} />
-              <div className="absolute bottom-[12%] left-[25%] h-[30%] w-[38%] border border-foreground/50 bg-foreground/10" style={{ clipPath: "polygon(6% 0,100% 22%,74% 100%,0 80%)" }} />
+              <div
+                className="absolute left-[10%] top-[16%] h-[42%] w-[34%] border border-primary/70 bg-primary/25"
+                style={{ clipPath: "polygon(12% 0,100% 16%,85% 100%,0 82%)" }}
+              />
+              <div
+                className="absolute left-[42%] top-[22%] h-[54%] w-[50%] border border-secondary/75 bg-secondary/20"
+                style={{ clipPath: "polygon(0 12%,68% 0,100% 34%,90% 100%,18% 92%)" }}
+              />
+              <div
+                className="absolute bottom-[12%] left-[25%] h-[30%] w-[38%] border border-foreground/50 bg-foreground/10"
+                style={{ clipPath: "polygon(6% 0,100% 22%,74% 100%,0 80%)" }}
+              />
               <div className="scanline" />
 
               <div className="absolute bottom-4 left-4 right-4 rounded-lg border border-border/70 bg-background/85 p-3 text-xs text-muted-foreground">
@@ -173,8 +173,8 @@ export default function HomePage() {
           </div>
           <h3 className="font-display text-2xl sm:text-3xl">One endpoint. Deterministic masks.</h3>
           <p className="mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
-            Bring your own frame source and keep your stack exactly as-is. SegmentationAPI returns masks,
-            polygons, confidence, and tracking IDs in one response.
+            Bring your own frame source and keep your stack exactly as-is. SegmentationAPI returns
+            masks, polygons, confidence, and tracking IDs in one response.
           </p>
           <div className="soft-divider my-6" />
           <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-4 text-xs leading-relaxed text-[#ffcaa9] sm:text-sm">

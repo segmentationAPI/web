@@ -39,15 +39,18 @@ export default function PricingPage() {
             Token pricing that stays predictable.
           </h1>
           <p className="max-w-3xl text-muted-foreground sm:text-lg">
-            $0.01 gets you 2 tokens. Use the calculator and token usage cards below to estimate
-            your spend.
+            $0.01 gets you 2 tokens. Use the calculator and token usage cards below to estimate your
+            spend.
           </p>
         </div>
       </section>
 
       <TokenPricingCard />
 
-      <section className="glass-panel reveal rounded-[1.8rem] p-6 sm:p-8" style={{ animationDelay: "620ms" }}>
+      <section
+        className="glass-panel reveal rounded-[1.8rem] p-6 sm:p-8"
+        style={{ animationDelay: "620ms" }}
+      >
         <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
           <Coins className="h-4 w-4 text-secondary" />
           Token Consumption
@@ -64,7 +67,9 @@ export default function PricingPage() {
           </article>
 
           <div className="hidden md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3 md:px-1 md:py-4">
-            <p className="row-start-2 text-center font-display text-3xl leading-8 text-muted-foreground">+</p>
+            <p className="row-start-2 text-center font-display text-3xl leading-8 text-muted-foreground">
+              +
+            </p>
           </div>
 
           <article className="h-full rounded-2xl border border-border/70 bg-background/50 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
@@ -72,12 +77,16 @@ export default function PricingPage() {
               <segmentationToken.icon className="h-4 w-4 text-primary" />
               {segmentationToken.title}
             </p>
-            <p className="mt-3 font-display text-3xl leading-8 md:mt-0">{segmentationToken.tokens}</p>
+            <p className="mt-3 font-display text-3xl leading-8 md:mt-0">
+              {segmentationToken.tokens}
+            </p>
             <p className="mt-2 text-xs text-muted-foreground md:mt-0">{segmentationToken.detail}</p>
           </article>
 
           <div className="hidden md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3 md:px-1 md:py-4">
-            <p className="row-start-2 text-center font-display text-3xl leading-8 text-muted-foreground">=</p>
+            <p className="row-start-2 text-center font-display text-3xl leading-8 text-muted-foreground">
+              =
+            </p>
           </div>
 
           <article className="h-full rounded-2xl border border-primary/35 bg-primary/10 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">

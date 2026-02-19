@@ -140,8 +140,7 @@
   border: 1px solid color-mix(in srgb, var(--primary) 42%, transparent);
   background:
     linear-gradient(152deg, rgba(255, 112, 63, 0.14), transparent 38%),
-    linear-gradient(326deg, rgba(57, 213, 201, 0.09), transparent 45%),
-    rgba(9, 12, 18, 0.8);
+    linear-gradient(326deg, rgba(57, 213, 201, 0.09), transparent 45%), rgba(9, 12, 18, 0.8);
   box-shadow:
     0 24px 70px rgba(5, 7, 12, 0.7),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -269,7 +268,12 @@
   right: 0;
   top: -36%;
   height: 34%;
-  background: linear-gradient(180deg, transparent 0%, rgba(255, 112, 63, 0.35) 44%, transparent 100%);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 112, 63, 0.35) 44%,
+    transparent 100%
+  );
   mix-blend-mode: screen;
   animation: scan 4.2s linear infinite;
 }

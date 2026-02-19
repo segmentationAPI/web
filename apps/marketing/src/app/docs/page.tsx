@@ -1,11 +1,6 @@
 import type { Metadata } from "next";
 
-import {
-  Braces,
-  CloudUpload,
-  DatabaseZap,
-  ShieldCheck,
-} from "lucide-react";
+import { Braces, CloudUpload, DatabaseZap, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "SegmentationAPI Docs | SAM 3 API",
@@ -71,7 +66,9 @@ export default function DocsPage() {
           API Documentation
         </p>
         <div className="space-y-4">
-          <h1 className="font-display text-4xl tracking-tight sm:text-6xl">SegmentationAPI Reference</h1>
+          <h1 className="font-display text-4xl tracking-tight sm:text-6xl">
+            SegmentationAPI Reference
+          </h1>
           <p className="max-w-3xl text-muted-foreground sm:text-lg">
             Two endpoints are enough to power production workflows: upload to S3 with a signed URL,
             then segment instantly from the returned S3 key.
@@ -85,7 +82,9 @@ export default function DocsPage() {
             <CloudUpload className="h-4 w-4" />
             Upload Flow (S3)
           </p>
-          <h2 className="font-display text-3xl">`POST /v1/uploads/presign` + Segment from S3 key</h2>
+          <h2 className="font-display text-3xl">
+            `POST /v1/uploads/presign` + Segment from S3 key
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground sm:text-base">
             Recommended for large files and client-side uploads. Presign first, upload directly to
             S3, then call segmentation with the returned `s3Key`.
@@ -114,7 +113,6 @@ export default function DocsPage() {
             <code>{uploadCurl}</code>
           </pre>
         </div>
-
       </section>
 
       <section className="glass-panel reveal space-y-6 rounded-[1.8rem] p-6 sm:p-8">
