@@ -5,17 +5,16 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { formatNumber } from "@/components/dashboard-format";
-
-import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Input } from "./ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 type BalanceResponse = {
   tokenUsageLast24h: number;
   tokensRemaining: number;
 };
 
-export default function BillingPage() {
+export function BillingPageContent() {
   const [balance, setBalance] = useState<BalanceResponse | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [purchaseAmount, setPurchaseAmount] = useState("25");
@@ -96,7 +95,7 @@ export default function BillingPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
+    <>
       <Card className="border-[#2cf4ff]/20 bg-[#07101d]/80">
         <CardHeader>
           <CardDescription className="font-mono uppercase tracking-[0.14em] text-[#7d90aa]">
@@ -171,6 +170,14 @@ export default function BillingPage() {
           </Button>
         </CardContent>
       </Card>
+    </>
+  );
+}
+
+export default function BillingPage() {
+  return (
+    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
+      <BillingPageContent />
     </main>
   );
 }
