@@ -4,25 +4,9 @@ import { env } from "@segmentation/env/server";
 
 import { dynamoClient } from "./clients";
 
-function getApiKeysTableName() {
-  if (!env.AWS_DYNAMO_API_KEYS_TABLE) {
-    throw new Error("AWS_DYNAMO_API_KEYS_TABLE is not configured");
-  }
-
-  return env.AWS_DYNAMO_API_KEYS_TABLE;
-}
-
-function getBalancesTableName() {
-  if (!env.AWS_DYNAMO_BALANCE_TABLE) {
-    throw new Error("AWS_DYNAMO_BALANCE_TABLE is not configured");
-  }
-
-  return env.AWS_DYNAMO_BALANCE_TABLE;
-}
-
 export async function getDynamoTokenBalance(accountId: string) {
   const command = new GetItemCommand({
-    TableName: getBalancesTableName(),
+    TableName: env.AWS_DYNAMO_BALANCE_TABLE,
     Key: marshall({ accountId }),
   });
 
@@ -42,7 +26,7 @@ export async function getDynamoTokenBalance(accountId: string) {
 
 export async function incrementDynamoTokenBalance(accountId: string, tokensToAdd: number) {
   const command = new UpdateItemCommand({
-    TableName: getBalancesTableName(),
+    TableName: env.AWS_DYNAMO_BALANCE_TABLE,
     Key: marshall({ accountId }),
     UpdateExpression: "ADD tokensRemaining :tokens",
     ExpressionAttributeValues: marshall({
@@ -73,7 +57,7 @@ export async function putDynamoApiKey(params: {
 }) {
   await dynamoClient.send(
     new PutItemCommand({
-      TableName: getApiKeysTableName(),
+      TableName: env.AWS_DYNAMO_API_KEYS_TABLE,
       Item: marshall({
         accountId: params.accountId,
         keyHash: params.keyHash,
@@ -88,7 +72,7 @@ export async function putDynamoApiKey(params: {
 export async function setDynamoApiKeyRevoked(params: { keyId: string; revoked: boolean }) {
   await dynamoClient.send(
     new UpdateItemCommand({
-      TableName: getApiKeysTableName(),
+      TableName: env.AWS_DYNAMO_API_KEYS_TABLE,
       Key: marshall({
         keyId: params.keyId,
       }),

@@ -101,10 +101,8 @@ export async function POST(request: Request) {
 
   const stripe = getStripeClient();
 
-  const baseUrl = new URL(request.url).origin;
-  const successUrl =
-    env.STRIPE_SUCCESS_URL ?? `${baseUrl}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl = env.STRIPE_CANCEL_URL ?? `${baseUrl}/?checkout=cancelled`;
+  const successUrl = env.STRIPE_SUCCESS_URL;
+  const cancelUrl = env.STRIPE_CANCEL_URL;
 
   let checkoutSessionId = "";
 
