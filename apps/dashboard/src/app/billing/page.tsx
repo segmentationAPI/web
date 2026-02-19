@@ -2,12 +2,14 @@ import { Suspense } from "react";
 
 import { BillingPageContent } from "./_components/billing-page";
 import { BillingPageLoading } from "./_components/billing-page-loading";
+import { getBalanceForUser } from "@/lib/server/dashboard-queries";
 import { requirePageSession } from "@/lib/server/page-auth";
 
 async function BillingProtectedContent() {
-  await requirePageSession();
+  const session = await requirePageSession();
+  const balance = await getBalanceForUser(session.user.id);
 
-  return <BillingPageContent />;
+  return <BillingPageContent balance={balance} />;
 }
 
 export default function BillingRoutePage() {

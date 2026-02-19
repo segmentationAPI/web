@@ -3,11 +3,13 @@ import { Suspense } from "react";
 import { OverviewPageContent } from "./_components/overview-page";
 import { OverviewPageLoading } from "./_components/overview-page-loading";
 import { requirePageSession } from "@/lib/server/page-auth";
+import { getBalanceForUser } from "@/lib/server/dashboard-queries";
 
 async function HomeProtectedContent() {
   const session = await requirePageSession();
+  const balance = await getBalanceForUser(session.user.id);
 
-  return <OverviewPageContent userName={session.user.name} />;
+  return <OverviewPageContent balance={balance} userName={session.user.name} />;
 }
 
 export default function HomePage() {

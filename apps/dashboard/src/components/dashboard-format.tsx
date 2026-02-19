@@ -10,7 +10,7 @@ export function formatNumber(value: number | null) {
   return value.toLocaleString();
 }
 
-export function formatDate(value: string | null) {
+export function formatDate(value: Date | string | null) {
   if (!value) {
     return "--";
   }

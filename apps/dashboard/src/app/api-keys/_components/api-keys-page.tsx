@@ -2,85 +2,45 @@
 
 import { AlertTriangle, KeyRound, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { createApiKeyAction, revokeApiKeyAction } from "@/app/api-keys/actions";
 import { formatDate } from "@/components/dashboard-format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import type { ApiKey } from "@segmentation/db/schema/app";
 
-type ApiKeyRow = {
-  createdAt: string;
-  id: string;
-  keyPrefix: string;
-  label: string;
-  revoked: boolean;
-  revokedAt: string | null;
-};
-
-export function ApiKeysPageContent() {
-  const [keys, setKeys] = useState<ApiKeyRow[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
+  const router = useRouter();
+  const [keys, setKeys] = useState<ApiKey[]>(initialKeys);
   const [newKeyLabel, setNewKeyLabel] = useState("Production key");
   const [newlyCreatedSecret, setNewlyCreatedSecret] = useState<string | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
   const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null);
 
-  async function fetchApiKeys() {
-    const response = await fetch("/api/api-keys", {
-      method: "GET",
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch API keys");
-    }
-
-    const data = (await response.json()) as {
-      keys: ApiKeyRow[];
-    };
-
-    setKeys(data.keys);
-  }
-
   useEffect(() => {
-    void (async () => {
-      try {
-        await fetchApiKeys();
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to load API keys");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    setKeys(initialKeys);
+  }, [initialKeys]);
 
   async function handleCreateApiKey() {
     setCreatingKey(true);
 
     try {
-      const response = await fetch("/api/api-keys", {
-        body: JSON.stringify({
-          label: newKeyLabel,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
+      const response = await createApiKeyAction({
+        label: newKeyLabel,
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create key");
+        throw new Error(response.error || "Failed to create key");
       }
 
-      const data = (await response.json()) as {
-        plainTextKey: string;
-      };
-
-      setNewlyCreatedSecret(data.plainTextKey);
+      setNewlyCreatedSecret(response.plainTextKey);
+      setKeys((current) => [response.apiKey, ...current.filter((key) => key.id !== response.apiKey.id)]);
       setNewKeyLabel("Production key");
       toast.success("API key created");
-      await fetchApiKeys();
+      router.refresh();
     } catch (error) {
       console.error(error);
       toast.error("Failed to create API key");
@@ -93,16 +53,27 @@ export function ApiKeysPageContent() {
     setRevokingKeyId(keyId);
 
     try {
-      const response = await fetch(`/api/api-keys/${keyId}/revoke`, {
-        method: "POST",
+      const response = await revokeApiKeyAction({
+        keyId,
       });
 
       if (!response.ok) {
-        throw new Error("Failed to revoke key");
+        throw new Error(response.error || "Failed to revoke key");
       }
 
+      setKeys((current) =>
+        current.map((key) =>
+          key.id === keyId
+            ? {
+                ...key,
+                revoked: true,
+                revokedAt: key.revokedAt ?? new Date(),
+              }
+            : key,
+        ),
+      );
       toast.success("API key revoked");
-      await fetchApiKeys();
+      router.refresh();
     } catch (error) {
       console.error(error);
       toast.error("Failed to revoke API key");
@@ -173,13 +144,7 @@ export function ApiKeysPageContent() {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-6 text-center font-mono text-xs text-[#7d90aa]">
-                      Loading API keys...
-                    </td>
-                  </tr>
-                ) : keys.length === 0 ? (
+                {keys.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-3 py-6 text-center font-mono text-xs text-[#7d90aa]">
                       No API keys yet.
@@ -220,10 +185,10 @@ export function ApiKeysPageContent() {
   );
 }
 
-export default function ApiKeysPage() {
+export default function ApiKeysPage({ initialKeys }: { initialKeys: ApiKey[] }) {
   return (
     <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
-      <ApiKeysPageContent />
+      <ApiKeysPageContent initialKeys={initialKeys} />
     </main>
   );
 }

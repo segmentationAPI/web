@@ -1,45 +1,15 @@
 "use client";
 
 import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import type { Route } from "next";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import { formatDate, StatusPill } from "@/components/dashboard-format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { JobDetail, JobListItem } from "@/lib/dashboard-types";
 import { cn } from "@/lib/utils";
-
-type JobsResponse = {
-  items: Array<{
-    apiKeyId: string | null;
-    apiKeyPrefix: string | null;
-    createdAt: string;
-    id: string;
-    prompt: string | null;
-    requestId: string;
-    status: "success" | "failed";
-  }>;
-  nextOffset: number | null;
-};
-
-type JobDetailResponse = {
-  job: {
-    apiKeyPrefix: string | null;
-    createdAt: string;
-    errorCode: string | null;
-    errorMessage: string | null;
-    id: string;
-    inputImageName: string | null;
-    inputImageUrl: string | null;
-    outputs: Array<{
-      outputIndex: number;
-      signedUrl: string | null;
-    }>;
-    prompt: string | null;
-    requestId: string;
-    status: "success" | "failed";
-  };
-};
 
 const MASK_OVERLAY_COLORS = ["#ff5f57", "#2cf4ff", "#ffd166", "#8bff6a", "#4d96ff", "#ff8fab"];
 
@@ -55,80 +25,45 @@ function buildMaskTintStyle(maskUrl: string, color: string) {
   };
 }
 
-export function RequestsPageContent() {
-  const [jobs, setJobs] = useState<JobsResponse["items"]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+type RequestsPageContentProps = {
+  jobs: JobListItem[];
+  selectedJob: JobDetail | null;
+  selectedJobId: string | null;
+};
 
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [selectedJob, setSelectedJob] = useState<JobDetailResponse["job"] | null>(null);
-  const [jobLoading, setJobLoading] = useState(false);
-
-  async function fetchJobs() {
-    const response = await fetch("/api/jobs?limit=25", {
-      method: "GET",
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch request history");
-    }
-
-    const data = (await response.json()) as JobsResponse;
-
-    setJobs(data.items);
-  }
+export function RequestsPageContent({ jobs, selectedJob, selectedJobId }: RequestsPageContentProps) {
+  const router = useRouter();
+  const [pendingJobId, setPendingJobId] = useState<string | null>(null);
+  const [refreshing, startRefreshing] = useTransition();
+  const [navigating, startNavigating] = useTransition();
 
   useEffect(() => {
-    void (async () => {
-      try {
-        await fetchJobs();
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to load request history");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    setPendingJobId(null);
+  }, [selectedJobId]);
 
-  async function refreshJobs() {
-    setRefreshing(true);
-
-    try {
-      await fetchJobs();
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to refresh request history");
-    } finally {
-      setRefreshing(false);
-    }
+  function refreshJobs() {
+    startRefreshing(() => {
+      router.refresh();
+    });
   }
 
-  async function openJobDetail(jobId: string) {
-    setSelectedJobId(jobId);
-    setJobLoading(true);
-
-    try {
-      const response = await fetch(`/api/jobs/${jobId}`, {
-        method: "GET",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to load job detail");
-      }
-
-      const data = (await response.json()) as JobDetailResponse;
-
-      setSelectedJob(data.job);
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to load request details");
-      setSelectedJobId(null);
-      setSelectedJob(null);
-    } finally {
-      setJobLoading(false);
-    }
+  function openJobDetail(jobId: string) {
+    setPendingJobId(jobId);
+    startNavigating(() => {
+      router.push(`/requests?jobId=${encodeURIComponent(jobId)}` as Route);
+    });
   }
+
+  function closeJobDetail() {
+    setPendingJobId(null);
+    startNavigating(() => {
+      router.push("/requests" as Route);
+    });
+  }
+
+  const activeJobId = pendingJobId ?? selectedJobId;
+  const showDrawer = activeJobId !== null;
+  const jobLoading = pendingJobId !== null || navigating;
 
   return (
     <>
@@ -144,11 +79,11 @@ export function RequestsPageContent() {
           </div>
           <Button
             variant="outline"
-            onClick={() => void refreshJobs()}
-            disabled={refreshing || loading}
+            onClick={refreshJobs}
+            disabled={refreshing}
             className="border-[#2cf4ff]/25 bg-[#2cf4ff]/10 font-mono uppercase tracking-[0.12em] text-[#9bf7ff] hover:bg-[#2cf4ff]/20"
           >
-            <RefreshCw className={cn("size-3.5", refreshing || loading ? "animate-spin" : "")} aria-hidden />
+            <RefreshCw className={cn("size-3.5", refreshing ? "animate-spin" : "")} aria-hidden />
             Refresh
           </Button>
         </CardHeader>
@@ -165,13 +100,7 @@ export function RequestsPageContent() {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center font-mono text-xs text-[#7d90aa]">
-                      Loading request history...
-                    </td>
-                  </tr>
-                ) : jobs.length === 0 ? (
+                {jobs.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-3 py-8 text-center font-mono text-xs text-[#7d90aa]">
                       No API requests recorded yet.
@@ -191,7 +120,8 @@ export function RequestsPageContent() {
                       <td className="px-3 py-2">
                         <Button
                           variant="ghost"
-                          onClick={() => void openJobDetail(job.id)}
+                          onClick={() => openJobDetail(job.id)}
+                          disabled={navigating && pendingJobId === job.id}
                           className="font-mono uppercase tracking-[0.12em] text-[#9bf7ff] hover:bg-[#2cf4ff]/10"
                         >
                           <ExternalLink className="size-3.5" aria-hidden />
@@ -207,22 +137,23 @@ export function RequestsPageContent() {
         </CardContent>
       </Card>
 
-      {selectedJobId ? (
+      {showDrawer ? (
         <div className="fixed inset-0 z-50 flex">
           <button
             type="button"
             className="flex-1 bg-[#01050b]/80"
-            onClick={() => {
-              setSelectedJobId(null);
-              setSelectedJob(null);
-            }}
+            onClick={closeJobDetail}
             aria-label="Close request details"
           />
           <aside className="h-full w-full max-w-2xl overflow-y-auto border-l border-[#2cf4ff]/25 bg-[#050910] p-5">
-            {jobLoading || !selectedJob ? (
+            {jobLoading ? (
               <div className="flex h-full items-center justify-center font-mono text-xs uppercase tracking-[0.14em] text-[#7d90aa]">
                 <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
                 Loading Request Detail
+              </div>
+            ) : !selectedJob ? (
+              <div className="border border-[#ff5470]/25 bg-[#ff5470]/7 p-3 text-xs text-[#ffbdc7]">
+                Unable to load this request detail.
               </div>
             ) : (
               <div className="space-y-5">
@@ -275,12 +206,12 @@ export function RequestsPageContent() {
                           className="block w-full object-cover"
                         />
                         {selectedJob.outputs.map((output, index) =>
-                          output.signedUrl ? (
+                          output.url ? (
                             <div
                               key={`overlay-${output.outputIndex}`}
                               className="pointer-events-none absolute inset-0"
                               style={buildMaskTintStyle(
-                                output.signedUrl,
+                                output.url,
                                 MASK_OVERLAY_COLORS[index % MASK_OVERLAY_COLORS.length],
                               )}
                             />
@@ -299,10 +230,10 @@ export function RequestsPageContent() {
   );
 }
 
-export default function RequestsPage() {
+export default function RequestsPage(props: RequestsPageContentProps) {
   return (
     <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
-      <RequestsPageContent />
+      <RequestsPageContent {...props} />
     </main>
   );
 }

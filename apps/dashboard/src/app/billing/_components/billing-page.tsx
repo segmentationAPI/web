@@ -1,22 +1,17 @@
 "use client";
 
 import { CreditCard, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { createCheckoutSessionAction } from "@/app/billing/actions";
 import { formatNumber } from "@/components/dashboard-format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import type { BalanceData } from "@/lib/dashboard-types";
 
-type BalanceResponse = {
-  tokenUsageLast24h: number;
-  tokensRemaining: number;
-};
-
-export function BillingPageContent() {
-  const [balance, setBalance] = useState<BalanceResponse | null>(null);
-  const [loadingBalance, setLoadingBalance] = useState(true);
+export function BillingPageContent({ balance }: { balance: BalanceData }) {
   const [purchaseAmount, setPurchaseAmount] = useState("25");
   const [checkingOut, setCheckingOut] = useState(false);
 
@@ -30,29 +25,6 @@ export function BillingPageContent() {
     return Math.floor(amount * 100);
   }, [purchaseAmount]);
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const response = await fetch("/api/balance", {
-          method: "GET",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch balance");
-        }
-
-        const data = (await response.json()) as BalanceResponse;
-
-        setBalance(data);
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to load current balance");
-      } finally {
-        setLoadingBalance(false);
-      }
-    })();
-  }, []);
-
   async function handleCheckout() {
     setCheckingOut(true);
 
@@ -63,29 +35,15 @@ export function BillingPageContent() {
         throw new Error("Invalid amount");
       }
 
-      const response = await fetch("/api/stripe/checkout", {
-        body: JSON.stringify({ amountUsd }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
+      const response = await createCheckoutSessionAction({
+        amountUsd,
       });
 
       if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
-
-        throw new Error(body?.error || "Failed to start checkout");
+        throw new Error(response.error || "Failed to start checkout");
       }
 
-      const data = (await response.json()) as {
-        checkoutUrl: string;
-      };
-
-      if (!data.checkoutUrl) {
-        throw new Error("Missing checkout URL");
-      }
-
-      window.location.href = data.checkoutUrl;
+      window.location.href = response.checkoutUrl;
     } catch (error) {
       console.error(error);
       toast.error(error instanceof Error ? error.message : "Failed to start checkout");
@@ -109,7 +67,7 @@ export function BillingPageContent() {
               Tokens Remaining
             </div>
             <div className="mt-2 font-display text-3xl text-[#8eff6f]">
-              {loadingBalance ? "..." : formatNumber(balance?.tokensRemaining ?? null)}
+              {formatNumber(balance.tokensRemaining)}
             </div>
           </div>
           <div className="rounded-none border border-[#2cf4ff]/20 bg-[#0a1322]/90 p-3">
@@ -117,7 +75,7 @@ export function BillingPageContent() {
               Last 24h Usage
             </div>
             <div className="mt-2 font-display text-3xl text-[#2cf4ff]">
-              {loadingBalance ? "..." : formatNumber(balance?.tokenUsageLast24h ?? null)}
+              {formatNumber(balance.tokenUsageLast24h)}
             </div>
           </div>
         </CardContent>
@@ -174,10 +132,10 @@ export function BillingPageContent() {
   );
 }
 
-export default function BillingPage() {
+export default function BillingPage({ balance }: { balance: BalanceData }) {
   return (
     <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
-      <BillingPageContent />
+      <BillingPageContent balance={balance} />
     </main>
   );
 }

@@ -1,24 +1,13 @@
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "@segmentation/env/server";
 
-import { s3Client } from "./clients";
-
-export async function getSignedImageUrlByKey(key: string | null) {
+export function buildAssetUrlByKey(key: string | null) {
   if (!key) {
     return null;
   }
 
-  return getSignedUrl(
-    s3Client,
-    new GetObjectCommand({
-      Bucket: env.ASSETS_BUCKET,
-      Key: key,
-    }),
-    {
-      expiresIn: env.AWS_S3_SIGNED_URL_TTL_SECONDS,
-    },
-  );
+  const baseUrl = env.AWS_CLOUDFRONT_BASE_URL.replace(/\/+$/, "");
+  const normalizedKey = key.replace(/^\/+/, "");
+  return `${baseUrl}/${normalizedKey}`;
 }
 
 export function buildInputImageKey(params: { imageName: string | null; userId: string }) {

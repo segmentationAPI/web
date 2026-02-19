@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, type InferSelectModel } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -40,6 +40,7 @@ export const apiKey = pgTable(
     index("api_key_revoked_idx").on(table.revoked),
   ],
 );
+export type ApiKey = InferSelectModel<typeof apiKey>;
 
 export const creditPurchase = pgTable(
   "credit_purchase",
@@ -81,6 +82,7 @@ export const requestJob = pgTable(
     status: jobStatusEnum("status").notNull(),
     inputImageName: text("input_image_name"),
     prompt: text("prompt"),
+    outputCount: integer("output_count").default(0).notNull(),
     errorCode: text("error_code"),
     errorMessage: text("error_message"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -91,21 +93,7 @@ export const requestJob = pgTable(
     index("request_job_status_idx").on(table.status),
   ],
 );
-
-export const requestJobOutput = pgTable(
-  "request_job_output",
-  {
-    id: text("id").primaryKey(),
-    jobId: text("job_id")
-      .notNull()
-      .references(() => requestJob.id, { onDelete: "cascade" }),
-    outputIndex: integer("output_index").notNull(),
-  },
-  (table) => [
-    uniqueIndex("request_job_output_job_index_uidx").on(table.jobId, table.outputIndex),
-    index("request_job_output_job_id_idx").on(table.jobId),
-  ],
-);
+export type RequestJob = InferSelectModel<typeof requestJob>;
 
 export const apiKeyRelations = relations(apiKey, ({ one, many }) => ({
   jobs: many(requestJob),
@@ -122,21 +110,13 @@ export const creditPurchaseRelations = relations(creditPurchase, ({ one }) => ({
   }),
 }));
 
-export const requestJobRelations = relations(requestJob, ({ one, many }) => ({
+export const requestJobRelations = relations(requestJob, ({ one }) => ({
   apiKey: one(apiKey, {
     fields: [requestJob.apiKeyId],
     references: [apiKey.id],
   }),
-  outputs: many(requestJobOutput),
   user: one(user, {
     fields: [requestJob.userId],
     references: [user.id],
-  }),
-}));
-
-export const requestJobOutputRelations = relations(requestJobOutput, ({ one }) => ({
-  job: one(requestJob, {
-    fields: [requestJobOutput.jobId],
-    references: [requestJob.id],
   }),
 }));

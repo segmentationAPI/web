@@ -1,0 +1,181 @@
+"use server";
+
+import { db } from "@segmentation/db";
+import { apiKey, type ApiKey } from "@segmentation/db/schema/app";
+import { and, eq } from "drizzle-orm";
+import { createHash } from "node:crypto";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+import { putDynamoApiKey, setDynamoApiKeyRevoked } from "@/lib/server/aws/dynamo";
+import { requirePageSession } from "@/lib/server/page-auth";
+
+const createApiKeyPayloadSchema = z.object({
+  label: z.string().trim().max(100).optional(),
+});
+
+const revokeApiKeyPayloadSchema = z.object({
+  keyId: z.string().min(1),
+});
+
+type CreateApiKeyActionResult =
+  | {
+      apiKey: ApiKey;
+      ok: true;
+      plainTextKey: string;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+type RevokeApiKeyActionResult =
+  | {
+      ok: true;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+function generateApiKeySecret() {
+  const random = `${crypto.randomUUID().replaceAll("-", "")}${crypto.randomUUID().replaceAll("-", "")}`;
+  return `sam3_${random}`;
+}
+
+function hashApiKey(secret: string) {
+  return createHash("sha256").update(secret).digest("hex");
+}
+
+export async function createApiKeyAction(
+  input: z.input<typeof createApiKeyPayloadSchema>,
+): Promise<CreateApiKeyActionResult> {
+  const session = await requirePageSession();
+  const parsed = createApiKeyPayloadSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      error: "Invalid request body",
+      ok: false,
+    };
+  }
+
+  const label = parsed.data.label || "Primary key";
+  const plainTextKey = generateApiKeySecret();
+  const keyHash = hashApiKey(plainTextKey);
+  const keyPrefix = plainTextKey.slice(0, 8);
+  const keyId = `key_${crypto.randomUUID()}`;
+
+  try {
+    await db.transaction(async (tx) => {
+      await tx.insert(apiKey).values({
+        id: keyId,
+        keyHash,
+        keyPrefix,
+        label,
+        revoked: false,
+        userId: session.user.id,
+      });
+
+      await putDynamoApiKey({
+        accountId: session.user.id,
+        keyHash,
+        keyId,
+        keyPrefix,
+        revoked: false,
+      });
+    });
+  } catch (error) {
+    console.error("Failed to create API key", error);
+    return {
+      error: "Failed to create API key",
+      ok: false,
+    };
+  }
+
+  const [createdKey] = await db
+    .select()
+    .from(apiKey)
+    .where(and(eq(apiKey.userId, session.user.id), eq(apiKey.id, keyId)))
+    .limit(1);
+
+  if (!createdKey) {
+    return {
+      error: "Failed to load created API key",
+      ok: false,
+    };
+  }
+
+  revalidatePath("/api-keys");
+
+  return {
+    apiKey: createdKey,
+    ok: true,
+    plainTextKey,
+  };
+}
+
+export async function revokeApiKeyAction(
+  input: z.input<typeof revokeApiKeyPayloadSchema>,
+): Promise<RevokeApiKeyActionResult> {
+  const session = await requirePageSession();
+  const parsed = revokeApiKeyPayloadSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      error: "Invalid request body",
+      ok: false,
+    };
+  }
+
+  const [existingKey] = await db
+    .select({
+      id: apiKey.id,
+      revoked: apiKey.revoked,
+    })
+    .from(apiKey)
+    .where(and(eq(apiKey.userId, session.user.id), eq(apiKey.id, parsed.data.keyId)))
+    .limit(1);
+
+  if (!existingKey) {
+    return {
+      error: "API key not found",
+      ok: false,
+    };
+  }
+
+  if (existingKey.revoked) {
+    return {
+      ok: true,
+    };
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .update(apiKey)
+        .set({
+          revoked: true,
+          revokedAt: new Date(),
+        })
+        .where(and(eq(apiKey.userId, session.user.id), eq(apiKey.id, parsed.data.keyId)));
+
+      await setDynamoApiKeyRevoked({
+        keyId: parsed.data.keyId,
+        revoked: true,
+      });
+    });
+  } catch (error) {
+    console.error("Failed to revoke API key", error);
+    return {
+      error: "Failed to revoke API key",
+      ok: false,
+    };
+  }
+
+  revalidatePath("/api-keys");
+
+  return {
+    ok: true,
+  };
+}

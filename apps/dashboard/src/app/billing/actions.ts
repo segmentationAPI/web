@@ -1,18 +1,29 @@
+"use server";
+
 import { db } from "@segmentation/db";
 import { creditPurchase } from "@segmentation/db/schema/app";
 import { user } from "@segmentation/db/schema/auth";
 import { env } from "@segmentation/env/server";
 import { and, eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { MAX_PURCHASE_USD, MIN_PURCHASE_USD, TOKENS_PER_USD } from "@/lib/server/constants";
-import { requireRouteUser } from "@/lib/server/route-auth";
+import { requirePageSession } from "@/lib/server/page-auth";
 import { getStripeClient } from "@/lib/server/stripe";
 
-const bodySchema = z.object({
+const checkoutPayloadSchema = z.object({
   amountUsd: z.number().finite(),
 });
+
+type CheckoutActionResult =
+  | {
+      checkoutUrl: string;
+      ok: true;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
 
 async function getOrCreateStripeCustomer(params: {
   email: string;
@@ -25,7 +36,6 @@ async function getOrCreateStripeCustomer(params: {
   }
 
   const stripe = getStripeClient();
-
   const customer = await stripe.customers.create({
     email: params.email,
     metadata: {
@@ -44,30 +54,30 @@ async function getOrCreateStripeCustomer(params: {
   return customer.id;
 }
 
-export async function POST(request: Request) {
-  const context = await requireRouteUser(request);
+export async function createCheckoutSessionAction(
+  input: z.input<typeof checkoutPayloadSchema>,
+): Promise<CheckoutActionResult> {
+  const session = await requirePageSession();
 
-  if (!context) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const parsed = bodySchema.safeParse(await request.json().catch(() => null));
+  const parsed = checkoutPayloadSchema.safeParse(input);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return {
+      error: "Invalid request body",
+      ok: false,
+    };
   }
 
   const amountUsd = Math.round(parsed.data.amountUsd * 100) / 100;
 
   if (amountUsd < MIN_PURCHASE_USD || amountUsd > MAX_PURCHASE_USD) {
-    return NextResponse.json(
-      {
-        error: `Amount must be between $${MIN_PURCHASE_USD} and $${MAX_PURCHASE_USD}`,
-      },
-      { status: 400 },
-    );
+    return {
+      error: `Amount must be between $${MIN_PURCHASE_USD} and $${MAX_PURCHASE_USD}`,
+      ok: false,
+    };
   }
 
+  const userId = session.user.id;
   const amountUsdCents = Math.round(amountUsd * 100);
   const tokensGranted = Math.floor((amountUsdCents * TOKENS_PER_USD) / 100);
 
@@ -77,30 +87,34 @@ export async function POST(request: Request) {
       stripeCustomerId: user.stripeCustomerId,
     })
     .from(user)
-    .where(eq(user.id, context.userId))
+    .where(eq(user.id, userId))
     .limit(1);
 
   if (!currentUser) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+    return {
+      error: "User not found",
+      ok: false,
+    };
   }
 
   let stripeCustomerId: string;
 
   try {
     stripeCustomerId = await getOrCreateStripeCustomer({
-      email: context.session.user.email,
+      email: session.user.email,
       existingStripeCustomerId: currentUser.stripeCustomerId,
       userId: currentUser.id,
-      userName: context.session.user.name,
+      userName: session.user.name,
     });
   } catch (error) {
     console.error("Failed to initialize Stripe customer", error);
-
-    return NextResponse.json({ error: "Failed to initialize billing customer" }, { status: 500 });
+    return {
+      error: "Failed to initialize billing customer",
+      ok: false,
+    };
   }
 
   const stripe = getStripeClient();
-
   const successUrl = env.STRIPE_SUCCESS_URL;
   const cancelUrl = env.STRIPE_CANCEL_URL;
 
@@ -124,13 +138,20 @@ export async function POST(request: Request) {
         },
       ],
       metadata: {
-        accountId: context.userId,
+        accountId: userId,
         amountUsdCents: String(amountUsdCents),
         tokensGranted: String(tokensGranted),
       },
       mode: "payment",
       success_url: successUrl,
     });
+
+    if (!checkoutSession.url) {
+      return {
+        error: "Failed to create Stripe checkout",
+        ok: false,
+      };
+    }
 
     checkoutSessionId = checkoutSession.id;
 
@@ -140,13 +161,13 @@ export async function POST(request: Request) {
       status: "pending",
       stripeCheckoutSessionId: checkoutSession.id,
       tokensGranted,
-      userId: context.userId,
+      userId,
     });
 
-    return NextResponse.json({
+    return {
       checkoutUrl: checkoutSession.url,
-      sessionId: checkoutSession.id,
-    });
+      ok: true,
+    };
   } catch (error) {
     if (checkoutSessionId) {
       await db
@@ -156,16 +177,16 @@ export async function POST(request: Request) {
           status: "failed",
         })
         .where(
-          and(
-            eq(creditPurchase.userId, context.userId),
-            eq(creditPurchase.stripeCheckoutSessionId, checkoutSessionId),
-          ),
+          and(eq(creditPurchase.userId, userId), eq(creditPurchase.stripeCheckoutSessionId, checkoutSessionId)),
         )
         .catch(() => undefined);
     }
 
     console.error("Failed to create Stripe checkout", error);
 
-    return NextResponse.json({ error: "Failed to create Stripe checkout" }, { status: 500 });
+    return {
+      error: "Failed to create Stripe checkout",
+      ok: false,
+    };
   }
 }
