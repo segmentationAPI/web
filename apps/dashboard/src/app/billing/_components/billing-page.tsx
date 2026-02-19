@@ -54,41 +54,41 @@ export function BillingPageContent({ balance }: { balance: BalanceData }) {
 
   return (
     <>
-      <Card className="border-[#2cf4ff]/20 bg-[#07101d]/80">
+      <Card className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 py-6">
         <CardHeader>
-          <CardDescription className="font-mono uppercase tracking-[0.14em] text-[#7d90aa]">
+          <CardDescription className="font-mono uppercase tracking-[0.14em] text-muted-foreground">
             Current Balance
           </CardDescription>
-          <CardTitle className="font-display tracking-[0.08em] text-[#e8f7ff]">
+          <CardTitle className="font-display tracking-[0.03em] text-foreground">
             Billing Overview
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-none border border-[#2cf4ff]/20 bg-[#0a1322]/90 p-3">
-            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#7d90aa]">
+          <div className="rounded-xl border border-border/70 bg-muted/55 p-4">
+            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               Tokens Remaining
             </div>
-            <div className="mt-2 font-display text-3xl text-[#8eff6f]">
+            <div className="mt-2 font-display text-3xl text-secondary">
               {formatNumber(balance.tokensRemaining)}
             </div>
           </div>
-          <div className="rounded-none border border-[#2cf4ff]/20 bg-[#0a1322]/90 p-3">
-            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#7d90aa]">
+          <div className="rounded-xl border border-border/70 bg-muted/55 p-4">
+            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               Last 24h Usage
             </div>
-            <div className="mt-2 font-display text-3xl text-[#2cf4ff]">
+            <div className="mt-2 font-display text-3xl text-primary">
               {formatNumber(balance.tokenUsageLast24h)}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-[#2cf4ff]/20 bg-[#07101d]/80">
+      <Card className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 py-6">
         <CardHeader>
-          <CardDescription className="font-mono uppercase tracking-[0.14em] text-[#7d90aa]">
+          <CardDescription className="font-mono uppercase tracking-[0.14em] text-muted-foreground">
             Buy Credits
           </CardDescription>
-          <CardTitle className="font-display tracking-[0.08em] text-[#e8f7ff]">
+          <CardTitle className="font-display tracking-[0.03em] text-foreground">
             Stripe Checkout (USD)
           </CardTitle>
         </CardHeader>
@@ -96,7 +96,7 @@ export function BillingPageContent({ balance }: { balance: BalanceData }) {
           <div className="space-y-2">
             <label
               htmlFor="purchase-amount"
-              className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#7d90aa]"
+              className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground"
             >
               Amount ($5 - $500)
             </label>
@@ -108,18 +108,18 @@ export function BillingPageContent({ balance }: { balance: BalanceData }) {
               step="0.01"
               value={purchaseAmount}
               onChange={(event) => setPurchaseAmount(event.target.value)}
-              className="border-[#2cf4ff]/30 bg-[#040912]"
+              className="rounded-md border-input bg-background/60"
             />
           </div>
 
-          <div className="rounded-none border border-[#8eff6f]/25 bg-[#8eff6f]/5 p-2 font-mono text-[12px] text-[#ccffc0]">
+          <div className="rounded-lg border border-secondary/35 bg-secondary/10 p-2 font-mono text-[12px] text-secondary">
             Estimated credit: {predictedTokens.toLocaleString()} tokens
           </div>
 
           <Button
             onClick={handleCheckout}
             disabled={checkingOut}
-            className="w-full border border-[#8eff6f]/30 bg-[#8eff6f]/15 font-mono uppercase tracking-[0.14em] text-[#cfffbf] hover:bg-[#8eff6f]/25"
+            className="w-full border border-primary/45 bg-primary/20 font-mono uppercase tracking-[0.14em] text-foreground hover:bg-primary/30"
           >
             {checkingOut ? (
               <>

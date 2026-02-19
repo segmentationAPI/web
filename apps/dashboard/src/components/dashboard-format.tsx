@@ -22,10 +22,10 @@ export function StatusPill({ status }: { status: "success" | "failed" }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-none border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em]",
+        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em]",
         status === "success"
-          ? "border-[#2cf4ff]/40 bg-[#2cf4ff]/10 text-[#94fcff]"
-          : "border-[#ff5470]/40 bg-[#ff5470]/10 text-[#ff9dae]",
+          ? "border-secondary/45 bg-secondary/15 text-secondary"
+          : "border-destructive/45 bg-destructive/10 text-destructive",
       )}
     >
       {status === "success" ? (

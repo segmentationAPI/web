@@ -17,14 +17,19 @@ export default function Header() {
   const onDashboard = pathname !== "/login";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#2cf4ff]/20 bg-[#03070f]/75 backdrop-blur-sm">
-      <div className="mx-auto flex w-full max-w-[1320px] items-center justify-between gap-4 px-4 py-2 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-border/35 bg-background/70 backdrop-blur-xl">
+      <div className="mx-auto flex w-full max-w-[1320px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-4">
-          <Link
-            href="/"
-            className="font-display text-lg font-semibold uppercase tracking-[0.18em] text-[#e8f7ff]"
-          >
-            Segmentation API
+          <Link href="/" className="inline-flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-lg border border-border/80 bg-background/80 shadow-[0_0_24px_rgba(255,112,63,0.2)]">
+              <span className="h-3.5 w-3.5 rotate-45 bg-primary" />
+            </span>
+            <span className="flex flex-col">
+              <span className="font-display text-lg leading-none">SegmentationAPI</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                Dashboard
+              </span>
+            </span>
           </Link>
           {onDashboard ? (
             <nav className="hidden items-center gap-2 md:flex">
@@ -34,8 +39,8 @@ export default function Header() {
                   href={link.href}
                   className={
                     pathname === link.href
-                      ? "rounded-none border border-[#8eff6f]/35 bg-[#8eff6f]/18 px-2 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-[#cbffbf] transition"
-                      : "rounded-none border border-[#2cf4ff]/30 bg-[#2cf4ff]/5 px-2 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-[#9bf7ff] transition hover:bg-[#2cf4ff]/14"
+                      ? "rounded-full border border-primary/60 bg-primary/20 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-foreground transition-colors"
+                      : "rounded-full border border-border/70 bg-background/65 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
                   }
                 >
                   {link.label}

@@ -12,7 +12,7 @@ import type { JobDetail, JobListItem } from "@/lib/dashboard-types";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
-const MASK_OVERLAY_COLORS = ["#ff5f57", "#2cf4ff", "#ffd166", "#8bff6a", "#4d96ff", "#ff8fab"];
+const MASK_OVERLAY_COLORS = ["#ff703f", "#39d5c9", "#f2b77a", "#74e8a5", "#f95f8e", "#ffeecc"];
 
 function buildMaskTintStyle(maskUrl: string, color: string) {
   return {
@@ -72,13 +72,13 @@ export function RequestsPageContent({
 
   return (
     <>
-      <Card className="border-[#2cf4ff]/20 bg-[#07101d]/80">
+      <Card className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 py-6">
         <CardHeader className="flex flex-row items-center justify-between gap-3">
           <div>
-            <CardDescription className="font-mono uppercase tracking-[0.14em] text-[#7d90aa]">
+            <CardDescription className="font-mono uppercase tracking-[0.14em] text-muted-foreground">
               Request History
             </CardDescription>
-            <CardTitle className="font-display tracking-[0.08em] text-[#e8f7ff]">
+            <CardTitle className="font-display tracking-[0.03em] text-foreground">
               Past API Requests
             </CardTitle>
           </div>
@@ -86,16 +86,16 @@ export function RequestsPageContent({
             variant="outline"
             onClick={refreshJobs}
             disabled={refreshing}
-            className="border-[#2cf4ff]/25 bg-[#2cf4ff]/10 font-mono uppercase tracking-[0.12em] text-[#9bf7ff] hover:bg-[#2cf4ff]/20"
+            className="border-primary/35 bg-primary/15 font-mono uppercase tracking-[0.12em] text-foreground hover:bg-primary/25"
           >
             <RefreshCw className={cn("size-3.5", refreshing ? "animate-spin" : "")} aria-hidden />
             Refresh
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto border border-[#2cf4ff]/20">
+          <div className="overflow-x-auto rounded-xl border border-border/70 bg-card/55">
             <table className="min-w-full text-left text-xs">
-              <thead className="bg-[#08101d] font-mono uppercase tracking-[0.12em] text-[#90a3ba]">
+              <thead className="bg-muted/65 font-mono uppercase tracking-[0.12em] text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2">Request ID</th>
                   <th className="px-3 py-2">Status</th>
@@ -107,32 +107,29 @@ export function RequestsPageContent({
               <tbody>
                 {jobs.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={5}
-                      className="px-3 py-8 text-center font-mono text-xs text-[#7d90aa]"
-                    >
+                    <td colSpan={5} className="px-3 py-8 text-center font-mono text-xs text-muted-foreground">
                       No API requests recorded yet.
                     </td>
                   </tr>
                 ) : (
                   jobs.map((job) => (
-                    <tr key={job.id} className="border-t border-[#2cf4ff]/15">
-                      <td className="max-w-[240px] truncate px-3 py-2 font-mono text-[#d6e9ff]">
+                    <tr key={job.id} className="border-t border-border/60">
+                      <td className="max-w-[240px] truncate px-3 py-2 font-mono text-foreground">
                         {job.requestId}
                       </td>
                       <td className="px-3 py-2">
                         <StatusPill status={job.status} />
                       </td>
-                      <td className="px-3 py-2 font-mono text-[#9ab7d5]">
+                      <td className="px-3 py-2 font-mono text-muted-foreground">
                         {job.apiKeyPrefix || "--"}
                       </td>
-                      <td className="px-3 py-2 text-[#9ab7d5]">{formatDate(job.createdAt)}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{formatDate(job.createdAt)}</td>
                       <td className="px-3 py-2">
                         <Button
                           variant="ghost"
                           onClick={() => openJobDetail(job.id)}
                           disabled={navigating && pendingJobId === job.id}
-                          className="font-mono uppercase tracking-[0.12em] text-[#9bf7ff] hover:bg-[#2cf4ff]/10"
+                          className="font-mono uppercase tracking-[0.12em] text-primary hover:bg-primary/10"
                         >
                           <ExternalLink className="size-3.5" aria-hidden />
                           View
@@ -151,43 +148,43 @@ export function RequestsPageContent({
         <div className="fixed inset-0 z-50 flex">
           <button
             type="button"
-            className="flex-1 bg-[#01050b]/80"
+            className="flex-1 bg-background/80"
             onClick={closeJobDetail}
             aria-label="Close request details"
           />
-          <aside className="h-full w-full max-w-2xl overflow-y-auto border-l border-[#2cf4ff]/25 bg-[#050910] p-5">
+          <aside className="h-full w-full max-w-2xl overflow-y-auto border-l border-border/70 bg-card p-5">
             {jobLoading ? (
-              <div className="flex h-full items-center justify-center font-mono text-xs uppercase tracking-[0.14em] text-[#7d90aa]">
+              <div className="flex h-full items-center justify-center font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
                 <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
                 Loading Request Detail
               </div>
             ) : !selectedJob ? (
-              <div className="border border-[#ff5470]/25 bg-[#ff5470]/7 p-3 text-xs text-[#ffbdc7]">
+              <div className="rounded-lg border border-destructive/35 bg-destructive/10 p-3 text-xs text-destructive">
                 Unable to load this request detail.
               </div>
             ) : (
               <div className="space-y-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#7d90aa]">
+                    <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                       Request Detail
                     </p>
-                    <h2 className="mt-1 break-all font-display text-lg tracking-[0.06em] text-[#e8f7ff]">
+                    <h2 className="mt-1 break-all font-display text-lg tracking-[0.03em] text-foreground">
                       {selectedJob.requestId}
                     </h2>
                   </div>
                   <StatusPill status={selectedJob.status} />
                 </div>
 
-                <div className="grid gap-2 border border-[#2cf4ff]/15 bg-[#08101b]/80 p-3 text-xs text-[#bdd2ec] sm:grid-cols-2">
+                <div className="grid gap-2 rounded-xl border border-border/70 bg-muted/55 p-3 text-xs text-foreground sm:grid-cols-2">
                   <div>
-                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">
+                    <span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
                       Created At
                     </span>
                     <p className="mt-1">{formatDate(selectedJob.createdAt)}</p>
                   </div>
                   <div className="sm:col-span-2">
-                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">
+                    <span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
                       Prompt
                     </span>
                     <p className="mt-1 wrap-break-word">{selectedJob.prompt || "--"}</p>
@@ -195,8 +192,8 @@ export function RequestsPageContent({
                 </div>
 
                 {selectedJob.errorMessage ? (
-                  <div className="border border-[#ff5470]/25 bg-[#ff5470]/7 p-3 text-xs text-[#ffbdc7]">
-                    <p className="font-mono uppercase tracking-[0.14em] text-[#ff95a9]">
+                  <div className="rounded-lg border border-destructive/35 bg-destructive/10 p-3 text-xs text-destructive">
+                    <p className="font-mono uppercase tracking-[0.14em] text-destructive">
                       Error Message
                     </p>
                     <p className="mt-1">{selectedJob.errorMessage}</p>
@@ -204,20 +201,20 @@ export function RequestsPageContent({
                 ) : null}
 
                 <section className="space-y-2">
-                  <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#7d90aa]">
+                  <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                     Input + Combined Masks
                   </h3>
                   {selectedJob.outputs.length === 0 ? (
-                    <div className="border border-[#2cf4ff]/15 bg-[#08101b]/80 p-3 text-xs text-[#7d90aa]">
+                    <div className="rounded-lg border border-border/70 bg-muted/55 p-3 text-xs text-muted-foreground">
                       No output images
                     </div>
                   ) : !selectedJob.inputImageUrl ? (
-                    <div className="border border-[#2cf4ff]/15 bg-[#08101b]/80 p-3 text-xs text-[#7d90aa]">
+                    <div className="rounded-lg border border-border/70 bg-muted/55 p-3 text-xs text-muted-foreground">
                       Missing input image for overlay rendering
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="relative overflow-hidden border border-[#2cf4ff]/20 bg-[#02060d]">
+                      <div className="relative overflow-hidden rounded-xl border border-border/70 bg-background/80">
                         <Image
                           src={selectedJob.inputImageUrl}
                           alt="Input image with combined mask overlays"

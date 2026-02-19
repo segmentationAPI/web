@@ -87,12 +87,12 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
 
   return (
     <>
-      <Card className="border-[#2cf4ff]/20 bg-[#07101d]/80">
+      <Card className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 py-6">
         <CardHeader>
-          <CardDescription className="font-mono uppercase tracking-[0.14em] text-[#7d90aa]">
+          <CardDescription className="font-mono uppercase tracking-[0.14em] text-muted-foreground">
             API Keys
           </CardDescription>
-          <CardTitle className="font-display tracking-[0.08em] text-[#e8f7ff]">
+          <CardTitle className="font-display tracking-[0.03em] text-foreground">
             Key Management
           </CardTitle>
         </CardHeader>
@@ -102,12 +102,12 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
               value={newKeyLabel}
               onChange={(event) => setNewKeyLabel(event.target.value)}
               placeholder="Label"
-              className="border-[#2cf4ff]/30 bg-[#040912]"
+              className="border-input bg-background/60"
             />
             <Button
               onClick={handleCreateApiKey}
               disabled={creatingKey}
-              className="border border-[#2cf4ff]/30 bg-[#2cf4ff]/15 font-mono uppercase tracking-[0.14em] text-[#a8f8ff] hover:bg-[#2cf4ff]/25"
+              className="border border-primary/45 bg-primary/20 font-mono uppercase tracking-[0.14em] text-foreground hover:bg-primary/30"
             >
               {creatingKey ? (
                 <>
@@ -124,14 +124,14 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
           </div>
 
           {newlyCreatedSecret ? (
-            <div className="rounded-none border border-[#8eff6f]/40 bg-[#8eff6f]/8 p-3">
+            <div className="rounded-xl border border-secondary/45 bg-secondary/10 p-3">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 size-4 text-[#8eff6f]" aria-hidden />
+                <AlertTriangle className="mt-0.5 size-4 text-secondary" aria-hidden />
                 <div>
-                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#b8ffaa]">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-secondary">
                     Copy this key now
                   </p>
-                  <p className="mt-1 break-all font-mono text-xs text-[#d5ffd2]">
+                  <p className="mt-1 break-all font-mono text-xs text-foreground">
                     {newlyCreatedSecret}
                   </p>
                 </div>
@@ -139,9 +139,9 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
             </div>
           ) : null}
 
-          <div className="overflow-x-auto border border-[#2cf4ff]/20">
+          <div className="overflow-x-auto rounded-xl border border-border/70 bg-card/55">
             <table className="min-w-full text-left text-xs">
-              <thead className="bg-[#08101d] font-mono uppercase tracking-[0.12em] text-[#90a3ba]">
+              <thead className="bg-muted/65 font-mono uppercase tracking-[0.12em] text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2">Label</th>
                   <th className="px-3 py-2">Prefix</th>
@@ -153,36 +153,33 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
               <tbody>
                 {keys.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={5}
-                      className="px-3 py-6 text-center font-mono text-xs text-[#7d90aa]"
-                    >
+                    <td colSpan={5} className="px-3 py-6 text-center font-mono text-xs text-muted-foreground">
                       No API keys yet.
                     </td>
                   </tr>
                 ) : (
                   keys.map((key) => (
-                    <tr key={key.id} className="border-t border-[#2cf4ff]/15">
-                      <td className="px-3 py-2 text-[#d6e9ff]">{key.label}</td>
-                      <td className="px-3 py-2 font-mono text-[#9ab7d5]">{key.keyPrefix}</td>
+                    <tr key={key.id} className="border-t border-border/60">
+                      <td className="px-3 py-2 text-foreground">{key.label}</td>
+                      <td className="px-3 py-2 font-mono text-muted-foreground">{key.keyPrefix}</td>
                       <td className="px-3 py-2">
                         {key.revoked ? (
-                          <span className="font-mono uppercase tracking-[0.12em] text-[#ff8c9d]">
+                          <span className="font-mono uppercase tracking-[0.12em] text-destructive">
                             revoked
                           </span>
                         ) : (
-                          <span className="font-mono uppercase tracking-[0.12em] text-[#8eff6f]">
+                          <span className="font-mono uppercase tracking-[0.12em] text-secondary">
                             active
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-[#9ab7d5]">{formatDate(key.createdAt)}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{formatDate(key.createdAt)}</td>
                       <td className="px-3 py-2 text-right">
                         <Button
                           disabled={key.revoked || revokingKeyId === key.id}
                           onClick={() => void handleRevokeApiKey(key.id)}
                           variant="outline"
-                          className="border-[#ff5470]/30 bg-[#ff5470]/10 font-mono uppercase tracking-[0.12em] text-[#ff9fb0] hover:bg-[#ff5470]/20"
+                          className="border-destructive/35 bg-destructive/10 font-mono uppercase tracking-[0.12em] text-destructive hover:bg-destructive/20"
                         >
                           {revokingKeyId === key.id ? "Revoking" : "Revoke"}
                         </Button>

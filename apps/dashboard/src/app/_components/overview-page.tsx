@@ -13,29 +13,29 @@ export function OverviewPageContent({
 }) {
   return (
     <>
-      <Card className="border-[#2cf4ff]/20 bg-[#07101d]/80">
+      <Card className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 py-6">
         <CardHeader>
-          <CardDescription className="font-mono uppercase tracking-[0.14em] text-[#7d90aa]">
+          <CardDescription className="font-mono uppercase tracking-[0.14em] text-muted-foreground">
             Account Overview
           </CardDescription>
-          <CardTitle className="font-display text-2xl tracking-[0.06em] text-[#e8f7ff]">
+          <CardTitle className="font-display text-2xl tracking-[0.03em] text-foreground">
             {userName}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-none border border-[#2cf4ff]/20 bg-[#0a1322]/90 p-3">
-            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#7d90aa]">
+          <div className="rounded-xl border border-border/70 bg-muted/55 p-4">
+            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               Tokens Remaining
             </div>
-            <div className="mt-2 font-display text-3xl text-[#8eff6f]">
+            <div className="mt-2 font-display text-3xl text-secondary">
               {formatNumber(balance.tokensRemaining)}
             </div>
           </div>
-          <div className="rounded-none border border-[#2cf4ff]/20 bg-[#0a1322]/90 p-3">
-            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#7d90aa]">
+          <div className="rounded-xl border border-border/70 bg-muted/55 p-4">
+            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               Last 24h Usage
             </div>
-            <div className="mt-2 font-display text-3xl text-[#2cf4ff]">
+            <div className="mt-2 font-display text-3xl text-primary">
               {formatNumber(balance.tokenUsageLast24h)}
             </div>
           </div>

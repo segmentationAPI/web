@@ -123,7 +123,7 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
         <Button
           variant="link"
           onClick={onSwitchToSignUp}
-          className="font-mono uppercase tracking-[0.12em] text-[#8ec9ff] hover:text-[#b8deff]"
+          className="font-mono uppercase tracking-[0.12em] text-primary hover:text-secondary"
         >
           Need an account? Sign Up
         </Button>
