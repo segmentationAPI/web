@@ -6,8 +6,6 @@ import { NextResponse } from "next/server";
 import { getDynamoTokenBalance } from "@/lib/server/aws/dynamo";
 import { requireRouteUser } from "@/lib/server/route-auth";
 
-export const runtime = "nodejs";
-
 export async function GET(request: Request) {
   const context = await requireRouteUser(request);
 

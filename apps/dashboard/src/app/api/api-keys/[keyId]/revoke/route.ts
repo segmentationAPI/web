@@ -6,8 +6,6 @@ import { NextResponse } from "next/server";
 import { setDynamoApiKeyRevoked } from "@/lib/server/aws/dynamo";
 import { requireRouteUser } from "@/lib/server/route-auth";
 
-export const runtime = "nodejs";
-
 export async function POST(
   request: Request,
   context: {

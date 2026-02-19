@@ -7,8 +7,6 @@ import { NextResponse } from "next/server";
 import { incrementDynamoTokenBalance } from "@/lib/server/aws/dynamo";
 import { getStripeClient } from "@/lib/server/stripe";
 
-export const runtime = "nodejs";
-
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
 

@@ -6,8 +6,6 @@ import { NextResponse } from "next/server";
 import { buildInputImageKey, buildOutputMaskKey, getSignedImageUrlByKey } from "@/lib/server/aws/s3";
 import { requireRouteUser } from "@/lib/server/route-auth";
 
-export const runtime = "nodejs";
-
 export async function GET(
   request: Request,
   context: {

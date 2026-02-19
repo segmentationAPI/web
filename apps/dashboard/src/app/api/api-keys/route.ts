@@ -7,8 +7,6 @@ import { NextResponse } from "next/server";
 import { putDynamoApiKey } from "@/lib/server/aws/dynamo";
 import { requireRouteUser } from "@/lib/server/route-auth";
 
-export const runtime = "nodejs";
-
 function generateApiKeySecret() {
   const random = `${crypto.randomUUID().replaceAll("-", "")}${crypto.randomUUID().replaceAll("-", "")}`;
 

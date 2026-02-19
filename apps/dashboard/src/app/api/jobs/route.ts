@@ -6,8 +6,6 @@ import { NextResponse } from "next/server";
 import { DEFAULT_PAGE_SIZE } from "@/lib/server/constants";
 import { requireRouteUser } from "@/lib/server/route-auth";
 
-export const runtime = "nodejs";
-
 function parsePositiveInt(value: string | null, fallback: number) {
   const parsed = Number.parseInt(value ?? "", 10);
 

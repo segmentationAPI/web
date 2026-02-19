@@ -10,8 +10,6 @@ import { MAX_PURCHASE_USD, MIN_PURCHASE_USD, TOKENS_PER_USD } from "@/lib/server
 import { requireRouteUser } from "@/lib/server/route-auth";
 import { getStripeClient } from "@/lib/server/stripe";
 
-export const runtime = "nodejs";
-
 const bodySchema = z.object({
   amountUsd: z.number().finite(),
 });
