@@ -16,10 +16,9 @@ type JobsResponse = {
     apiKeyPrefix: string | null;
     createdAt: string;
     id: string;
-    processedAt: string | null;
+    prompt: string | null;
     requestId: string;
     status: "success" | "failed";
-    tokenCost: number;
   }>;
   nextOffset: number | null;
 };
@@ -31,25 +30,31 @@ type JobDetailResponse = {
     errorCode: string | null;
     errorMessage: string | null;
     id: string;
+    inputImageName: string | null;
     inputImageUrl: string | null;
-    inputBucket: string | null;
-    inputKey: string | null;
     outputs: Array<{
-      bucket: string;
-      height: number | null;
-      id: string;
-      key: string;
-      mimeType: string | null;
       outputIndex: number;
       signedUrl: string | null;
-      width: number | null;
     }>;
-    processedAt: string | null;
+    prompt: string | null;
     requestId: string;
     status: "success" | "failed";
-    tokenCost: number;
   };
 };
+
+const MASK_OVERLAY_COLORS = ["#ff5f57", "#2cf4ff", "#ffd166", "#8bff6a", "#4d96ff", "#ff8fab"];
+
+function buildMaskTintStyle(maskUrl: string, color: string) {
+  return {
+    backgroundBlendMode: "multiply",
+    backgroundImage: `linear-gradient(${color}, ${color}), url("${maskUrl}")`,
+    backgroundPosition: "center, center",
+    backgroundRepeat: "no-repeat, no-repeat",
+    backgroundSize: "100% 100%, 100% 100%",
+    mixBlendMode: "screen" as const,
+    opacity: 0.7,
+  };
+}
 
 export default function RequestsPage() {
   const [jobs, setJobs] = useState<JobsResponse["items"]>([]);
@@ -155,22 +160,21 @@ export default function RequestsPage() {
                 <tr>
                   <th className="px-3 py-2">Request ID</th>
                   <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Tokens</th>
                   <th className="px-3 py-2">API key</th>
-                  <th className="px-3 py-2">Processed</th>
+                  <th className="px-3 py-2">Created</th>
                   <th className="px-3 py-2">Open</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-8 text-center font-mono text-xs text-[#7d90aa]">
+                    <td colSpan={5} className="px-3 py-8 text-center font-mono text-xs text-[#7d90aa]">
                       Loading request history...
                     </td>
                   </tr>
                 ) : jobs.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-8 text-center font-mono text-xs text-[#7d90aa]">
+                    <td colSpan={5} className="px-3 py-8 text-center font-mono text-xs text-[#7d90aa]">
                       No API requests recorded yet.
                     </td>
                   </tr>
@@ -183,9 +187,8 @@ export default function RequestsPage() {
                       <td className="px-3 py-2">
                         <StatusPill status={job.status} />
                       </td>
-                      <td className="px-3 py-2 font-mono text-[#9ab7d5]">{job.tokenCost}</td>
                       <td className="px-3 py-2 font-mono text-[#9ab7d5]">{job.apiKeyPrefix || "--"}</td>
-                      <td className="px-3 py-2 text-[#9ab7d5]">{formatDate(job.processedAt || job.createdAt)}</td>
+                      <td className="px-3 py-2 text-[#9ab7d5]">{formatDate(job.createdAt)}</td>
                       <td className="px-3 py-2">
                         <Button
                           variant="ghost"
@@ -236,20 +239,12 @@ export default function RequestsPage() {
 
                 <div className="grid gap-2 border border-[#2cf4ff]/15 bg-[#08101b]/80 p-3 text-xs text-[#bdd2ec] sm:grid-cols-2">
                   <div>
-                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">Token Cost</span>
-                    <p className="mt-1 font-mono">{selectedJob.tokenCost}</p>
+                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">Created At</span>
+                    <p className="mt-1">{formatDate(selectedJob.createdAt)}</p>
                   </div>
-                  <div>
-                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">API Key Prefix</span>
-                    <p className="mt-1 font-mono">{selectedJob.apiKeyPrefix || "--"}</p>
-                  </div>
-                  <div>
-                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">Processed At</span>
-                    <p className="mt-1">{formatDate(selectedJob.processedAt || selectedJob.createdAt)}</p>
-                  </div>
-                  <div>
-                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">Error Code</span>
-                    <p className="mt-1">{selectedJob.errorCode || "--"}</p>
+                  <div className="sm:col-span-2">
+                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">Prompt</span>
+                    <p className="mt-1 break-words">{selectedJob.prompt || "--"}</p>
                   </div>
                 </div>
 
@@ -261,46 +256,38 @@ export default function RequestsPage() {
                 ) : null}
 
                 <section className="space-y-2">
-                  <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#7d90aa]">Input Image</h3>
-                  {selectedJob.inputImageUrl ? (
-                    <img
-                      src={selectedJob.inputImageUrl}
-                      alt="Input image"
-                      className="w-full border border-[#2cf4ff]/20 bg-[#02060d] object-cover"
-                    />
-                  ) : (
-                    <div className="border border-[#2cf4ff]/15 bg-[#08101b]/80 p-3 text-xs text-[#7d90aa]">
-                      No input image
-                    </div>
-                  )}
-                </section>
-
-                <section className="space-y-2">
-                  <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#7d90aa]">Output Images</h3>
+                  <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#7d90aa]">
+                    Input + Combined Masks
+                  </h3>
                   {selectedJob.outputs.length === 0 ? (
                     <div className="border border-[#2cf4ff]/15 bg-[#08101b]/80 p-3 text-xs text-[#7d90aa]">
                       No output images
                     </div>
+                  ) : !selectedJob.inputImageUrl ? (
+                    <div className="border border-[#2cf4ff]/15 bg-[#08101b]/80 p-3 text-xs text-[#7d90aa]">
+                      Missing input image for overlay rendering
+                    </div>
                   ) : (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {selectedJob.outputs.map((output) => (
-                        <div key={output.id} className="space-y-1">
-                          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#7d90aa]">
-                            Output #{output.outputIndex + 1}
-                          </p>
-                          {output.signedUrl ? (
-                            <img
-                              src={output.signedUrl}
-                              alt={`Output ${output.outputIndex + 1}`}
-                              className="w-full border border-[#2cf4ff]/20 bg-[#02060d] object-cover"
+                    <div className="space-y-3">
+                      <div className="relative overflow-hidden border border-[#2cf4ff]/20 bg-[#02060d]">
+                        <img
+                          src={selectedJob.inputImageUrl}
+                          alt="Input image with combined mask overlays"
+                          className="block w-full object-cover"
+                        />
+                        {selectedJob.outputs.map((output, index) =>
+                          output.signedUrl ? (
+                            <div
+                              key={`overlay-${output.outputIndex}`}
+                              className="pointer-events-none absolute inset-0"
+                              style={buildMaskTintStyle(
+                                output.signedUrl,
+                                MASK_OVERLAY_COLORS[index % MASK_OVERLAY_COLORS.length],
+                              )}
                             />
-                          ) : (
-                            <div className="border border-[#2cf4ff]/15 bg-[#08101b]/80 p-3 text-xs text-[#7d90aa]">
-                              Missing image URL
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                          ) : null,
+                        )}
+                      </div>
                     </div>
                   )}
                 </section>

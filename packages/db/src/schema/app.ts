@@ -79,22 +79,15 @@ export const requestJob = pgTable(
     apiKeyId: text("api_key_id").references(() => apiKey.id, { onDelete: "set null" }),
     requestId: text("request_id").notNull(),
     status: jobStatusEnum("status").notNull(),
-    tokenCost: integer("token_cost").default(0).notNull(),
-    inputBucket: text("input_bucket"),
-    inputKey: text("input_key"),
+    inputImageName: text("input_image_name"),
+    prompt: text("prompt"),
     errorCode: text("error_code"),
     errorMessage: text("error_message"),
-    processedAt: timestamp("processed_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
   },
   (table) => [
     uniqueIndex("request_job_request_id_uidx").on(table.requestId),
     index("request_job_user_id_idx").on(table.userId),
-    index("request_job_processed_at_idx").on(table.processedAt),
     index("request_job_status_idx").on(table.status),
   ],
 );
@@ -107,27 +100,11 @@ export const requestJobOutput = pgTable(
       .notNull()
       .references(() => requestJob.id, { onDelete: "cascade" }),
     outputIndex: integer("output_index").notNull(),
-    bucket: text("bucket").notNull(),
-    key: text("key").notNull(),
-    mimeType: text("mime_type"),
-    width: integer("width"),
-    height: integer("height"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
     uniqueIndex("request_job_output_job_index_uidx").on(table.jobId, table.outputIndex),
     index("request_job_output_job_id_idx").on(table.jobId),
   ],
-);
-
-export const workerEventReceipt = pgTable(
-  "worker_event_receipt",
-  {
-    eventId: text("event_id").primaryKey(),
-    jobId: text("job_id").references(() => requestJob.id, { onDelete: "set null" }),
-    receivedAt: timestamp("received_at").defaultNow().notNull(),
-  },
-  (table) => [index("worker_event_receipt_job_id_idx").on(table.jobId)],
 );
 
 export const apiKeyRelations = relations(apiKey, ({ one, many }) => ({

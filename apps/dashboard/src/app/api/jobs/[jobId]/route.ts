@@ -3,7 +3,7 @@ import { apiKey, requestJob, requestJobOutput } from "@segmentation/db/schema/ap
 import { and, asc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { getSignedImageUrl } from "@/lib/server/aws/s3";
+import { buildInputImageKey, buildOutputMaskKey, getSignedImageUrlByKey } from "@/lib/server/aws/s3";
 import { requireRouteUser } from "@/lib/server/route-auth";
 
 export const runtime = "nodejs";
@@ -29,12 +29,10 @@ export async function GET(
       errorCode: requestJob.errorCode,
       errorMessage: requestJob.errorMessage,
       id: requestJob.id,
-      inputBucket: requestJob.inputBucket,
-      inputKey: requestJob.inputKey,
-      processedAt: requestJob.processedAt,
+      inputImageName: requestJob.inputImageName,
+      prompt: requestJob.prompt,
       requestId: requestJob.requestId,
       status: requestJob.status,
-      tokenCost: requestJob.tokenCost,
     })
     .from(requestJob)
     .leftJoin(apiKey, eq(requestJob.apiKeyId, apiKey.id))
@@ -47,30 +45,29 @@ export async function GET(
 
   const outputs = await db
     .select({
-      bucket: requestJobOutput.bucket,
-      height: requestJobOutput.height,
-      id: requestJobOutput.id,
-      key: requestJobOutput.key,
-      mimeType: requestJobOutput.mimeType,
       outputIndex: requestJobOutput.outputIndex,
-      width: requestJobOutput.width,
     })
     .from(requestJobOutput)
     .where(eq(requestJobOutput.jobId, job.id))
     .orderBy(asc(requestJobOutput.outputIndex));
 
   const [inputImageUrl, outputUrls] = await Promise.all([
-    getSignedImageUrl({
-      bucket: job.inputBucket,
-      key: job.inputKey,
-    }),
+    getSignedImageUrlByKey(
+      buildInputImageKey({
+        imageName: job.inputImageName,
+        userId: authContext.userId,
+      }),
+    ),
     Promise.all(
       outputs.map(async (output) => ({
         ...output,
-        signedUrl: await getSignedImageUrl({
-          bucket: output.bucket,
-          key: output.key,
-        }),
+        signedUrl: await getSignedImageUrlByKey(
+          buildOutputMaskKey({
+            jobId: job.id,
+            outputIndex: output.outputIndex,
+            userId: authContext.userId,
+          }),
+        ),
       })),
     ),
   ]);

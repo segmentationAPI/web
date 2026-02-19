@@ -1,6 +1,6 @@
 import { db } from "@segmentation/db";
 import { apiKey, requestJob } from "@segmentation/db/schema/app";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { DEFAULT_PAGE_SIZE } from "@/lib/server/constants";
@@ -35,15 +35,14 @@ export async function GET(request: Request) {
       apiKeyPrefix: apiKey.keyPrefix,
       createdAt: requestJob.createdAt,
       id: requestJob.id,
-      processedAt: requestJob.processedAt,
+      prompt: requestJob.prompt,
       requestId: requestJob.requestId,
       status: requestJob.status,
-      tokenCost: requestJob.tokenCost,
     })
     .from(requestJob)
     .leftJoin(apiKey, eq(requestJob.apiKeyId, apiKey.id))
     .where(and(eq(requestJob.userId, context.userId)))
-    .orderBy(desc(sql`coalesce(${requestJob.processedAt}, ${requestJob.createdAt})`), desc(requestJob.id))
+    .orderBy(desc(requestJob.createdAt), desc(requestJob.id))
     .limit(limit)
     .offset(offset);
 

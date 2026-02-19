@@ -1,6 +1,6 @@
 import { db } from "@segmentation/db";
 import { requestJob } from "@segmentation/db/schema/app";
-import { and, eq, gte, sum } from "drizzle-orm";
+import { and, count, eq, gte } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { getDynamoTokenBalance } from "@/lib/server/aws/dynamo";
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     getDynamoTokenBalance(context.userId),
     db
       .select({
-        tokenUsageLast24h: sum(requestJob.tokenCost),
+        requestCountLast24h: count(requestJob.id),
       })
       .from(requestJob)
       .where(
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
   ]);
 
   return NextResponse.json({
-    tokenUsageLast24h: Number(usageRow?.tokenUsageLast24h ?? 0),
+    tokenUsageLast24h: Number(usageRow?.requestCountLast24h ?? 0) * 2,
     tokensRemaining: balance,
   });
 }

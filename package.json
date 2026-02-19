@@ -12,7 +12,7 @@
     "check-types": "turbo check-types",
     "dev:native": "turbo -F native dev",
     "dev:web": "turbo -F web dev",
-    "db:push": "turbo -F @segmentation/db db:push",
+    "db:push": "pnpm -F @segmentation/db db:push",
     "db:studio": "turbo -F @segmentation/db db:studio",
     "db:generate": "turbo -F @segmentation/db db:generate",
     "db:migrate": "turbo -F @segmentation/db db:migrate",
