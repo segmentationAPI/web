@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { env } from "@segmentation/env/server";
+import { env } from "@segmentation/env/web";
 import { ArrowRight, Boxes, Braces, Cpu, Radar, ShieldCheck, Zap } from "lucide-react";
 
 const capabilityCards = [

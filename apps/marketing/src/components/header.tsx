@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { env } from "@segmentation/env/server";
+import { env } from "@segmentation/env/web";
 
 export default function Header() {
   const appUrl = env.APP_URL.toString();
