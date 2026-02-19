@@ -50,6 +50,8 @@ const sampleRequest = `curl -X POST \\
   }'`;
 
 export default function HomePage() {
+  const appUrl = env.APP_URL.toString();
+
   return (
     <main className="mx-auto flex w-full max-w-300 flex-col gap-16 px-4 pb-24 pt-6 sm:px-8 lg:gap-24">
       <section id="top" className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
@@ -66,10 +68,10 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-            <Link href={env.APP_URL} className="cta-primary">
+            <a href={appUrl} className="cta-primary">
               Start Building
               <ArrowRight className="h-4 w-4" />
-            </Link>
+            </a>
             <Link href="/docs" className="cta-ghost">
               View API Docs
             </Link>
@@ -229,10 +231,10 @@ export default function HomePage() {
           Launch your first request in minutes and skip the GPU ops burden entirely.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <Link href={env.APP_URL} className="cta-primary">
+          <a href={appUrl} className="cta-primary">
             Create Account
             <ArrowRight className="h-4 w-4" />
-          </Link>
+          </a>
           <Link href="/docs" className="cta-ghost">
             Explore Docs
           </Link>
