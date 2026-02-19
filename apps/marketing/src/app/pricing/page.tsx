@@ -1,57 +1,32 @@
 import type { Metadata } from "next";
 
-import Link from "next/link";
-import { Check, Cpu, Sparkles } from "lucide-react";
+import TokenPricingCard from "@/components/token-pricing-card";
+import { CloudUpload, Cpu, Scissors, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Segmenta Pricing | SAM 3 API",
   description:
-    "Simple tiered pricing for Segmenta's SAM 3 API-as-a-Service, from sandbox usage to enterprise deployment.",
+    "Simple token pricing for Segmenta's SAM 3 API: $0.01 gets 2 tokens with predictable usage per upload and segmentation run.",
 };
 
-const plans = [
+const tokenConsumption = [
   {
-    name: "Starter",
-    price: "$0",
-    cadence: "/month",
-    description: "Best for prototyping and MVP workflows.",
-    features: [
-      "20,000 segments / month",
-      "Shared inference throughput",
-      "Community support",
-      "Standard model updates",
-    ],
-    cta: "Start Free",
+    title: "Input Upload",
+    tokens: "1 token",
+    detail: "Consumed when an input image is uploaded to our S3 bucket.",
+    icon: CloudUpload,
   },
   {
-    name: "Scale",
-    price: "$299",
-    cadence: "/month",
-    description: "For shipping teams that need predictable latency.",
-    features: [
-      "2,000,000 segments / month",
-      "Dedicated concurrency pools",
-      "Priority support",
-      "Usage analytics + webhooks",
-    ],
-    cta: "Start Scale Trial",
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    cadence: "",
-    description: "For regulated and mission-critical deployments.",
-    features: [
-      "Private or regional deployment",
-      "VPC peering and IP allowlists",
-      "Custom SLAs",
-      "Security + compliance support",
-    ],
-    cta: "Talk to Sales",
+    title: "Segmentation Run",
+    tokens: "1 token",
+    detail: "Consumed each time segmentation runs.",
+    icon: Scissors,
   },
 ] as const;
 
 export default function PricingPage() {
+  const [uploadToken, segmentationToken] = tokenConsumption;
+
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-10 px-4 pb-24 pt-8 sm:px-8">
       <section className="space-y-6 reveal">
@@ -61,47 +36,66 @@ export default function PricingPage() {
         </p>
         <div className="space-y-4">
           <h1 className="font-display text-4xl tracking-tight sm:text-6xl">
-            Start free. Scale without re-architecture.
+            Token pricing that stays predictable.
           </h1>
           <p className="max-w-3xl text-muted-foreground sm:text-lg">
-            Segmenta pricing is built around segmentation volume and throughput. Keep one API,
-            one integration path, and move tiers as demand grows.
+            $0.01 gets you 2 tokens. Use the calculator and token usage cards below to estimate
+            your spend.
           </p>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        {plans.map((plan, index) => (
-          <article
-            key={plan.name}
-            className="glass-panel reveal rounded-[1.6rem] p-6"
-            style={{ animationDelay: `${120 + index * 80}ms` }}
-          >
-            <h2 className="font-display text-2xl">{plan.name}</h2>
-            <p className="mt-4 font-display text-4xl">
-              {plan.price}
-              <span className="ml-1 text-base text-muted-foreground">{plan.cadence}</span>
+      <TokenPricingCard />
+
+      <section className="glass-panel reveal rounded-[1.8rem] p-6 sm:p-8" style={{ animationDelay: "620ms" }}>
+        <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <Sparkles className="h-4 w-4 text-secondary" />
+          Token Consumption
+        </p>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1.2fr]">
+          <article className="rounded-2xl border border-border/70 bg-background/50 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
+            <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              <uploadToken.icon className="h-4 w-4 text-primary" />
+              {uploadToken.title}
             </p>
-            <p className="mt-3 text-sm text-muted-foreground">{plan.description}</p>
-            <ul className="mt-5 space-y-2 text-sm">
-              {plan.features.map((feature) => (
-                <li key={`${plan.name}-${feature}`} className="inline-flex items-center gap-2 text-foreground">
-                  <Check className="h-4 w-4 text-secondary" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <Link href="/docs" className="cta-ghost mt-6 w-full justify-center">
-              {plan.cta}
-            </Link>
+            <p className="mt-3 font-display text-3xl leading-8 md:mt-0">{uploadToken.tokens}</p>
+            <p className="mt-2 text-xs text-muted-foreground md:mt-0">{uploadToken.detail}</p>
           </article>
-        ))}
+
+          <div className="hidden md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3 md:px-1 md:py-4">
+            <p className="row-start-2 text-center font-display text-3xl leading-8 text-muted-foreground">+</p>
+          </div>
+
+          <article className="rounded-2xl border border-border/70 bg-background/50 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
+            <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              <segmentationToken.icon className="h-4 w-4 text-primary" />
+              {segmentationToken.title}
+            </p>
+            <p className="mt-3 font-display text-3xl leading-8 md:mt-0">{segmentationToken.tokens}</p>
+            <p className="mt-2 text-xs text-muted-foreground md:mt-0">{segmentationToken.detail}</p>
+          </article>
+
+          <div className="hidden md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3 md:px-1 md:py-4">
+            <p className="row-start-2 text-center font-display text-3xl leading-8 text-muted-foreground">=</p>
+          </div>
+
+          <article className="rounded-2xl border border-primary/35 bg-primary/10 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              Full Request Cycle
+            </p>
+            <p className="mt-3 font-display text-3xl leading-8 text-foreground md:mt-0">2 tokens</p>
+            <p className="mt-2 text-xs text-muted-foreground md:mt-0">
+              Upload one image and run one segmentation.
+            </p>
+          </article>
+        </div>
       </section>
 
       <section className="glass-panel reveal rounded-[1.8rem] p-6 sm:p-8">
         <p className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
           <Cpu className="h-4 w-4 text-primary" />
-          Included in every plan
+          Included in every account
         </p>
         <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
           <p>Model upgrades for SAM 3 releases</p>

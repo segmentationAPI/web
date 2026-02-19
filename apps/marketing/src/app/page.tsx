@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Boxes,
   Braces,
-  Check,
   Cpu,
   Radar,
   ShieldCheck,
@@ -44,27 +43,6 @@ const workflow = [
   },
 ] as const;
 
-const pricing = [
-  {
-    plan: "Starter",
-    price: "$0",
-    details: "20,000 segments/mo, shared throughput, community support.",
-    cta: "Launch Sandbox",
-  },
-  {
-    plan: "Scale",
-    price: "$299",
-    details: "2M segments/mo, dedicated concurrency, priority support.",
-    cta: "Start Scale Trial",
-  },
-  {
-    plan: "Enterprise",
-    price: "Custom",
-    details: "Private deployment, SLAs, VPC peering, compliance controls.",
-    cta: "Contact Sales",
-  },
-] as const;
-
 const sampleRequest = `curl https://api.segmenta.ai/v1/sam3/segment \\
   -H "Authorization: Bearer sk_live_xxx" \\
   -F image="@street-scene.jpg" \\
@@ -92,7 +70,7 @@ export default function HomePage() {
 
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/pricing" className="cta-primary">
-              Start Free
+              Start Building
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link href="/docs" className="cta-ghost">
@@ -232,36 +210,17 @@ export default function HomePage() {
       <section id="pricing" className="space-y-8">
         <div className="space-y-3 reveal" style={{ animationDelay: "520ms" }}>
           <p className="tone-chip">Pricing</p>
-          <h2 className="font-display text-3xl sm:text-4xl">Start free. Scale without migration.</h2>
+          <h2 className="font-display text-3xl sm:text-4xl">Simple token pricing.</h2>
           <p className="max-w-2xl text-muted-foreground">
-            Pick the tier that fits your throughput today. Move up with no model changes and no
-            endpoint rewrites.
+            $0.01 gets you 2 tokens. One token is used for S3 input upload, and one token is used
+            when segmentation runs.
           </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {pricing.map((plan, index) => (
-            <article
-              key={plan.plan}
-              className="glass-panel reveal rounded-[1.6rem] p-6"
-              style={{ animationDelay: `${560 + index * 90}ms` }}
-            >
-              <h3 className="font-display text-xl">{plan.plan}</h3>
-              <p className="mt-4 font-display text-4xl">{plan.price}</p>
-              <p className="mt-4 text-sm text-muted-foreground">{plan.details}</p>
-              <ul className="mt-5 space-y-2 text-sm">
-                {["SAM 3 model updates", "Usage analytics", "Mask confidence metadata"].map((item) => (
-                  <li key={`${plan.plan}-${item}`} className="inline-flex items-center gap-2 text-foreground">
-                    <Check className="h-4 w-4 text-secondary" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/pricing" className="cta-ghost mt-6 w-full justify-center">
-                {plan.cta}
-              </Link>
-            </article>
-          ))}
+          <Link
+            href="/pricing"
+            className="inline-flex text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          >
+            See full pricing
+          </Link>
         </div>
       </section>
 

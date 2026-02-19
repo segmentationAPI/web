@@ -127,7 +127,10 @@ export default function DocsPage() {
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li>Pass API keys as `Authorization: Bearer ...` on every request.</li>
           <li>Presigned URLs are short-lived and single-use by default.</li>
-          <li>Rate limits and concurrency are tier-based and shown in response headers.</li>
+          <li>
+            Billing is token-based: $0.01 gets 2 tokens, with 1 token for S3 input upload and 1
+            token for each segmentation run.
+          </li>
         </ul>
       </section>
     </main>

@@ -29,7 +29,7 @@ export default function Header() {
         </nav>
 
         <Link href="/pricing" className="cta-primary px-4 py-2 text-sm">
-          Start Free
+          Start Building
         </Link>
       </div>
     </header>
