@@ -143,7 +143,7 @@ export default function HomePage() {
 
       <section id="features" className="space-y-8">
         <div className="space-y-3 reveal" style={{ animationDelay: "300ms" }}>
-          <p className="tone-chip">Why Segmenta</p>
+          <p className="tone-chip">Why SegmentationAPI</p>
           <h2 className="font-display text-3xl sm:text-4xl">Built for real production pressure.</h2>
           <p className="max-w-2xl text-muted-foreground">
             From pre-launch experimentation to massive deployment, every layer is optimized for
@@ -180,7 +180,7 @@ export default function HomePage() {
           </div>
           <h3 className="font-display text-2xl sm:text-3xl">One endpoint. Deterministic masks.</h3>
           <p className="mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
-            Bring your own frame source and keep your stack exactly as-is. Segmenta returns masks,
+            Bring your own frame source and keep your stack exactly as-is. SegmentationAPI returns masks,
             polygons, confidence, and tracking IDs in one response.
           </p>
           <div className="soft-divider my-6" />

@@ -8,9 +8,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Segmenta Docs | SAM 3 API",
+  title: "SegmentationAPI Docs | SAM 3 API",
   description:
-    "Reference docs for Segmenta endpoints, request formats, and upload workflows for SAM 3 segmentation.",
+    "Reference docs for SegmentationAPI endpoints, request formats, and upload workflows for SAM 3 segmentation.",
 };
 
 const segmentCurl = `curl https://api.segmenta.ai/v1/sam3/segment \\
@@ -52,7 +52,7 @@ export default function DocsPage() {
           API Documentation
         </p>
         <div className="space-y-4">
-          <h1 className="font-display text-4xl tracking-tight sm:text-6xl">Segmenta API Reference</h1>
+          <h1 className="font-display text-4xl tracking-tight sm:text-6xl">SegmentationAPI Reference</h1>
           <p className="max-w-3xl text-muted-foreground sm:text-lg">
             Two endpoints are enough to power full SAM 3 production workflows: upload to S3 with a
             signed URL, then segment instantly from file or URL.

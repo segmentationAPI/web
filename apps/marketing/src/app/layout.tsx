@@ -25,7 +25,7 @@ const monoFont = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Segmenta | SAM 3 API-as-a-Service",
+  title: "SegmentationAPI | SAM 3 API-as-a-Service",
   description:
     "Production-grade API platform for Meta's Segment Anything Model 3. Fast masks, vector output, and enterprise-ready reliability.",
 };

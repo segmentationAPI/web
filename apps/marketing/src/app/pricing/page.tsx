@@ -4,9 +4,9 @@ import TokenPricingCard from "@/components/token-pricing-card";
 import { CloudUpload, Cpu, Scissors, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Segmenta Pricing | SAM 3 API",
+  title: "SegmentationAPI Pricing | SAM 3 API",
   description:
-    "Simple token pricing for Segmenta's SAM 3 API: $0.01 gets 2 tokens with predictable usage per upload and segmentation run.",
+    "Simple token pricing for SegmentationAPI's SAM 3 API: $0.01 gets 2 tokens with predictable usage per upload and segmentation run.",
 };
 
 const tokenConsumption = [

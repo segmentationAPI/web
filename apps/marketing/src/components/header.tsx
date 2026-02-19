@@ -9,7 +9,7 @@ export default function Header() {
             <span className="h-3.5 w-3.5 rotate-45 bg-primary" />
           </span>
           <span className="flex flex-col">
-            <span className="font-display text-lg leading-none">Segmenta</span>
+            <span className="font-display text-lg leading-none">SegmentationAPI</span>
             <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
               SAM 3 API
             </span>
