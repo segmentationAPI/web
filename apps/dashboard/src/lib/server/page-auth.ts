@@ -1,7 +1,7 @@
 import { auth } from "@segmentation/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { cache } from 'react';
+import { cache } from "react";
 
 export const requirePageSession = cache(async () => {
   const session = await auth.api.getSession({

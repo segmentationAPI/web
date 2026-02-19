@@ -37,7 +37,10 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
       }
 
       setNewlyCreatedSecret(response.plainTextKey);
-      setKeys((current) => [response.apiKey, ...current.filter((key) => key.id !== response.apiKey.id)]);
+      setKeys((current) => [
+        response.apiKey,
+        ...current.filter((key) => key.id !== response.apiKey.id),
+      ]);
       setNewKeyLabel("Production key");
       toast.success("API key created");
       router.refresh();
@@ -89,7 +92,9 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
           <CardDescription className="font-mono uppercase tracking-[0.14em] text-[#7d90aa]">
             API Keys
           </CardDescription>
-          <CardTitle className="font-display tracking-[0.08em] text-[#e8f7ff]">Key Management</CardTitle>
+          <CardTitle className="font-display tracking-[0.08em] text-[#e8f7ff]">
+            Key Management
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
@@ -126,7 +131,9 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
                   <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#b8ffaa]">
                     Copy this key now
                   </p>
-                  <p className="mt-1 break-all font-mono text-xs text-[#d5ffd2]">{newlyCreatedSecret}</p>
+                  <p className="mt-1 break-all font-mono text-xs text-[#d5ffd2]">
+                    {newlyCreatedSecret}
+                  </p>
                 </div>
               </div>
             </div>
@@ -146,7 +153,10 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
               <tbody>
                 {keys.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-3 py-6 text-center font-mono text-xs text-[#7d90aa]">
+                    <td
+                      colSpan={5}
+                      className="px-3 py-6 text-center font-mono text-xs text-[#7d90aa]"
+                    >
                       No API keys yet.
                     </td>
                   </tr>
@@ -157,9 +167,13 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
                       <td className="px-3 py-2 font-mono text-[#9ab7d5]">{key.keyPrefix}</td>
                       <td className="px-3 py-2">
                         {key.revoked ? (
-                          <span className="font-mono uppercase tracking-[0.12em] text-[#ff8c9d]">revoked</span>
+                          <span className="font-mono uppercase tracking-[0.12em] text-[#ff8c9d]">
+                            revoked
+                          </span>
                         ) : (
-                          <span className="font-mono uppercase tracking-[0.12em] text-[#8eff6f]">active</span>
+                          <span className="font-mono uppercase tracking-[0.12em] text-[#8eff6f]">
+                            active
+                          </span>
                         )}
                       </td>
                       <td className="px-3 py-2 text-[#9ab7d5]">{formatDate(key.createdAt)}</td>

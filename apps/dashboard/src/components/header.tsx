@@ -20,7 +20,10 @@ export default function Header() {
     <header className="sticky top-0 z-40 border-b border-[#2cf4ff]/20 bg-[#03070f]/75 backdrop-blur-sm">
       <div className="mx-auto flex w-full max-w-[1320px] items-center justify-between gap-4 px-4 py-2 sm:px-6">
         <div className="flex items-center gap-4">
-          <Link href="/" className="font-display text-lg font-semibold uppercase tracking-[0.18em] text-[#e8f7ff]">
+          <Link
+            href="/"
+            className="font-display text-lg font-semibold uppercase tracking-[0.18em] text-[#e8f7ff]"
+          >
             Segmentation API
           </Link>
           {onDashboard ? (

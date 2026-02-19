@@ -4,7 +4,13 @@ import { formatNumber } from "@/components/dashboard-format";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { BalanceData } from "@/lib/dashboard-types";
 
-export function OverviewPageContent({ balance, userName }: { balance: BalanceData; userName: string }) {
+export function OverviewPageContent({
+  balance,
+  userName,
+}: {
+  balance: BalanceData;
+  userName: string;
+}) {
   return (
     <>
       <Card className="border-[#2cf4ff]/20 bg-[#07101d]/80">
@@ -39,7 +45,13 @@ export function OverviewPageContent({ balance, userName }: { balance: BalanceDat
   );
 }
 
-export default function OverviewPage({ balance, userName }: { balance: BalanceData; userName: string }) {
+export default function OverviewPage({
+  balance,
+  userName,
+}: {
+  balance: BalanceData;
+  userName: string;
+}) {
   return (
     <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
       <OverviewPageContent balance={balance} userName={userName} />

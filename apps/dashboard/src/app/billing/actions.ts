@@ -177,7 +177,10 @@ export async function createCheckoutSessionAction(
           status: "failed",
         })
         .where(
-          and(eq(creditPurchase.userId, userId), eq(creditPurchase.stripeCheckoutSessionId, checkoutSessionId)),
+          and(
+            eq(creditPurchase.userId, userId),
+            eq(creditPurchase.stripeCheckoutSessionId, checkoutSessionId),
+          ),
         )
         .catch(() => undefined);
     }

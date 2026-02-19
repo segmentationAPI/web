@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { JobDetail, JobListItem } from "@/lib/dashboard-types";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const MASK_OVERLAY_COLORS = ["#ff5f57", "#2cf4ff", "#ffd166", "#8bff6a", "#4d96ff", "#ff8fab"];
 
@@ -31,7 +32,11 @@ type RequestsPageContentProps = {
   selectedJobId: string | null;
 };
 
-export function RequestsPageContent({ jobs, selectedJob, selectedJobId }: RequestsPageContentProps) {
+export function RequestsPageContent({
+  jobs,
+  selectedJob,
+  selectedJobId,
+}: RequestsPageContentProps) {
   const router = useRouter();
   const [pendingJobId, setPendingJobId] = useState<string | null>(null);
   const [refreshing, startRefreshing] = useTransition();
@@ -102,7 +107,10 @@ export function RequestsPageContent({ jobs, selectedJob, selectedJobId }: Reques
               <tbody>
                 {jobs.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center font-mono text-xs text-[#7d90aa]">
+                    <td
+                      colSpan={5}
+                      className="px-3 py-8 text-center font-mono text-xs text-[#7d90aa]"
+                    >
                       No API requests recorded yet.
                     </td>
                   </tr>
@@ -115,7 +123,9 @@ export function RequestsPageContent({ jobs, selectedJob, selectedJobId }: Reques
                       <td className="px-3 py-2">
                         <StatusPill status={job.status} />
                       </td>
-                      <td className="px-3 py-2 font-mono text-[#9ab7d5]">{job.apiKeyPrefix || "--"}</td>
+                      <td className="px-3 py-2 font-mono text-[#9ab7d5]">
+                        {job.apiKeyPrefix || "--"}
+                      </td>
                       <td className="px-3 py-2 text-[#9ab7d5]">{formatDate(job.createdAt)}</td>
                       <td className="px-3 py-2">
                         <Button
@@ -159,7 +169,9 @@ export function RequestsPageContent({ jobs, selectedJob, selectedJobId }: Reques
               <div className="space-y-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#7d90aa]">Request Detail</p>
+                    <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#7d90aa]">
+                      Request Detail
+                    </p>
                     <h2 className="mt-1 break-all font-display text-lg tracking-[0.06em] text-[#e8f7ff]">
                       {selectedJob.requestId}
                     </h2>
@@ -169,18 +181,24 @@ export function RequestsPageContent({ jobs, selectedJob, selectedJobId }: Reques
 
                 <div className="grid gap-2 border border-[#2cf4ff]/15 bg-[#08101b]/80 p-3 text-xs text-[#bdd2ec] sm:grid-cols-2">
                   <div>
-                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">Created At</span>
+                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">
+                      Created At
+                    </span>
                     <p className="mt-1">{formatDate(selectedJob.createdAt)}</p>
                   </div>
                   <div className="sm:col-span-2">
-                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">Prompt</span>
-                    <p className="mt-1 break-words">{selectedJob.prompt || "--"}</p>
+                    <span className="font-mono uppercase tracking-[0.12em] text-[#7d90aa]">
+                      Prompt
+                    </span>
+                    <p className="mt-1 wrap-break-word">{selectedJob.prompt || "--"}</p>
                   </div>
                 </div>
 
                 {selectedJob.errorMessage ? (
                   <div className="border border-[#ff5470]/25 bg-[#ff5470]/7 p-3 text-xs text-[#ffbdc7]">
-                    <p className="font-mono uppercase tracking-[0.14em] text-[#ff95a9]">Error Message</p>
+                    <p className="font-mono uppercase tracking-[0.14em] text-[#ff95a9]">
+                      Error Message
+                    </p>
                     <p className="mt-1">{selectedJob.errorMessage}</p>
                   </div>
                 ) : null}
@@ -200,10 +218,12 @@ export function RequestsPageContent({ jobs, selectedJob, selectedJobId }: Reques
                   ) : (
                     <div className="space-y-3">
                       <div className="relative overflow-hidden border border-[#2cf4ff]/20 bg-[#02060d]">
-                        <img
+                        <Image
                           src={selectedJob.inputImageUrl}
                           alt="Input image with combined mask overlays"
                           className="block w-full object-cover"
+                          width={500}
+                          height={500}
                         />
                         {selectedJob.outputs.map((output, index) =>
                           output.url ? (
@@ -232,7 +252,7 @@ export function RequestsPageContent({ jobs, selectedJob, selectedJobId }: Reques
 
 export default function RequestsPage(props: RequestsPageContentProps) {
   return (
-    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
+    <main className="mx-auto flex w-full max-w-330 flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
       <RequestsPageContent {...props} />
     </main>
   );

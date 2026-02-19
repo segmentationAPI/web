@@ -19,7 +19,10 @@ export async function getBalanceForUser(userId: string): Promise<BalanceData> {
       })
       .from(requestJob)
       .where(
-        and(eq(requestJob.userId, userId), gte(requestJob.createdAt, new Date(Date.now() - LAST_24_HOURS_MS))),
+        and(
+          eq(requestJob.userId, userId),
+          gte(requestJob.createdAt, new Date(Date.now() - LAST_24_HOURS_MS)),
+        ),
       )
       .limit(1)
       .then((rows) => rows[0]),
@@ -91,16 +94,15 @@ export async function getJobDetailForUser(params: {
   );
 
   const outputUrls = Array.from({ length: Math.max(job.outputCount, 0) }, (_, outputIndex) => ({
-      outputIndex,
-      url: buildAssetUrlByKey(
-        buildOutputMaskKey({
-          jobId: job.id,
-          outputIndex,
-          userId: params.userId,
-        }),
-      ),
-    }),
-  );
+    outputIndex,
+    url: buildAssetUrlByKey(
+      buildOutputMaskKey({
+        jobId: job.id,
+        outputIndex,
+        userId: params.userId,
+      }),
+    ),
+  }));
 
   return {
     ...job,
