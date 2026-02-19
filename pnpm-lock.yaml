@@ -158,6 +158,82 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
+  apps/marketing:
+    dependencies:
+      '@base-ui/react':
+        specifier: ^1.0.0
+        version: 1.2.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@segmentation/env':
+        specifier: workspace:*
+        version: link:../../packages/env
+      '@tanstack/react-form':
+        specifier: ^1.28.0
+        version: 1.28.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      babel-plugin-react-compiler:
+        specifier: ^1.0.0
+        version: 1.0.0
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      dotenv:
+        specifier: 'catalog:'
+        version: 17.3.1
+      lucide-react:
+        specifier: ^0.546.0
+        version: 0.546.0(react@19.2.4)
+      next:
+        specifier: ^16.1.1
+        version: 16.1.6(@babel/core@7.29.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      next-themes:
+        specifier: ^0.4.6
+        version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react:
+        specifier: ^19.2.3
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.2.3
+        version: 19.2.4(react@19.2.4)
+      shadcn:
+        specifier: ^3.6.2
+        version: 3.8.5(@types/node@20.19.33)(typescript@5.9.3)
+      sonner:
+        specifier: ^2.0.5
+        version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.4.1
+      tw-animate-css:
+        specifier: ^1.3.4
+        version: 1.4.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
+    devDependencies:
+      '@segmentation/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@tailwindcss/postcss':
+        specifier: ^4.1.10
+        version: 4.2.0
+      '@types/node':
+        specifier: ^20
+        version: 20.19.33
+      '@types/react':
+        specifier: ^19.2.7
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.14)
+      tailwindcss:
+        specifier: ^4.1.10
+        version: 4.2.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
   packages/auth:
     dependencies:
       '@aws-sdk/client-dynamodb':
