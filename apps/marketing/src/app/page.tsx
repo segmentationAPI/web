@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   ArrowRight,
   Boxes,
@@ -6,7 +8,6 @@ import {
   Cpu,
   Radar,
   ShieldCheck,
-  Sparkles,
   Zap,
 } from "lucide-react";
 
@@ -90,13 +91,13 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-            <a href="#pricing" className="cta-primary">
+            <Link href="/pricing" className="cta-primary">
               Start Free
               <ArrowRight className="h-4 w-4" />
-            </a>
-            <a href="#docs" className="cta-ghost">
+            </Link>
+            <Link href="/docs" className="cta-ghost">
               View API Docs
-            </a>
+            </Link>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
@@ -256,9 +257,9 @@ export default function HomePage() {
                   </li>
                 ))}
               </ul>
-              <a href="#top" className="cta-ghost mt-6 w-full justify-center">
+              <Link href="/pricing" className="cta-ghost mt-6 w-full justify-center">
                 {plan.cta}
-              </a>
+              </Link>
             </article>
           ))}
         </div>
@@ -276,13 +277,13 @@ export default function HomePage() {
           Launch your first request in minutes and skip the GPU ops burden entirely.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <a href="#pricing" className="cta-primary">
+          <Link href="/pricing" className="cta-primary">
             Create Account
             <ArrowRight className="h-4 w-4" />
-          </a>
-          <a href="#docs" className="cta-ghost">
+          </Link>
+          <Link href="/docs" className="cta-ghost">
             Explore Docs
-          </a>
+          </Link>
         </div>
       </section>
     </main>
