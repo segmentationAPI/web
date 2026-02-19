@@ -5,10 +5,9 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { formatDate, StatusPill } from "@/components/dashboard-format";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 
 type JobsResponse = {
   items: Array<{
@@ -56,7 +55,7 @@ function buildMaskTintStyle(maskUrl: string, color: string) {
   };
 }
 
-export default function RequestsPage() {
+export function RequestsPageContent() {
   const [jobs, setJobs] = useState<JobsResponse["items"]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -132,7 +131,7 @@ export default function RequestsPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
+    <>
       <Card className="border-[#2cf4ff]/20 bg-[#07101d]/80">
         <CardHeader className="flex flex-row items-center justify-between gap-3">
           <div>
@@ -296,6 +295,14 @@ export default function RequestsPage() {
           </aside>
         </div>
       ) : null}
+    </>
+  );
+}
+
+export default function RequestsPage() {
+  return (
+    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
+      <RequestsPageContent />
     </main>
   );
 }

@@ -5,10 +5,9 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { formatDate } from "@/components/dashboard-format";
-
-import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Input } from "./ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 type ApiKeyRow = {
   createdAt: string;
@@ -19,7 +18,7 @@ type ApiKeyRow = {
   revokedAt: string | null;
 };
 
-export default function ApiKeysPage() {
+export function ApiKeysPageContent() {
   const [keys, setKeys] = useState<ApiKeyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [newKeyLabel, setNewKeyLabel] = useState("Production key");
@@ -113,7 +112,7 @@ export default function ApiKeysPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
+    <>
       <Card className="border-[#2cf4ff]/20 bg-[#07101d]/80">
         <CardHeader>
           <CardDescription className="font-mono uppercase tracking-[0.14em] text-[#7d90aa]">
@@ -217,6 +216,14 @@ export default function ApiKeysPage() {
           </div>
         </CardContent>
       </Card>
+    </>
+  );
+}
+
+export default function ApiKeysPage() {
+  return (
+    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
+      <ApiKeysPageContent />
     </main>
   );
 }
