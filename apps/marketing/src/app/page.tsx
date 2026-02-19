@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { env } from "@segmentation/env/server";
 import {
   ArrowRight,
   Boxes,
@@ -43,11 +44,16 @@ const workflow = [
   },
 ] as const;
 
-const sampleRequest = `curl https://api.segmenta.ai/v1/sam3/segment \\
-  -H "Authorization: Bearer sk_live_xxx" \\
-  -F image="@street-scene.jpg" \\
-  -F prompt='{"points":[[421,222],[501,252]],"labels":[1,0]}' \\
-  -F response_format="mask+polygons+confidence"`;
+const sampleRequest = `curl -X POST \\
+  https://api.segmentationapi.com/v1/segment \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: sk_live_xxx" \\
+  -d '{
+    "prompt": "painting",
+    "inputS3Key": "inputs/demo-account/upload-001.png",
+    "threshold": 0.5,
+    "mask_threshold": 0.5
+  }'`;
 
 export default function HomePage() {
   return (
@@ -69,7 +75,7 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-            <Link href="/pricing" className="cta-primary">
+            <Link href={env.APP_URL} className="cta-primary">
               Start Building
               <ArrowRight className="h-4 w-4" />
             </Link>
@@ -160,7 +166,7 @@ export default function HomePage() {
       </section>
 
       <section id="docs" className="grid gap-6 lg:grid-cols-[1.04fr_0.96fr]">
-        <article className="glass-panel reveal rounded-[1.8rem] p-6 sm:p-8">
+        <article className="glass-panel reveal rounded-[1.8rem] p-6 sm:p-8 lg:h-full">
           <div className="mb-5 inline-flex items-center gap-3 rounded-full border border-border/70 bg-background/60 px-4 py-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
             <Braces className="h-4 w-4 text-primary" />
             Zero-friction API
@@ -176,11 +182,11 @@ export default function HomePage() {
           </pre>
         </article>
 
-        <div className="space-y-4">
+        <div className="space-y-4 lg:grid lg:h-full lg:grid-rows-3 lg:gap-4 lg:space-y-0">
           {workflow.map((step, index) => (
             <article
               key={step.title}
-              className="glass-panel reveal rounded-[1.4rem] p-5"
+              className="glass-panel reveal rounded-[1.4rem] p-5 lg:h-full"
               style={{ animationDelay: `${420 + index * 90}ms` }}
             >
               <p className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -223,7 +229,7 @@ export default function HomePage() {
           Launch your first request in minutes and skip the GPU ops burden entirely.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <Link href="/pricing" className="cta-primary">
+          <Link href={env.APP_URL} className="cta-primary">
             Create Account
             <ArrowRight className="h-4 w-4" />
           </Link>

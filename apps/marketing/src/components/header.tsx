@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { env } from "@segmentation/env/server";
+
 export default function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/35 bg-background/70 backdrop-blur-xl">
@@ -21,14 +23,14 @@ export default function Header() {
             Features
           </Link>
           <Link href="/docs" className="transition-colors hover:text-foreground">
-            API
+            Docs
           </Link>
           <Link href="/pricing" className="transition-colors hover:text-foreground">
             Pricing
           </Link>
         </nav>
 
-        <Link href="/pricing" className="cta-primary px-4 py-2 text-sm">
+        <Link href={env.APP_URL} className="cta-primary px-4 py-2 text-sm">
           Start Building
         </Link>
       </div>

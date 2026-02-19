@@ -1,6 +1,6 @@
 "use client";
 
-import { Coins } from "lucide-react";
+import { Calculator } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const minCents = 1;
@@ -26,7 +26,7 @@ export default function TokenPricingCard() {
   return (
     <article className="glass-panel reveal rounded-[1.6rem] p-6 sm:p-8" style={{ animationDelay: "560ms" }}>
       <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        <Coins className="h-4 w-4 text-secondary" />
+        <Calculator className="h-4 w-4 text-secondary" />
         Token Calculator
       </p>
 

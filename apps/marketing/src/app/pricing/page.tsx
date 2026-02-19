@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import TokenPricingCard from "@/components/token-pricing-card";
-import { CloudUpload, Cpu, Scissors, Sparkles } from "lucide-react";
+import { CloudUpload, Coins, Cpu, RefreshCw, Scissors, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "SegmentationAPI Pricing | SAM 3 API",
@@ -49,13 +49,13 @@ export default function PricingPage() {
 
       <section className="glass-panel reveal rounded-[1.8rem] p-6 sm:p-8" style={{ animationDelay: "620ms" }}>
         <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
-          <Sparkles className="h-4 w-4 text-secondary" />
+          <Coins className="h-4 w-4 text-secondary" />
           Token Consumption
         </p>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1.2fr]">
-          <article className="rounded-2xl border border-border/70 bg-background/50 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
-            <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+        <div className="mt-5 grid gap-3 md:auto-rows-fr md:grid-cols-[minmax(14rem,1fr)_auto_minmax(14rem,1fr)_auto_minmax(14rem,1fr)]">
+          <article className="h-full rounded-2xl border border-border/70 bg-background/50 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
+            <p className="inline-flex items-center gap-2 whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               <uploadToken.icon className="h-4 w-4 text-primary" />
               {uploadToken.title}
             </p>
@@ -67,8 +67,8 @@ export default function PricingPage() {
             <p className="row-start-2 text-center font-display text-3xl leading-8 text-muted-foreground">+</p>
           </div>
 
-          <article className="rounded-2xl border border-border/70 bg-background/50 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
-            <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+          <article className="h-full rounded-2xl border border-border/70 bg-background/50 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
+            <p className="inline-flex items-center gap-2 whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               <segmentationToken.icon className="h-4 w-4 text-primary" />
               {segmentationToken.title}
             </p>
@@ -80,8 +80,9 @@ export default function PricingPage() {
             <p className="row-start-2 text-center font-display text-3xl leading-8 text-muted-foreground">=</p>
           </div>
 
-          <article className="rounded-2xl border border-primary/35 bg-primary/10 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+          <article className="h-full rounded-2xl border border-primary/35 bg-primary/10 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
+            <p className="inline-flex items-center gap-2 whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              <RefreshCw className="h-4 w-4 text-primary" />
               Full Request Cycle
             </p>
             <p className="mt-3 font-display text-3xl leading-8 text-foreground md:mt-0">2 tokens</p>
