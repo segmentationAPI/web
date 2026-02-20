@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     turbopackFileSystemCacheForBuild: true,
   },
   images: {
-    remotePatterns: [new URL("https://d2l0k5nmpb02cr.cloudfront.net/*/**")],
+    remotePatterns: [new URL("https://assets.segmentationapi.com/*/**")],
   },
 };
 
