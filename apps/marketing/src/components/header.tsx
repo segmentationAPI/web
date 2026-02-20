@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 import { env } from "@segmentation/env/web";
 
@@ -26,6 +27,9 @@ export default function Header() {
           </Link>
           <Link href="/docs" className="transition-colors hover:text-foreground">
             Docs
+          </Link>
+          <Link href={"/playground" as Route} className="transition-colors hover:text-foreground">
+            Playground
           </Link>
           <Link href="/pricing" className="transition-colors hover:text-foreground">
             Pricing

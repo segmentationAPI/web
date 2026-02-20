@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { Route } from "next";
 import { usePathname } from "next/navigation";
 
 import UserMenu from "./user-menu";
@@ -10,6 +11,7 @@ const dashboardLinks = [
   { href: "/api-keys", label: "API Keys" },
   { href: "/requests", label: "Requests" },
   { href: "/billing", label: "Billing" },
+  { href: "/playground", label: "Playground" },
 ] as const;
 
 export default function Header() {
@@ -36,7 +38,7 @@ export default function Header() {
               {dashboardLinks.map((link) => (
                 <Link
                   key={link.href}
-                  href={link.href}
+                  href={link.href as Route}
                   className={
                     pathname === link.href
                       ? "rounded-full border border-primary/60 bg-primary/20 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-foreground transition-colors"
