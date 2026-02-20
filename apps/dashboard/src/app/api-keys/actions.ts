@@ -67,16 +67,16 @@ export async function createApiKeyAction(
   const keyId = `key_${crypto.randomUUID()}`;
 
   try {
-    await db.transaction(async (tx) => {
-      await tx.insert(apiKey).values({
-        id: keyId,
-        keyHash,
-        keyPrefix,
-        label,
-        revoked: false,
-        userId: session.user.id,
-      });
+    await db.insert(apiKey).values({
+      id: keyId,
+      keyHash,
+      keyPrefix,
+      label,
+      revoked: false,
+      userId: session.user.id,
+    });
 
+    try {
       await putDynamoApiKey({
         accountId: session.user.id,
         keyHash,
@@ -84,7 +84,17 @@ export async function createApiKeyAction(
         keyPrefix,
         revoked: false,
       });
-    });
+    } catch (dynamoError) {
+      try {
+        await db
+          .delete(apiKey)
+          .where(and(eq(apiKey.userId, session.user.id), eq(apiKey.id, keyId)));
+      } catch (cleanupError) {
+        console.error("Failed to cleanup API key after Dynamo write error", cleanupError);
+      }
+
+      throw dynamoError;
+    }
   } catch (error) {
     console.error("Failed to create API key", error);
     return {
@@ -151,20 +161,18 @@ export async function revokeApiKeyAction(
   }
 
   try {
-    await db.transaction(async (tx) => {
-      await tx
-        .update(apiKey)
-        .set({
-          revoked: true,
-          revokedAt: new Date(),
-        })
-        .where(and(eq(apiKey.userId, session.user.id), eq(apiKey.id, parsed.data.keyId)));
-
-      await setDynamoApiKeyRevoked({
-        keyId: parsed.data.keyId,
-        revoked: true,
-      });
+    await setDynamoApiKeyRevoked({
+      keyId: parsed.data.keyId,
+      revoked: true,
     });
+
+    await db
+      .update(apiKey)
+      .set({
+        revoked: true,
+        revokedAt: new Date(),
+      })
+      .where(and(eq(apiKey.userId, session.user.id), eq(apiKey.id, parsed.data.keyId)));
   } catch (error) {
     console.error("Failed to revoke API key", error);
     return {
