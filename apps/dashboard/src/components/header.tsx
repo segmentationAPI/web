@@ -8,6 +8,7 @@ import UserMenu from "./user-menu";
 const dashboardLinks = [
   { href: "/", label: "Overview" },
   { href: "/api-keys", label: "API Keys" },
+  { href: "/playground", label: "Playground" },
   { href: "/requests", label: "Requests" },
   { href: "/billing", label: "Billing" },
 ] as const;

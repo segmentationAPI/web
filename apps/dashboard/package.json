@@ -16,6 +16,7 @@
     "@segmentation/auth": "workspace:*",
     "@segmentation/db": "workspace:*",
     "@segmentation/env": "workspace:*",
+    "@segmentationapi/sdk": "^0.1.1",
     "@tanstack/react-form": "^1.28.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "catalog:",
