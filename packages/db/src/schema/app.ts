@@ -120,3 +120,86 @@ export const requestJobRelations = relations(requestJob, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+// ─── Auto-labeling ────────────────────────────────────────────────────────────
+
+export const labelProjectStatusEnum = pgEnum("label_project_status", [
+  "draft",
+  "ready",
+  "processing",
+  "completed",
+  "failed",
+]);
+
+export const labelProject = pgTable(
+  "label_project",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    apiKeyId: text("api_key_id").references(() => apiKey.id, { onDelete: "set null" }),
+    apiKeyPlaintext: text("api_key_plaintext").notNull().default(""),
+    prompt: text("prompt").notNull(),
+    status: labelProjectStatusEnum("status").default("draft").notNull(),
+    outputCoco: boolean("output_coco").default(true).notNull(),
+    outputClassPngs: boolean("output_class_pngs").default(false).notNull(),
+    outputYolo: boolean("output_yolo").default(false).notNull(),
+    totalImages: integer("total_images").default(0).notNull(),
+    processedImages: integer("processed_images").default(0).notNull(),
+    failedImages: integer("failed_images").default(0).notNull(),
+    resultKey: text("result_key"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("label_project_user_id_idx").on(table.userId),
+    index("label_project_status_idx").on(table.status),
+  ],
+);
+export type LabelProject = InferSelectModel<typeof labelProject>;
+
+export const labelImage = pgTable(
+  "label_image",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => labelProject.id, { onDelete: "cascade" }),
+    s3Key: text("s3_key").notNull(),
+    originalName: text("original_name").notNull(),
+    fileSizeBytes: integer("file_size_bytes").notNull(),
+    imageStatus: text("image_status").default("pending").notNull(), // pending | processing | done | failed
+    errorMessage: text("error_message"),
+    requestId: text("request_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("label_image_project_id_idx").on(table.projectId),
+    index("label_image_status_idx").on(table.imageStatus),
+  ],
+);
+export type LabelImage = InferSelectModel<typeof labelImage>;
+
+export const labelProjectRelations = relations(labelProject, ({ one, many }) => ({
+  user: one(user, {
+    fields: [labelProject.userId],
+    references: [user.id],
+  }),
+  apiKey: one(apiKey, {
+    fields: [labelProject.apiKeyId],
+    references: [apiKey.id],
+  }),
+  images: many(labelImage),
+}));
+
+export const labelImageRelations = relations(labelImage, ({ one }) => ({
+  project: one(labelProject, {
+    fields: [labelImage.projectId],
+    references: [labelProject.id],
+  }),
+}));

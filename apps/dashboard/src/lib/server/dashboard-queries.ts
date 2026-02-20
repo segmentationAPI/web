@@ -1,5 +1,13 @@
 import { db } from "@segmentation/db";
-import { apiKey, requestJob, type ApiKey } from "@segmentation/db/schema/app";
+import {
+  apiKey,
+  labelImage,
+  labelProject,
+  requestJob,
+  type ApiKey,
+  type LabelImage,
+  type LabelProject,
+} from "@segmentation/db/schema/app";
 import { and, count, desc, eq, getTableColumns, gte } from "drizzle-orm";
 
 import type { BalanceData, JobDetail, JobListItem } from "@/lib/dashboard-types";
@@ -66,6 +74,34 @@ export async function listJobsForUser(params: {
     items: jobs,
     nextOffset: jobs.length < limit ? null : offset + jobs.length,
   };
+}
+
+export async function listLabelProjectsForUser(userId: string): Promise<LabelProject[]> {
+  return db
+    .select()
+    .from(labelProject)
+    .where(eq(labelProject.userId, userId))
+    .orderBy(desc(labelProject.createdAt));
+}
+
+export async function getLabelProjectForUser(params: {
+  projectId: string;
+  userId: string;
+}): Promise<LabelProject | null> {
+  const [project] = await db
+    .select()
+    .from(labelProject)
+    .where(and(eq(labelProject.id, params.projectId), eq(labelProject.userId, params.userId)))
+    .limit(1);
+  return project ?? null;
+}
+
+export async function getLabelProjectImages(projectId: string): Promise<LabelImage[]> {
+  return db
+    .select()
+    .from(labelImage)
+    .where(eq(labelImage.projectId, projectId))
+    .orderBy(labelImage.createdAt);
 }
 
 export async function getJobDetailForUser(params: {

@@ -31,6 +31,9 @@ export default function Header() {
           <Link href={"/playground" as Route} className="transition-colors hover:text-foreground">
             Playground
           </Link>
+          <Link href={"/auto-label" as Route} className="transition-colors hover:text-foreground">
+            Auto-Label
+          </Link>
           <Link href="/pricing" className="transition-colors hover:text-foreground">
             Pricing
           </Link>

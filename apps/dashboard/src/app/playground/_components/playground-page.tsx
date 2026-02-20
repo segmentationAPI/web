@@ -27,18 +27,6 @@ function buildMaskTintStyle(maskUrl: string, color: string) {
   };
 }
 
-function formatFileSize(bytes: number) {
-  if (bytes >= 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  }
-
-  if (bytes >= 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  }
-
-  return `${bytes} B`;
-}
-
 function extractErrorMessage(status: number, body: unknown, fallback: string) {
   if (
     body &&
@@ -442,24 +430,6 @@ export function PlaygroundPageContent({ balance, cloudfrontBaseUrl, initialApiKe
                 event.target.value = "";
               }}
             />
-
-            {imagePreviewUrl && imageFile ? (
-              <div className="rounded-lg border border-border/70 bg-background/55 p-2">
-                <div className="overflow-hidden rounded-md border border-border/60 bg-card/70">
-                  <Image
-                    src={imagePreviewUrl}
-                    alt={imageFile.name || "Uploaded image preview"}
-                    width={640}
-                    height={360}
-                    className="h-auto w-full object-contain"
-                    unoptimized
-                  />
-                </div>
-                <p className="mt-2 truncate font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
-                  {imageFile.name} · {formatFileSize(imageFile.size)}
-                </p>
-              </div>
-            ) : null}
           </div>
 
           <Button
@@ -500,7 +470,7 @@ export function PlaygroundPageContent({ balance, cloudfrontBaseUrl, initialApiKe
               <p className="font-mono uppercase tracking-[0.14em]">Request failed</p>
               <p className="mt-1">{errorMessage || "Failed to run segmentation."}</p>
             </div>
-          ) : result && imagePreviewUrl ? (
+          ) : imagePreviewUrl ? (
             <>
               <div className="relative overflow-hidden rounded-xl border border-border/70 bg-background/80">
                 <Image
@@ -511,7 +481,7 @@ export function PlaygroundPageContent({ balance, cloudfrontBaseUrl, initialApiKe
                   height={640}
                   unoptimized
                 />
-                {result.masks.map((mask, index) => (
+                {result?.masks.map((mask, index) => (
                   <div
                     key={`${mask.key}-${index}`}
                     className="pointer-events-none absolute inset-0"
@@ -523,55 +493,67 @@ export function PlaygroundPageContent({ balance, cloudfrontBaseUrl, initialApiKe
                 ))}
               </div>
 
-              <div className="grid gap-2 rounded-xl border border-border/70 bg-muted/55 p-3 text-xs text-foreground sm:grid-cols-2">
-                <div>
-                  <span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
-                    Request ID
-                  </span>
-                  <p className="mt-1 break-all">{result.requestId || "--"}</p>
-                </div>
-                <div>
-                  <span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
-                    Job ID
-                  </span>
-                  <p className="mt-1 break-all">{result.job_id || "--"}</p>
-                </div>
-                <div>
-                  <span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
-                    Num Instances
-                  </span>
-                  <p className="mt-1">{result.num_instances ?? result.masks.length}</p>
-                </div>
-                <div>
-                  <span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
-                    Output Prefix
-                  </span>
-                  <p className="mt-1 break-all">{result.output_prefix || "--"}</p>
-                </div>
-              </div>
+              {result ? (
+                <>
+                  <div className="grid gap-2 rounded-xl border border-border/70 bg-muted/55 p-3 text-xs text-foreground sm:grid-cols-2">
+                    <div>
+                      <span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
+                        Request ID
+                      </span>
+                      <p className="mt-1 break-all">{result.requestId || "--"}</p>
+                    </div>
+                    <div>
+                      <span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
+                        Job ID
+                      </span>
+                      <p className="mt-1 break-all">{result.job_id || "--"}</p>
+                    </div>
+                    <div>
+                      <span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
+                        Num Instances
+                      </span>
+                      <p className="mt-1">{result.num_instances ?? result.masks.length}</p>
+                    </div>
+                    <div>
+                      <span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
+                        Output Prefix
+                      </span>
+                      <p className="mt-1 break-all">{result.output_prefix || "--"}</p>
+                    </div>
+                  </div>
 
-              <div className="space-y-2 rounded-xl border border-border/70 bg-muted/45 p-3">
-                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                  Mask Scores
-                </p>
-                {result.masks.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No masks returned.</p>
-                ) : (
-                  <ul className="space-y-2 text-xs">
-                    {result.masks.map((mask, index) => (
-                      <li key={`score-${mask.key}-${index}`} className="rounded-md border border-border/70 p-2">
-                        <p className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
-                          Mask {index + 1}
-                        </p>
-                        <p className="mt-1 text-foreground">
-                          Confidence:{" "}
-                          {typeof mask.score === "number" ? mask.score.toFixed(4) : "Unavailable"}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+                  <div className="space-y-2 rounded-xl border border-border/70 bg-muted/45 p-3">
+                    <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      Mask Scores
+                    </p>
+                    {result.masks.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No masks returned.</p>
+                    ) : (
+                      <ul className="space-y-2 text-xs">
+                        {result.masks.map((mask, index) => (
+                          <li
+                            key={`score-${mask.key}-${index}`}
+                            className="rounded-md border border-border/70 p-2"
+                          >
+                            <p className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
+                              Mask {index + 1}
+                            </p>
+                            <p className="mt-1 text-foreground">
+                              Confidence:{" "}
+                              {typeof mask.score === "number" ? mask.score.toFixed(4) : "Unavailable"}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-lg border border-border/70 bg-muted/45 p-3 text-xs text-muted-foreground">
+                  Image loaded. Click <span className="font-mono text-foreground">Run Segmentation</span>{" "}
+                  to generate mask overlays.
+                </div>
+              )}
             </>
           ) : (
             <div className="flex min-h-[480px] flex-col items-center justify-center rounded-lg border border-border/70 bg-muted/45 p-6 text-center">

@@ -12,6 +12,7 @@ const dashboardLinks = [
   { href: "/requests", label: "Requests" },
   { href: "/billing", label: "Billing" },
   { href: "/playground", label: "Playground" },
+  { href: "/auto-label", label: "Auto-Label" },
 ] as const;
 
 export default function Header() {
@@ -40,7 +41,7 @@ export default function Header() {
                   key={link.href}
                   href={link.href as Route}
                   className={
-                    pathname === link.href
+                    pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href))
                       ? "rounded-full border border-primary/60 bg-primary/20 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-foreground transition-colors"
                       : "rounded-full border border-border/70 bg-background/65 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
                   }
