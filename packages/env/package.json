@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./server": "./src/server.ts",
-    "./web": "./src/web.ts"
+    "./dashboard": "./src/dashboard.ts",
+    "./marketing": "./src/marketing.ts"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.1",

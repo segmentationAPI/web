@@ -1,10 +1,8 @@
 import Link from "next/link";
 
-import { env } from "@segmentation/env/web";
+import { env } from "@segmentation/env/marketing";
 
 export default function Header() {
-  const appUrl = env.APP_URL.toString();
-
   return (
     <header className="sticky top-0 z-40 border-b border-border/35 bg-background/70 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-300 items-center justify-between px-4 py-4 sm:px-8">
@@ -32,7 +30,7 @@ export default function Header() {
           </Link>
         </nav>
 
-        <a href={appUrl} className="cta-primary px-4 py-2 text-sm">
+        <a href={env.NEXT_PUBLIC_APP_URL} className="cta-primary px-4 py-2 text-sm">
           Start Building
         </a>
       </div>

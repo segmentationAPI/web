@@ -1,4 +1,4 @@
-import { env } from "@segmentation/env/server";
+import { env } from "@segmentation/env/dashboard";
 
 export function buildAssetUrlByKey(key: string | null) {
   if (!key) {

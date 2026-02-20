@@ -3,7 +3,7 @@
 import { db } from "@segmentation/db";
 import { creditPurchase } from "@segmentation/db/schema/app";
 import { user } from "@segmentation/db/schema/auth";
-import { env } from "@segmentation/env/server";
+import { env } from "@segmentation/env/dashboard";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -115,14 +115,12 @@ export async function createCheckoutSessionAction(
   }
 
   const stripe = getStripeClient();
-  const successUrl = env.STRIPE_SUCCESS_URL;
-  const cancelUrl = env.STRIPE_CANCEL_URL;
 
   let checkoutSessionId = "";
 
   try {
     const checkoutSession = await stripe.checkout.sessions.create({
-      cancel_url: cancelUrl,
+      cancel_url: env.NEXT_PUBLIC_STRIPE_CANCEL_URL,
       customer: stripeCustomerId,
       line_items: [
         {
@@ -143,7 +141,7 @@ export async function createCheckoutSessionAction(
         tokensGranted: String(tokensGranted),
       },
       mode: "payment",
-      success_url: successUrl,
+      success_url: env.NEXT_PUBLIC_STRIPE_SUCCESS_URL,
     });
 
     if (!checkoutSession.url) {

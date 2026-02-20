@@ -2,8 +2,9 @@
 
 import { db } from "@segmentation/db";
 import { apiKey, type ApiKey } from "@segmentation/db/schema/app";
+import { env } from "@segmentation/env/dashboard";
 import { and, eq } from "drizzle-orm";
-import { createHash } from "node:crypto";
+import { createHmac, randomBytes, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -39,12 +40,17 @@ type RevokeApiKeyActionResult =
     };
 
 function generateApiKeySecret() {
-  const random = `${crypto.randomUUID().replaceAll("-", "")}${crypto.randomUUID().replaceAll("-", "")}`;
-  return `sam3_${random}`;
+  const keyPrefix = randomBytes(8).toString("hex");
+  const keySecret = randomBytes(24).toString("hex");
+
+  return {
+    keyPrefix,
+    plainTextKey: `sk_live_${keyPrefix}_${keySecret}`,
+  };
 }
 
 function hashApiKey(secret: string) {
-  return createHash("sha256").update(secret).digest("hex");
+  return createHmac("sha256", env.API_KEY_HMAC_SECRET).update(secret).digest("hex");
 }
 
 export async function createApiKeyAction(
@@ -61,10 +67,9 @@ export async function createApiKeyAction(
   }
 
   const label = parsed.data.label || "Primary key";
-  const plainTextKey = generateApiKeySecret();
+  const { keyPrefix, plainTextKey } = generateApiKeySecret();
   const keyHash = hashApiKey(plainTextKey);
-  const keyPrefix = plainTextKey.slice(0, 8);
-  const keyId = `key_${crypto.randomUUID()}`;
+  const keyId = `key_${randomUUID()}`;
 
   try {
     await db.insert(apiKey).values({

@@ -1,6 +1,6 @@
 import { GetItemCommand, PutItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import { env } from "@segmentation/env/server";
+import { env } from "@segmentation/env/dashboard";
 
 import { dynamoClient } from "./clients";
 

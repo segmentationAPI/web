@@ -1,6 +1,6 @@
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
-import { env } from "@segmentation/env/server";
+import { env } from "@segmentation/env/dashboard";
 
 const dynamoClient = new DynamoDBClient({
   region: env.AWS_REGION,

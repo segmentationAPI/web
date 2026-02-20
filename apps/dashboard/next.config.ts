@@ -1,4 +1,4 @@
-import "@segmentation/env/web";
+import "@segmentation/env/dashboard";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

@@ -1,4 +1,4 @@
-import { env } from "@segmentation/env/server";
+import { env } from "@segmentation/env/dashboard";
 import Stripe from "stripe";
 
 let stripeClient: Stripe | null = null;

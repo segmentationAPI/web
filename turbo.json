@@ -8,26 +8,27 @@
       "outputs": ["dist/**", ".next/**"]
     },
     "marketing#build": {
-      "env": ["APP_URL"]
+      "env": ["NEXT_PUBLIC_APP_URL"]
     },
     "web#build": {
       "env": [
-        "APP_URL",
         "DATABASE_URL",
         "BETTER_AUTH_SECRET",
         "BETTER_AUTH_URL",
         "CORS_ORIGIN",
         "STRIPE_SECRET_KEY",
         "STRIPE_WEBHOOK_SECRET",
-        "STRIPE_SUCCESS_URL",
-        "STRIPE_CANCEL_URL",
+        "NEXT_PUBLIC_STRIPE_SUCCESS_URL",
+        "NEXT_PUBLIC_STRIPE_CANCEL_URL",
         "STRIPE_PUBLISHABLE_KEY",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
         "AWS_REGION",
         "AWS_DYNAMO_API_KEYS_TABLE",
         "AWS_DYNAMO_BALANCE_TABLE",
+        "API_KEY_HMAC_SECRET",
         "AWS_CLOUDFRONT_BASE_URL",
+        "API_KEY_HMAC_SECRET",
         "NODE_ENV"
       ]
     },

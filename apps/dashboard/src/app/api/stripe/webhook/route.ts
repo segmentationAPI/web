@@ -1,6 +1,6 @@
 import { db } from "@segmentation/db";
 import { creditPurchase } from "@segmentation/db/schema/app";
-import { env } from "@segmentation/env/server";
+import { env } from "@segmentation/env/dashboard";
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
