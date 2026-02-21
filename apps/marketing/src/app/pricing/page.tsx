@@ -28,17 +28,17 @@ export default function PricingPage() {
   const [uploadToken, segmentationToken] = tokenConsumption;
 
   return (
-    <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-10 px-4 pb-24 pt-8 sm:px-8">
-      <section className="space-y-6 reveal">
+    <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 pb-20 pt-6 sm:gap-10 sm:px-8 sm:pt-8">
+      <section className="space-y-5 reveal sm:space-y-6">
         <p className="tone-chip">
           <Sparkles className="h-4 w-4" />
           Pricing
         </p>
-        <div className="space-y-4">
-          <h1 className="font-display text-4xl tracking-tight sm:text-6xl">
+        <div className="space-y-3 sm:space-y-4">
+          <h1 className="font-display text-3xl tracking-tight sm:text-5xl lg:text-6xl">
             Token pricing that stays predictable.
           </h1>
-          <p className="max-w-3xl text-muted-foreground sm:text-lg">
+          <p className="max-w-3xl text-sm text-muted-foreground sm:text-base lg:text-lg">
             $0.01 gets you 2 tokens. Use the calculator and token usage cards below to estimate your
             spend.
           </p>
@@ -48,7 +48,7 @@ export default function PricingPage() {
       <TokenPricingCard />
 
       <section
-        className="glass-panel reveal rounded-[1.8rem] p-6 sm:p-8"
+        className="glass-panel reveal rounded-[1.8rem] p-5 sm:p-8"
         style={{ animationDelay: "620ms" }}
       >
         <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -58,7 +58,7 @@ export default function PricingPage() {
 
         <div className="mt-5 grid gap-3 md:auto-rows-fr md:grid-cols-[minmax(14rem,1fr)_auto_minmax(14rem,1fr)_auto_minmax(14rem,1fr)]">
           <article className="h-full rounded-2xl border border-border/70 bg-background/50 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
-            <p className="inline-flex items-center gap-2 whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               <uploadToken.icon className="h-4 w-4 text-primary" />
               {uploadToken.title}
             </p>
@@ -73,7 +73,7 @@ export default function PricingPage() {
           </div>
 
           <article className="h-full rounded-2xl border border-border/70 bg-background/50 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
-            <p className="inline-flex items-center gap-2 whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               <segmentationToken.icon className="h-4 w-4 text-primary" />
               {segmentationToken.title}
             </p>
@@ -90,7 +90,7 @@ export default function PricingPage() {
           </div>
 
           <article className="h-full rounded-2xl border border-primary/35 bg-primary/10 p-4 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3">
-            <p className="inline-flex items-center gap-2 whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               <RefreshCw className="h-4 w-4 text-primary" />
               Full Request Cycle
             </p>
@@ -102,12 +102,12 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <section className="glass-panel reveal rounded-[1.8rem] p-6 sm:p-8">
+      <section className="glass-panel reveal rounded-[1.8rem] p-5 sm:p-8">
         <p className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
           <Cpu className="h-4 w-4 text-primary" />
           Included in every account
         </p>
-        <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
+        <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2 sm:text-sm">
           <p>Model upgrades for SAM 3 releases</p>
           <p>Standard request/response observability</p>
           <p>Mask confidence and vector output formats</p>

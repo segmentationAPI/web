@@ -38,7 +38,7 @@ async function RequestsProtectedContent({ searchParams }: RequestsRoutePageProps
 
 export default function RequestsRoutePage(props: RequestsRoutePageProps) {
   return (
-    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
+    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-4 px-3 pb-8 pt-3 sm:gap-5 sm:px-6 sm:pb-10 sm:pt-4">
       <Suspense fallback={<RequestsPageLoading />}>
         <RequestsProtectedContent searchParams={props.searchParams} />
       </Suspense>

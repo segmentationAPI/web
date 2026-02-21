@@ -59,30 +59,30 @@ const uploadCurl = `curl -X PUT "https://s3.amazonaws.com/...signed-url..." \\
 
 export default function DocsPage() {
   return (
-    <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-10 px-4 pb-24 pt-8 sm:px-8">
-      <section className="space-y-6 reveal">
+    <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 pb-20 pt-6 sm:gap-10 sm:px-8 sm:pt-8">
+      <section className="space-y-5 reveal sm:space-y-6">
         <p className="tone-chip">
           <Braces className="h-4 w-4" />
           API Documentation
         </p>
-        <div className="space-y-4">
-          <h1 className="font-display text-4xl tracking-tight sm:text-6xl">
+        <div className="space-y-3 sm:space-y-4">
+          <h1 className="font-display text-3xl tracking-tight sm:text-5xl lg:text-6xl">
             SegmentationAPI Reference
           </h1>
-          <p className="max-w-3xl text-muted-foreground sm:text-lg">
+          <p className="max-w-3xl text-sm text-muted-foreground sm:text-base lg:text-lg">
             Two endpoints are enough to power production workflows: upload to S3 with a signed URL,
             then segment instantly from the returned S3 key.
           </p>
         </div>
       </section>
 
-      <section className="glass-panel reveal space-y-6 rounded-[1.8rem] p-6 sm:p-8">
+      <section className="glass-panel reveal space-y-5 rounded-[1.8rem] p-5 sm:space-y-6 sm:p-8">
         <div>
           <p className="tone-chip mb-4">
             <CloudUpload className="h-4 w-4" />
             Upload Flow (S3)
           </p>
-          <h2 className="font-display text-3xl">
+          <h2 className="font-display text-2xl sm:text-3xl">
             `POST /v1/uploads/presign` + Segment from S3 key
           </h2>
           <p className="mt-2 text-sm text-muted-foreground sm:text-base">
@@ -97,10 +97,10 @@ export default function DocsPage() {
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
             1. Request signed upload URL
           </p>
-          <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-4 text-xs leading-relaxed text-[#ffcaa9] sm:text-sm">
+          <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-3 text-[11px] leading-relaxed text-[#ffcaa9] sm:p-4 sm:text-sm">
             <code>{presignCurl}</code>
           </pre>
-          <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-4 text-xs leading-relaxed text-[#ffcaa9] sm:text-sm">
+          <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-3 text-[11px] leading-relaxed text-[#ffcaa9] sm:p-4 sm:text-sm">
             <code>{presignResponse}</code>
           </pre>
         </div>
@@ -109,43 +109,43 @@ export default function DocsPage() {
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
             2. Upload file to S3
           </p>
-          <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-4 text-xs leading-relaxed text-[#ffcaa9] sm:text-sm">
+          <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-3 text-[11px] leading-relaxed text-[#ffcaa9] sm:p-4 sm:text-sm">
             <code>{uploadCurl}</code>
           </pre>
         </div>
       </section>
 
-      <section className="glass-panel reveal space-y-6 rounded-[1.8rem] p-6 sm:p-8">
+      <section className="glass-panel reveal space-y-5 rounded-[1.8rem] p-5 sm:space-y-6 sm:p-8">
         <div>
           <p className="tone-chip mb-4">
             <DatabaseZap className="h-4 w-4" />
             Endpoint Example
           </p>
-          <h2 className="font-display text-3xl">`POST /v1/segment`</h2>
+          <h2 className="font-display text-2xl sm:text-3xl">`POST /v1/segment`</h2>
           <p className="mt-2 text-sm text-muted-foreground sm:text-base">
             Use this endpoint to run segmentation after uploading the source image and passing the
             `inputS3Key`.
           </p>
         </div>
-        <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-4 text-xs leading-relaxed text-[#ffcaa9] sm:text-sm">
+        <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-3 text-[11px] leading-relaxed text-[#ffcaa9] sm:p-4 sm:text-sm">
           <code>{segmentCurl}</code>
         </pre>
         <div className="space-y-3">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
             Example response
           </p>
-          <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-4 text-xs leading-relaxed text-[#ffcaa9] sm:text-sm">
+          <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-3 text-[11px] leading-relaxed text-[#ffcaa9] sm:p-4 sm:text-sm">
             <code>{segmentResponse}</code>
           </pre>
         </div>
       </section>
 
-      <section className="glass-panel reveal rounded-[1.6rem] p-6 sm:p-8">
+      <section className="glass-panel reveal rounded-[1.6rem] p-5 sm:p-8">
         <p className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
           <ShieldCheck className="h-4 w-4 text-secondary" />
           Auth and limits
         </p>
-        <ul className="space-y-2 text-sm text-muted-foreground">
+        <ul className="space-y-2 text-xs text-muted-foreground sm:text-sm">
           <li>Pass API keys as `x-api-key: ...` on every request.</li>
           <li>Presigned URLs are short-lived and single-use by default.</li>
           <li>

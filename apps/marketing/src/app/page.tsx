@@ -51,31 +51,31 @@ const sampleRequest = `curl -X POST \\
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex w-full max-w-300 flex-col gap-16 px-4 pb-24 pt-6 sm:px-8 lg:gap-24">
-      <section id="top" className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
-        <div className="space-y-8 reveal" style={{ animationDelay: "120ms" }}>
-          <div className="space-y-5">
-            <h1 className="font-display text-4xl leading-tight tracking-tight sm:text-6xl">
+    <main className="mx-auto flex w-full max-w-300 flex-col gap-12 px-4 pb-20 pt-5 sm:gap-16 sm:px-8 lg:gap-24">
+      <section id="top" className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+        <div className="space-y-6 reveal" style={{ animationDelay: "120ms" }}>
+          <div className="space-y-4">
+            <h1 className="font-display text-[2rem] leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
               Ship pixel-perfect segmentation at machine speed.
             </h1>
-            <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
+            <p className="max-w-xl text-sm text-muted-foreground sm:text-base lg:text-lg">
               Build interactive editors, robotics pipelines, and video intelligence with a single
               API. We run Meta&apos;s Segment Anything Model 3 behind an ultra-fast,
               production-ready platform.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <a href={env.NEXT_PUBLIC_APP_URL} className="cta-primary">
+          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+            <a href={env.NEXT_PUBLIC_APP_URL} className="cta-primary w-full sm:w-auto">
               Start Building
               <ArrowRight className="h-4 w-4" />
             </a>
-            <Link href="/docs" className="cta-ghost">
+            <Link href="/docs" className="cta-ghost w-full sm:w-auto">
               View API Docs
             </Link>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <article className="metric-card">
               <p className="metric-value">90ms</p>
               <p className="metric-label">p95 latency</p>
@@ -91,12 +91,12 @@ export default function HomePage() {
           </div>
         </div>
 
-        <article className="glass-panel reveal relative overflow-hidden rounded-[2rem] p-6 sm:p-8">
+        <article className="glass-panel reveal relative overflow-hidden rounded-[2rem] p-5 sm:p-8">
           <div className="absolute -left-16 -top-20 h-56 w-56 rounded-full bg-primary/30 blur-[80px]" />
           <div className="absolute -right-20 bottom-6 h-52 w-52 rounded-full bg-secondary/25 blur-[90px]" />
 
           <div className="relative z-10 space-y-5">
-            <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+            <div className="flex items-center justify-between gap-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
               <span>Live Pipeline</span>
               <span className="inline-flex items-center gap-2 text-foreground">
                 <span className="h-2 w-2 rounded-full bg-secondary shadow-[0_0_14px_rgba(57,213,201,0.95)]" />
@@ -104,7 +104,7 @@ export default function HomePage() {
               </span>
             </div>
 
-            <div className="relative h-77.5 overflow-hidden rounded-[1.4rem] border border-border/70 bg-[#090b10]">
+            <div className="relative h-64 overflow-hidden rounded-[1.4rem] border border-border/70 bg-[#090b10] sm:h-77.5">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(255,112,63,0.14),transparent_35%),radial-gradient(circle_at_80%_80%,rgba(57,213,201,0.16),transparent_42%),linear-gradient(180deg,#0f1218_0%,#050608_100%)]" />
               <div
                 className="absolute left-[10%] top-[16%] h-[42%] w-[34%] border border-primary/70 bg-primary/25"
@@ -134,7 +134,7 @@ export default function HomePage() {
         </article>
       </section>
 
-      <section id="features" className="space-y-8">
+      <section id="features" className="space-y-6 sm:space-y-8">
         <div className="space-y-3 reveal" style={{ animationDelay: "300ms" }}>
           <p className="tone-chip">Why SegmentationAPI</p>
           <h2 className="font-display text-3xl sm:text-4xl">Built for real production pressure.</h2>
@@ -151,7 +151,7 @@ export default function HomePage() {
             return (
               <article
                 key={capability.title}
-                className="glass-panel reveal card-stack rounded-[1.5rem] p-6"
+                className="glass-panel reveal card-stack rounded-[1.5rem] p-5 sm:p-6"
                 style={{ animationDelay: `${360 + index * 90}ms` }}
               >
                 <div className="mb-5 inline-flex rounded-xl border border-border/70 bg-background/60 p-3">
@@ -165,8 +165,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="docs" className="grid gap-6 lg:grid-cols-[1.04fr_0.96fr]">
-        <article className="glass-panel reveal rounded-[1.8rem] p-6 sm:p-8 lg:h-full">
+      <section id="docs" className="grid gap-5 lg:grid-cols-[1.04fr_0.96fr] lg:gap-6">
+        <article className="glass-panel reveal rounded-[1.8rem] p-5 sm:p-8 lg:h-full">
           <div className="mb-5 inline-flex items-center gap-3 rounded-full border border-border/70 bg-background/60 px-4 py-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
             <Braces className="h-4 w-4 text-primary" />
             Zero-friction API
@@ -200,7 +200,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="pricing" className="space-y-8">
+      <section id="pricing" className="space-y-6 sm:space-y-8">
         <div className="space-y-3 reveal" style={{ animationDelay: "520ms" }}>
           <p className="tone-chip">Pricing</p>
           <h2 className="font-display text-3xl sm:text-4xl">Simple token pricing.</h2>
@@ -217,7 +217,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="glass-panel reveal rounded-[2rem] p-8 text-center sm:p-12">
+      <section className="glass-panel reveal rounded-[2rem] p-6 text-center sm:p-12">
         <p className="mx-auto inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/70 px-4 py-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
           <Cpu className="h-4 w-4 text-primary" />
           Ready when you are
@@ -228,12 +228,12 @@ export default function HomePage() {
         <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
           Launch your first request in minutes and skip the GPU ops burden entirely.
         </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <a href={env.NEXT_PUBLIC_APP_URL} className="cta-primary">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
+          <a href={env.NEXT_PUBLIC_APP_URL} className="cta-primary w-full sm:w-auto">
             Create Account
             <ArrowRight className="h-4 w-4" />
           </a>
-          <Link href="/docs" className="cta-ghost">
+          <Link href="/docs" className="cta-ghost w-full sm:w-auto">
             Explore Docs
           </Link>
         </div>
