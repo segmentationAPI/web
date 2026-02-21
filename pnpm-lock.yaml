@@ -82,8 +82,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/env
       '@segmentationapi/sdk':
-        specifier: ^0.1.1
-        version: 0.1.1
+        specifier: ^0.2.3
+        version: 0.2.3
       '@tanstack/react-form':
         specifier: ^1.28.0
         version: 1.28.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1489,8 +1489,8 @@ packages:
   '@sec-ant/readable-stream@0.4.1':
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
 
-  '@segmentationapi/sdk@0.1.1':
-    resolution: {integrity: sha512-uWi09asQ4Py2GLS3KPj4LCsFMHX4JgRMC3xD/6TpJ7aRPFt5hMkGOLX8qnJy8AXK7SSf9vSSxHlxxAGj2A6MZw==}
+  '@segmentationapi/sdk@0.2.3':
+    resolution: {integrity: sha512-xopi7DM/z/CmlwJHIkOWvRPUaWrcmcVNpfmY42RqugR4JspHJyUaR0wqKhQHQINqzNdop31Ib/79FWgEbXKiXA==}
     engines: {node: '>=18'}
 
   '@sindresorhus/merge-streams@4.0.0':
@@ -4931,7 +4931,9 @@ snapshots:
 
   '@sec-ant/readable-stream@0.4.1': {}
 
-  '@segmentationapi/sdk@0.1.1': {}
+  '@segmentationapi/sdk@0.2.3':
+    dependencies:
+      zod: 4.3.6
 
   '@sindresorhus/merge-streams@4.0.0': {}
 

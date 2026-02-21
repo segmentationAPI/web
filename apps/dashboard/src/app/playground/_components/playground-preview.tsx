@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import type { PlaygroundResult } from "./playground-types";
+import type { PlaygroundMaskPreview } from "./playground-types";
 
 const MASK_OVERLAY_COLORS = ["#ff703f", "#39d5c9", "#f2b77a", "#74e8a5", "#f95f8e", "#ffeecc"];
 
@@ -20,7 +20,7 @@ function buildMaskTintStyle(maskUrl: string, color: string) {
 
 type PlaygroundPreviewProps = {
   hasResult: boolean;
-  masks: PlaygroundResult["masks"];
+  masks: PlaygroundMaskPreview[];
   selectedFile: File | null;
 };
 
@@ -78,4 +78,3 @@ export function PlaygroundPreview({ hasResult, masks, selectedFile }: Playground
     </div>
   );
 }
-

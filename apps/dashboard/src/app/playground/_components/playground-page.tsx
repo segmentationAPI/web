@@ -9,7 +9,11 @@ import { usePlaygroundSegmentation } from "./use-playground-segmentation";
 
 export function PlaygroundPageContent() {
   const playground = usePlaygroundSegmentation();
-  const masks = playground.result?.masks ?? [];
+  const previewMasks = playground.result?.previewMasks ?? [];
+  const previewFile =
+    playground.result && playground.result.previewFileIndex !== null
+      ? playground.selectedFiles[playground.result.previewFileIndex] ?? null
+      : playground.selectedFiles[0] ?? null;
 
   return (
     <div className="space-y-5">
@@ -25,20 +29,22 @@ export function PlaygroundPageContent() {
         <CardContent className="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
           <PlaygroundForm
             apiKey={playground.apiKey}
+            batchMode={playground.batchMode}
             onApiKeyChange={playground.setApiKey}
-            onFileSelected={playground.onFileSelected}
+            onBatchModeChange={playground.setBatchMode}
+            onFilesSelected={playground.onFilesSelected}
             onPromptChange={playground.setPrompt}
             onRunRequested={playground.onRunRequested}
             prompt={playground.prompt}
             runButtonState={playground.runButtonState}
-            showStatusMessage={Boolean(playground.selectedFile)}
+            selectedFileCount={playground.selectedFiles.length}
             statusMessage={playground.statusMessage}
           />
 
           <PlaygroundPreview
             hasResult={Boolean(playground.result)}
-            masks={masks}
-            selectedFile={playground.selectedFile}
+            masks={previewMasks}
+            selectedFile={previewFile}
           />
         </CardContent>
       </Card>
@@ -47,4 +53,3 @@ export function PlaygroundPageContent() {
     </div>
   );
 }
-
