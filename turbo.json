@@ -8,9 +8,15 @@
       "outputs": ["dist/**", ".next/**"]
     },
     "marketing#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**", ".next/**"],
       "env": ["NEXT_PUBLIC_APP_URL"]
     },
     "web#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**", ".next/**"],
       "env": [
         "DATABASE_URL",
         "BETTER_AUTH_SECRET",
@@ -28,7 +34,6 @@
         "AWS_DYNAMO_BALANCE_TABLE",
         "API_KEY_HMAC_SECRET",
         "AWS_CLOUDFRONT_BASE_URL",
-        "API_KEY_HMAC_SECRET",
         "NODE_ENV"
       ]
     },

@@ -40,13 +40,25 @@ type RevokeApiKeyActionResult =
     };
 
 function generateApiKeySecret() {
-  const keyPrefix = randomBytes(8).toString("hex");
-  const keySecret = randomBytes(24).toString("hex");
+  return randomBytes(24).toString("hex");
+}
 
-  return {
-    keyPrefix,
-    plainTextKey: `sk_live_${keyPrefix}_${keySecret}`,
-  };
+function buildApiKeyIdentitySegment(params: { accountId: string; keyId: string }) {
+  if (params.accountId.includes(":") || params.keyId.includes(":")) {
+    throw new Error("API key identifiers must not contain ':'");
+  }
+
+  return `${params.accountId}:${params.keyId}`;
+}
+
+function buildPlainTextApiKey(params: { accountId: string; keyId: string }) {
+  const keySecret = generateApiKeySecret();
+  const identitySegment = buildApiKeyIdentitySegment({
+    accountId: params.accountId,
+    keyId: params.keyId,
+  });
+
+  return `sk_live_${identitySegment}_${keySecret}`;
 }
 
 function hashApiKey(secret: string) {
@@ -67,9 +79,14 @@ export async function createApiKeyAction(
   }
 
   const label = parsed.data.label || "Primary key";
-  const { keyPrefix, plainTextKey } = generateApiKeySecret();
-  const keyHash = hashApiKey(plainTextKey);
   const keyId = `key_${randomUUID()}`;
+  const plainTextKey = buildPlainTextApiKey({
+    accountId: session.user.id,
+    keyId,
+  });
+  const keyHash = hashApiKey(plainTextKey);
+  // Keep schema compatibility until keyPrefix is removed from storage schema.
+  const keyPrefix = keyId;
 
   try {
     await db.insert(apiKey).values({

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const segmentCurl = `curl -X POST \\
   https://api.segmentationapi.com/v1/segment \\
   -H "Content-Type: application/json" \\
-  -H "x-api-key: sk_live_ab12cd34ef56_0123456789abcdef0123456789abcdef" \\
+  -H "x-api-key: YOUR_SEGMENTATION_API_KEY" \\
   -d '{
     "prompt": "painting",
     "inputS3Key": "inputs/demo-account/upload-001.png",
@@ -41,7 +41,7 @@ const segmentResponse = `{
 const presignCurl = `curl -X POST \\
   https://api.segmentationapi.com/v1/uploads/presign \\
   -H "Content-Type: application/json" \\
-  -H "x-api-key: sk_live_ab12cd34ef56_0123456789abcdef0123456789abcdef" \\
+  -H "x-api-key: YOUR_SEGMENTATION_API_KEY" \\
   -d '{
     "contentType": "image/png"
   }'`;
