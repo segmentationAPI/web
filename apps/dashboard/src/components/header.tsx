@@ -16,15 +16,18 @@ import {
 import { Button } from "./ui/button";
 import UserMenu from "./user-menu";
 
+import { Suspense } from "react";
+
 const dashboardLinks = [
   { href: "/", label: "Overview" },
+  { href: "/auto-label", label: "Auto Label" },
   { href: "/api-keys", label: "API Keys" },
   { href: "/playground", label: "Playground" },
   { href: "/requests", label: "Requests" },
   { href: "/billing", label: "Billing" },
 ] as const;
 
-export default function Header() {
+function HeaderContent() {
   const pathname = usePathname();
   const router = useRouter();
   const onDashboard = pathname !== "/login";
@@ -101,5 +104,13 @@ export default function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+export default function Header() {
+  return (
+    <Suspense fallback={<header className="sticky top-0 z-40 h-[61px] border-b border-border/35 bg-background/70 backdrop-blur-xl" />}>
+      <HeaderContent />
+    </Suspense>
   );
 }

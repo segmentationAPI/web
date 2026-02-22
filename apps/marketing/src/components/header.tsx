@@ -24,6 +24,12 @@ export default function Header() {
           <Link href="/#features" className="transition-colors hover:text-foreground">
             Features
           </Link>
+          <Link
+            href="/auto-label"
+            className="transition-colors hover:text-foreground"
+          >
+            Auto Label
+          </Link>
           <Link href="/docs" className="transition-colors hover:text-foreground">
             Docs
           </Link>

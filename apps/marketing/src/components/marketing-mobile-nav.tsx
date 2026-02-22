@@ -13,6 +13,7 @@ import { Button } from "./ui/button";
 
 const marketingLinks = [
   { href: "/#features", label: "Features" },
+  { href: "/auto-label", label: "Auto Label" },
   { href: "/docs", label: "Docs" },
   { href: "/pricing", label: "Pricing" },
 ] as const;
