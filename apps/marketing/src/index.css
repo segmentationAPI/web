@@ -246,13 +246,11 @@
 .soft-divider {
   height: 1px;
   width: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--primary) 72%, transparent) 20%,
-    color-mix(in srgb, var(--secondary) 72%, transparent) 80%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--primary) 72%, transparent) 20%,
+      color-mix(in srgb, var(--secondary) 72%, transparent) 80%,
+      transparent 100%);
 }
 
 .signal-text {
@@ -268,12 +266,10 @@
   right: 0;
   top: -36%;
   height: 34%;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(255, 112, 63, 0.35) 44%,
-    transparent 100%
-  );
+  background: linear-gradient(180deg,
+      transparent 0%,
+      rgba(255, 112, 63, 0.35) 44%,
+      transparent 100%);
   mix-blend-mode: screen;
   animation: scan 4.2s linear infinite;
 }
@@ -322,12 +318,262 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .marketing-shell::before,
   .marketing-shell::after,
   .scanline,
   .reveal {
     animation: none;
     transform: none;
+    opacity: 1;
+  }
+}
+
+/* ─── Auto Label Studio ──────────────────────────────────────────────────── */
+
+:root {
+  --al-accent: #7c5cfc;
+  --al-accent-glow: rgba(124, 92, 252, 0.38);
+  --al-accent-soft: rgba(124, 92, 252, 0.12);
+  --al-accent-border: color-mix(in srgb, #7c5cfc 48%, transparent);
+}
+
+/* Violet glass panel variant */
+.al-glass-panel {
+  border: 1px solid var(--al-accent-border);
+  background:
+    linear-gradient(148deg, rgba(124, 92, 252, 0.15), transparent 36%),
+    linear-gradient(322deg, rgba(57, 213, 201, 0.07), transparent 44%),
+    rgba(9, 12, 18, 0.82);
+  box-shadow:
+    0 24px 70px rgba(5, 7, 12, 0.7),
+    0 0 48px var(--al-accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
+}
+
+/* Violet chip label */
+.al-tone-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #7c5cfc 75%, transparent);
+  background: color-mix(in srgb, #7c5cfc 18%, transparent);
+  padding: 0.45rem 0.8rem;
+  font-family: var(--font-space-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+}
+
+/* Animated progress ring */
+.al-ring-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.al-ring {
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.al-ring-circle {
+  stroke-dasharray: 251;
+  stroke-dashoffset: 251;
+  animation: al-ring-fill 2.8s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+}
+
+/* Dataset grid sweep panel */
+.al-sweep-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.al-sweep-line {
+  position: absolute;
+  top: 0;
+  left: -8%;
+  width: 16%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(124, 92, 252, 0.55) 40%,
+      rgba(57, 213, 201, 0.4) 60%,
+      transparent 100%);
+  filter: blur(4px);
+  animation: al-sweep 3.6s ease-in-out infinite;
+}
+
+/* Image cell in the dataset grid */
+.al-img-cell {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, #7c5cfc 28%, transparent);
+  background: rgba(12, 10, 22, 0.9);
+}
+
+.al-img-cell-mask {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+/* Labeled state revealed by sweep animation delay */
+.al-img-cell:nth-child(1) .al-img-cell-mask {
+  animation: al-reveal-mask 3.6s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+
+.al-img-cell:nth-child(2) .al-img-cell-mask {
+  animation: al-reveal-mask 3.6s ease-in-out infinite;
+  animation-delay: 0.62s;
+}
+
+.al-img-cell:nth-child(3) .al-img-cell-mask {
+  animation: al-reveal-mask 3.6s ease-in-out infinite;
+  animation-delay: 0.94s;
+}
+
+.al-img-cell:nth-child(4) .al-img-cell-mask {
+  animation: al-reveal-mask 3.6s ease-in-out infinite;
+  animation-delay: 1.26s;
+}
+
+.al-img-cell:nth-child(5) .al-img-cell-mask {
+  animation: al-reveal-mask 3.6s ease-in-out infinite;
+  animation-delay: 1.3s;
+}
+
+.al-img-cell:nth-child(6) .al-img-cell-mask {
+  animation: al-reveal-mask 3.6s ease-in-out infinite;
+  animation-delay: 1.64s;
+}
+
+/* Node dot for the neural mesh decoration */
+.al-node {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--al-accent);
+  box-shadow: 0 0 10px var(--al-accent-glow);
+  animation: al-node-pulse 3s ease-in-out infinite;
+}
+
+/* Stats bar */
+.al-stat-bar {
+  border: 1px solid var(--al-accent-border);
+  background: linear-gradient(90deg,
+      rgba(124, 92, 252, 0.08) 0%,
+      rgba(57, 213, 201, 0.06) 50%,
+      rgba(124, 92, 252, 0.08) 100%);
+  box-shadow: 0 0 60px rgba(124, 92, 252, 0.12);
+}
+
+/* Stat item dividers */
+.al-stat-divider {
+  width: 1px;
+  height: 2.5rem;
+  background: linear-gradient(180deg,
+      transparent,
+      color-mix(in srgb, #7c5cfc 60%, transparent),
+      transparent);
+}
+
+/* Stepped connector */
+.al-step-connector {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg,
+      color-mix(in srgb, #7c5cfc 60%, transparent),
+      color-mix(in srgb, #39d5c9 60%, transparent));
+}
+
+/* Gradient text */
+.al-gradient-text {
+  background: linear-gradient(108deg, #c4b5fd 0%, #a78bfa 35%, #39d5c9 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Use-case card hover */
+.al-use-card {
+  transition:
+    transform 260ms ease,
+    border-color 260ms ease,
+    box-shadow 260ms ease;
+}
+
+.al-use-card:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, #7c5cfc 70%, transparent);
+  box-shadow: 0 16px 48px rgba(124, 92, 252, 0.2);
+}
+
+/* Keyframes */
+@keyframes al-sweep {
+  0% {
+    left: -16%;
+  }
+
+  100% {
+    left: 108%;
+  }
+}
+
+@keyframes al-reveal-mask {
+
+  0%,
+  8% {
+    opacity: 0;
+  }
+
+  18%,
+  88% {
+    opacity: 1;
+  }
+
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes al-ring-fill {
+  to {
+    stroke-dashoffset: 25;
+  }
+}
+
+@keyframes al-node-pulse {
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .al-sweep-line,
+  .al-ring-circle,
+  .al-img-cell-mask,
+  .al-node {
+    animation: none;
     opacity: 1;
   }
 }
