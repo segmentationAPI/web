@@ -226,16 +226,28 @@ export function usePlaygroundSegmentation() {
     dispatch({ type: "run:start" });
 
     try {
-      const client = new SegmentationClient({
-        apiKey: input.apiKey,
+      const rawKey = input.apiKey.startsWith("Bearer ") ? input.apiKey.slice(7) : input.apiKey;
+      const responseRes = await fetch("https://api.segmentationapi.com/v1/segment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "x-api-key": rawKey,
+        },
+        body: JSON.stringify({
+          inputS3Key: input.inputS3Key,
+          prompts: input.prompt.split(",").map(p => p.trim()).filter(Boolean),
+          threshold: 0.5,
+          mask_threshold: 0.5,
+        }),
       });
 
-      const response = await client.segment({
-        inputS3Key: input.inputS3Key,
-        maskThreshold: 0.5,
-        prompt: input.prompt,
-        threshold: 0.5,
-      });
+      if (!responseRes.ok) {
+        const errData = await responseRes.json().catch(() => ({}));
+        throw new Error(errData.error || `Request failed with status ${responseRes.status}`);
+      }
+
+      const response = await responseRes.json() as PlaygroundResult;
 
       if (runAttemptRef.current !== runAttempt) {
         return;

@@ -57,7 +57,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
 
     // Config state
     const [showConfig, setShowConfig] = useState(false);
-    const [prompt, setPrompt] = useState("");
+    const [promptsText, setPromptsText] = useState("");
     const [threshold, setThreshold] = useState(0.5);
     const [maskThreshold, setMaskThreshold] = useState(0.5);
     const [savingConfig, setSavingConfig] = useState(false);
@@ -89,7 +89,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             setProject(res.project);
             setImages(res.images || []);
             setActiveJob(res.activeBatchJob || null);
-            setPrompt(res.project.prompt || "");
+            setPromptsText((res.project.payload as any)?.prompts?.join(", ") || "");
             setThreshold(res.project.threshold ?? 0.5);
             setMaskThreshold(res.project.maskThreshold ?? 0.5);
         } else {
@@ -146,7 +146,9 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
 
     const handleSaveConfig = async () => {
         setSavingConfig(true);
-        const res = await updateProjectAction(projectId, { prompt, threshold, maskThreshold });
+        const prompts = promptsText.split(",").map((s) => s.trim()).filter(Boolean);
+        const payload = { prompts };
+        const res = await updateProjectAction(projectId, { payload, threshold, maskThreshold });
         if (res.ok) {
             toast.success("Configuration saved.");
             setShowConfig(false);
@@ -159,7 +161,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
     // ── Auto Label ──────────────────────────────────────────────────────────
 
     const handleAutoLabel = async () => {
-        if (!prompt.trim()) {
+        if (!promptsText.trim()) {
             toast.error("Please configure a prompt before running Auto Label.");
             setShowConfig(true);
             return;
@@ -439,8 +441,8 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
                     <input type="password" name="fakepasswordremember" autoComplete="current-password" style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} tabIndex={-1} aria-hidden="true" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="detection-prompt" className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Detection Prompt</Label>
-                            <Input id="detection-prompt" name="detection-prompt-nofill" placeholder="e.g. cells" value={prompt} onChange={(e) => setPrompt(e.target.value)} className="h-9 rounded-lg border-border/60 bg-background/60 px-3 text-sm focus-visible:border-primary/60" autoComplete="one-time-code" />
+                            <Label htmlFor="detection-prompt" className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Detection Prompts (comma separated)</Label>
+                            <Input id="detection-prompt" name="detection-prompt-nofill" placeholder="e.g. cells, nuclei" value={promptsText} onChange={(e) => setPromptsText(e.target.value)} className="h-9 rounded-lg border-border/60 bg-background/60 px-3 text-sm focus-visible:border-primary/60" autoComplete="one-time-code" />
                         </div>
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="seg-api-key" className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">API Key</Label>

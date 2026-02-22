@@ -1,6 +1,11 @@
-import { SegmentationClient } from "@segmentationapi/sdk";
-
-export type PlaygroundResult = Awaited<ReturnType<SegmentationClient["segment"]>>;
+export type PlaygroundResult = {
+  masks: {
+    base64: string;
+    box2d: [number, number, number, number];
+    label: string | null;
+    score: number;
+  }[];
+};
 
 export type PlaygroundErrorState = {
   details: string[];

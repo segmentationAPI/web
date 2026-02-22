@@ -18,7 +18,7 @@ const createProjectSchema = z.object({
 const updateProjectSchema = z.object({
     name: z.string().trim().min(1, "Project name is required").max(100).optional(),
     apiKeyId: z.string().optional(),
-    prompt: z.string().optional(),
+    payload: z.any().optional(),
     threshold: z.number().min(0).max(1).optional(),
     maskThreshold: z.number().min(0).max(1).optional(),
     latestBatchJobId: z.string().optional(),
@@ -325,8 +325,12 @@ export async function triggerAutoLabelAction(
             return { error: "Project not found", ok: false as const };
         }
 
-        if (!project.prompt?.trim()) {
-            return { error: "Please configure a prompt before running Auto Label.", ok: false as const };
+        const payloadData = project.payload as any;
+        const hasPrompts = payloadData?.prompts && payloadData.prompts.length > 0;
+        const hasBoxes = payloadData?.boxes && payloadData.boxes.length > 0;
+
+        if (!hasPrompts && !hasBoxes) {
+            return { error: "Please configure a prompt or add visual markers before running Auto Label.", ok: false as const };
         }
 
         const images = await db
@@ -340,7 +344,7 @@ export async function triggerAutoLabelAction(
 
         // 2. Call batch API server-side
         const payload = {
-            prompt: project.prompt,
+            ...payloadData,
             threshold: project.threshold,
             mask_threshold: project.maskThreshold,
             items: images.map((img) => ({ inputS3Key: img.inputS3Key })),
