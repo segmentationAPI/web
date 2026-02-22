@@ -177,6 +177,59 @@ export const requestBatchItem = pgTable(
 );
 export type RequestBatchItem = InferSelectModel<typeof requestBatchItem>;
 
+export const autoLabelProject = pgTable(
+  "auto_label_project",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    apiKeyId: text("api_key_id").references(() => apiKey.id, { onDelete: "set null" }),
+    prompt: text("prompt").default("").notNull(),
+    threshold: doublePrecision("threshold").default(0.5).notNull(),
+    maskThreshold: doublePrecision("mask_threshold").default(0.5).notNull(),
+    latestBatchJobId: text("latest_batch_job_id").references(() => requestBatchJob.id, { onDelete: "set null" }),
+    latestBatchRequestId: text("latest_batch_request_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("auto_label_project_user_id_idx").on(table.userId),
+    index("auto_label_project_user_id_created_at_idx").on(table.userId, table.createdAt.desc()),
+    index("auto_label_project_latest_batch_job_id_idx").on(table.latestBatchJobId),
+  ],
+);
+export type AutoLabelProject = InferSelectModel<typeof autoLabelProject>;
+
+export const autoLabelProjectImage = pgTable(
+  "auto_label_project_image",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => autoLabelProject.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    inputS3Key: text("input_s3_key").notNull(),
+    imageWidth: integer("image_width"),
+    imageHeight: integer("image_height"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("auto_label_project_image_project_id_input_s3_key_uidx").on(table.projectId, table.inputS3Key),
+    index("auto_label_project_image_project_id_idx").on(table.projectId),
+    index("auto_label_project_image_user_id_project_id_idx").on(table.userId, table.projectId),
+  ],
+);
+export type AutoLabelProjectImage = InferSelectModel<typeof autoLabelProjectImage>;
+
+
 export const apiKeyRelations = relations(apiKey, ({ one, many }) => ({
   jobs: many(requestJob),
   batchJobs: many(requestBatchJob),
@@ -223,6 +276,33 @@ export const requestBatchItemRelations = relations(requestBatchItem, ({ one }) =
   }),
   user: one(user, {
     fields: [requestBatchItem.userId],
+    references: [user.id],
+  }),
+}));
+
+export const autoLabelProjectRelations = relations(autoLabelProject, ({ one, many }) => ({
+  user: one(user, {
+    fields: [autoLabelProject.userId],
+    references: [user.id],
+  }),
+  apiKey: one(apiKey, {
+    fields: [autoLabelProject.apiKeyId],
+    references: [apiKey.id],
+  }),
+  latestBatchJob: one(requestBatchJob, {
+    fields: [autoLabelProject.latestBatchJobId],
+    references: [requestBatchJob.id],
+  }),
+  images: many(autoLabelProjectImage),
+}));
+
+export const autoLabelProjectImageRelations = relations(autoLabelProjectImage, ({ one }) => ({
+  project: one(autoLabelProject, {
+    fields: [autoLabelProjectImage.projectId],
+    references: [autoLabelProject.id],
+  }),
+  user: one(user, {
+    fields: [autoLabelProjectImage.userId],
     references: [user.id],
   }),
 }));
