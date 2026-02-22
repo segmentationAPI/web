@@ -375,7 +375,7 @@ export default function AutoLabelPage() {
                     className="al-glass-panel reveal overflow-hidden rounded-[2rem] p-0"
                     style={{ animationDelay: "600ms" }}
                 >
-                    <SegQueryDemo />
+                    <SegQueryDemo className="aspect-[16/9] w-full" />
                 </div>
             </section>
 

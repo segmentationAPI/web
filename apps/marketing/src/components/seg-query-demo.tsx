@@ -13,16 +13,36 @@ import { useEffect, useRef, useState } from "react";
 
 type Phase = "idle" | "typing" | "submitted" | "processing" | "done";
 
-const QUERY = "cells";
-const CHAR_MS = 110;
-const TYPE_START = 800;
-const SUBMIT_AT = TYPE_START + QUERY.length * CHAR_MS + 350;
-const PROCESS_AT = SUBMIT_AT + 320;
-const DONE_AT = PROCESS_AT + 680;
-const RESTART_AT = DONE_AT + 5200;
-const TOTAL = RESTART_AT;
+interface SegQueryDemoProps {
+    query?: string;
+    beforeImage?: string;
+    afterImage?: string;
+    beforeAlt?: string;
+    afterAlt?: string;
+    labelCountText?: string;
+    labelDetailedText?: string;
+    filename?: string;
+    className?: string;
+}
 
-export function SegQueryDemo() {
+export function SegQueryDemo({
+    query = "cells",
+    beforeImage = "/cells-before.jpg",
+    afterImage = "/cells-after.jpg",
+    beforeAlt = "Microscopy cells — before segmentation",
+    afterAlt = "Microscopy cells — after SAM 3 auto-segmentation",
+    labelCountText = "✓ 14 masks",
+    labelDetailedText = "14 objects · 100% confidence",
+    filename = "cells-sample-001.jpg",
+    className = "",
+}: SegQueryDemoProps = {}) {
+    const CHAR_MS = 110;
+    const TYPE_START = 800;
+    const SUBMIT_AT = TYPE_START + query.length * CHAR_MS + 350;
+    const PROCESS_AT = SUBMIT_AT + 320;
+    const DONE_AT = PROCESS_AT + 680;
+    const RESTART_AT = DONE_AT + 5200;
+
     const [typed, setTyped] = useState("");
     const [phase, setPhase] = useState<Phase>("idle");
     const startTime = useRef<number>(0);
@@ -51,10 +71,10 @@ export function SegQueryDemo() {
                 setPhase("submitted");
             } else if (t >= TYPE_START) {
                 const charsToShow = Math.min(
-                    QUERY.length,
+                    query.length,
                     Math.floor((t - TYPE_START) / CHAR_MS) + 1,
                 );
-                setTyped(QUERY.slice(0, charsToShow));
+                setTyped(query.slice(0, charsToShow));
                 setPhase("typing");
             } else {
                 setPhase("idle");
@@ -66,31 +86,29 @@ export function SegQueryDemo() {
 
         raf.current = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(raf.current);
-    }, []);
+    }, [query, SUBMIT_AT, PROCESS_AT, DONE_AT, RESTART_AT]);
 
     const isDone = phase === "done";
     const isProcessing = phase === "processing";
     const isSubmitted = phase === "submitted" || isProcessing || isDone;
 
     return (
-        <div className="relative select-none overflow-hidden rounded-[1.6rem]">
-            {/* ── macOS window chrome ─────────────────────────────────── */}
+        <div
+            className={`relative flex flex-col select-none overflow-hidden rounded-[1.6rem] bg-[#0e0c18] ${className}`}
+            style={{ transform: "translateZ(0)", WebkitMaskImage: "-webkit-radial-gradient(white, black)" }}
+        >
+            {/* ── window chrome ─────────────────────────────────── */}
             <div
-                className="relative z-10 flex items-center gap-2 px-3 py-2"
+                className="relative z-10 flex shrink-0 items-center gap-4 px-3 py-1.5"
                 style={{
                     background: "rgba(30, 28, 40, 0.92)",
                     backdropFilter: "blur(12px)",
                     borderBottom: "1px solid rgba(255,255,255,0.07)",
                 }}
             >
-                {/* Traffic lights */}
-                <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
-                <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
-                <span className="h-3 w-3 rounded-full bg-[#28c840]" />
-
                 {/* Search bar */}
                 <div
-                    className="relative ml-3 flex flex-1 items-center gap-2 overflow-hidden rounded-lg px-3.5 py-2 transition-all duration-300"
+                    className="relative flex flex-1 items-center gap-2 overflow-hidden rounded-md px-2.5 py-1 transition-all duration-300"
                     style={{
                         background: isSubmitted
                             ? "rgba(124,92,252,0.12)"
@@ -105,8 +123,8 @@ export function SegQueryDemo() {
                 >
                     {/* magnifier icon */}
                     <svg
-                        width="15"
-                        height="15"
+                        width="12"
+                        height="12"
                         viewBox="0 0 16 16"
                         fill="none"
                         className="shrink-0 opacity-50"
@@ -116,7 +134,7 @@ export function SegQueryDemo() {
                     </svg>
 
                     {/* typed text + cursor */}
-                    <span className="font-mono text-[15px] text-white/90">
+                    <span className="font-mono text-[13px] text-white/90">
                         {typed}
                         {!isSubmitted && (
                             <span
@@ -152,7 +170,7 @@ export function SegQueryDemo() {
                     style={{ color: isDone ? "#39d5c9" : isProcessing ? "#a78bfa" : "rgba(255,255,255,0.3)" }}
                 >
                     {isDone
-                        ? "✓ 14 masks"
+                        ? labelCountText
                         : isProcessing
                             ? "Labeling…"
                             : isSubmitted
@@ -162,20 +180,20 @@ export function SegQueryDemo() {
             </div>
 
             {/* ── Image viewport ─────────────────────────────────────── */}
-            <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#0e0c18]">
+            <div className="relative flex-1 w-full overflow-hidden bg-[#0e0c18] border-y border-white/5">
                 {/* BEFORE image */}
                 <img
-                    src="/cells-before.jpg"
-                    alt="Microscopy cells — before segmentation"
-                    className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
+                    src={beforeImage}
+                    alt={beforeAlt}
+                    className="absolute inset-0 h-full w-full object-cover object-[left_center] transition-opacity duration-700"
                     style={{ opacity: isDone ? 0 : 1 }}
                 />
 
                 {/* AFTER image */}
                 <img
-                    src="/cells-after.jpg"
-                    alt="Microscopy cells — after SAM 3 auto-segmentation"
-                    className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
+                    src={afterImage}
+                    alt={afterAlt}
+                    className="absolute inset-0 h-full w-full object-cover object-[left_center] transition-opacity duration-700"
                     style={{ opacity: isDone ? 1 : 0 }}
                 />
 
@@ -229,14 +247,14 @@ export function SegQueryDemo() {
 
             {/* ── Footer bar ─────────────────────────────────────────── */}
             <div
-                className="flex items-center justify-between px-4 py-1.5 font-mono text-[10px]"
+                className="flex shrink-0 items-center justify-between px-4 py-1.5 font-mono text-[10px]"
                 style={{
                     background: "rgba(18,16,30,0.95)",
                     borderTop: "1px solid rgba(255,255,255,0.06)",
                 }}
             >
                 <span style={{ color: "rgba(255,255,255,0.3)" }}>
-                    cells-sample-001.jpg
+                    {filename}
                 </span>
                 <span
                     style={{
@@ -244,7 +262,7 @@ export function SegQueryDemo() {
                         transition: "color 0.4s ease",
                     }}
                 >
-                    {isDone ? "14 objects · 100% confidence" : "No labels yet"}
+                    {isDone ? labelDetailedText : "No labels yet"}
                 </span>
             </div>
 

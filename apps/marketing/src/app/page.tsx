@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { env } from "@segmentation/env/marketing";
 import { ArrowRight, Boxes, Braces, Cpu, Radar, ShieldCheck, Zap } from "lucide-react";
+import { SegQueryDemo } from "../components/seg-query-demo";
+import { SegVideoDemo } from "../components/seg-video-demo";
 
 const capabilityCards = [
   {
@@ -91,47 +93,22 @@ export default function HomePage() {
           </div>
         </div>
 
-        <article className="glass-panel reveal relative overflow-hidden rounded-[2rem] p-5 sm:p-8">
-          <div className="absolute -left-16 -top-20 h-56 w-56 rounded-full bg-primary/30 blur-[80px]" />
-          <div className="absolute -right-20 bottom-6 h-52 w-52 rounded-full bg-secondary/25 blur-[90px]" />
+        <div className="reveal relative w-full">
+          <div className="absolute -left-16 -top-20 z-0 h-56 w-56 rounded-full bg-primary/30 blur-[80px]" />
+          <div className="absolute -right-20 bottom-6 z-0 h-52 w-52 rounded-full bg-secondary/25 blur-[90px]" />
 
-          <div className="relative z-10 space-y-5">
-            <div className="flex items-center justify-between gap-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              <span>Live Pipeline</span>
-              <span className="inline-flex items-center gap-2 text-foreground">
-                <span className="h-2 w-2 rounded-full bg-secondary shadow-[0_0_14px_rgba(57,213,201,0.95)]" />
-                23.8 fps
-              </span>
-            </div>
-
-            <div className="relative h-64 overflow-hidden rounded-[1.4rem] border border-border/70 bg-[#090b10] sm:h-77.5">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(255,112,63,0.14),transparent_35%),radial-gradient(circle_at_80%_80%,rgba(57,213,201,0.16),transparent_42%),linear-gradient(180deg,#0f1218_0%,#050608_100%)]" />
-              <div
-                className="absolute left-[10%] top-[16%] h-[42%] w-[34%] border border-primary/70 bg-primary/25"
-                style={{ clipPath: "polygon(12% 0,100% 16%,85% 100%,0 82%)" }}
-              />
-              <div
-                className="absolute left-[42%] top-[22%] h-[54%] w-[50%] border border-secondary/75 bg-secondary/20"
-                style={{ clipPath: "polygon(0 12%,68% 0,100% 34%,90% 100%,18% 92%)" }}
-              />
-              <div
-                className="absolute bottom-[12%] left-[25%] h-[30%] w-[38%] border border-foreground/50 bg-foreground/10"
-                style={{ clipPath: "polygon(6% 0,100% 22%,74% 100%,0 80%)" }}
-              />
-              <div className="scanline" />
-
-              <div className="absolute bottom-4 left-4 right-4 rounded-lg border border-border/70 bg-background/85 p-3 text-xs text-muted-foreground">
-                <p className="inline-flex items-center gap-2 font-mono text-[11px] text-foreground">
-                  <Cpu className="h-3.5 w-3.5" />
-                  mask confidence: <span className="signal-text">0.9982</span>
-                </p>
-                <p className="mt-2 truncate font-mono text-[10px] sm:text-[11px]">
-                  subject: cyclist_07 | classes: rider,bike,helmet | points: 2
-                </p>
-              </div>
-            </div>
-          </div>
-        </article>
+          <SegQueryDemo
+            query="clock"
+            beforeImage="/clock-before.jpg"
+            afterImage="/clock-after.jpg"
+            beforeAlt="The Persistence of Memory - original"
+            afterAlt="The Persistence of Memory - after auto segmentation"
+            labelCountText="✓ 5 masks"
+            labelDetailedText="5 objects · 98.2% confidence"
+            filename="dalí-memory.jpg"
+            className="relative z-10 h-[24rem] w-full sm:h-[28rem] lg:h-[30rem] border border-border/70 shadow-2xl shadow-primary/5 shadow-primary/20"
+          />
+        </div>
       </section>
 
       <section id="features" className="space-y-6 sm:space-y-8">
@@ -162,6 +139,32 @@ export default function HomePage() {
               </article>
             );
           })}
+        </div>
+      </section>
+
+      <section className="space-y-6 sm:space-y-8">
+        <div className="space-y-3 reveal" style={{ animationDelay: "200ms" }}>
+          <div className="flex items-center gap-3">
+            <p className="tone-chip">Video Auto Tracking</p>
+            <span className="inline-flex items-center rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-secondary">
+              Coming soon
+            </span>
+          </div>
+          <h2 className="font-display text-3xl sm:text-4xl">Track objects across frames automatically.</h2>
+          <p className="max-w-2xl text-muted-foreground">
+            Streamline your video annotation pipeline. Provide a text prompt and SAM 3 flawlessly tracks matching targets temporally across full sequences.
+          </p>
+        </div>
+
+        <div className="reveal relative w-full" style={{ animationDelay: "300ms" }}>
+          <SegVideoDemo
+            query="Spiderman"
+            videoSrc="/spiderman.mp4"
+            filename="spiderman.mp4"
+            className="relative z-10 h-[24rem] w-full sm:h-[28rem] lg:h-[30rem] border border-border/70 shadow-2xl shadow-secondary/5"
+            labelCountText="✓ 1 track"
+            labelDetailedText="1 object tracked · 98.8% confidence"
+          />
         </div>
       </section>
 
