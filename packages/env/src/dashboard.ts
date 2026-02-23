@@ -1,0 +1,44 @@
+import { createEnv } from "@t3-oss/env-nextjs";
+import { z } from "zod";
+
+export const env = createEnv({
+  server: {
+    DATABASE_URL: z.string().min(1),
+    BETTER_AUTH_SECRET: z.string().min(32),
+    BETTER_AUTH_URL: z.url(),
+    CORS_ORIGIN: z.url(),
+    STRIPE_SECRET_KEY: z.string().min(1),
+    STRIPE_WEBHOOK_SECRET: z.string().min(1),
+    AWS_ACCESS_KEY_ID: z.string().min(1),
+    AWS_SECRET_ACCESS_KEY: z.string().min(1),
+    AWS_REGION: z.string().min(1).default("us-east-2"),
+    AWS_DYNAMO_API_KEYS_TABLE: z.string().min(1),
+    AWS_DYNAMO_BALANCE_TABLE: z.string().min(1),
+    API_KEY_HMAC_SECRET: z.string().min(32),
+    AWS_CLOUDFRONT_BASE_URL: z.url(),
+    NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  },
+  client: {
+    NEXT_PUBLIC_STRIPE_SUCCESS_URL: z.url(),
+    NEXT_PUBLIC_STRIPE_CANCEL_URL: z.url(),
+  },
+  runtimeEnv: {
+    DATABASE_URL: process.env.DATABASE_URL,
+    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    CORS_ORIGIN: process.env.CORS_ORIGIN,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    NEXT_PUBLIC_STRIPE_SUCCESS_URL: process.env.NEXT_PUBLIC_STRIPE_SUCCESS_URL,
+    NEXT_PUBLIC_STRIPE_CANCEL_URL: process.env.NEXT_PUBLIC_STRIPE_CANCEL_URL,
+    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+    AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+    AWS_REGION: process.env.AWS_REGION,
+    AWS_DYNAMO_API_KEYS_TABLE: process.env.AWS_DYNAMO_API_KEYS_TABLE,
+    AWS_DYNAMO_BALANCE_TABLE: process.env.AWS_DYNAMO_BALANCE_TABLE,
+    API_KEY_HMAC_SECRET: process.env.API_KEY_HMAC_SECRET,
+    AWS_CLOUDFRONT_BASE_URL: process.env.AWS_CLOUDFRONT_BASE_URL,
+    NODE_ENV: process.env.NODE_ENV,
+  },
+  emptyStringAsUndefined: true,
+});

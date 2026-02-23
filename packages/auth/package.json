@@ -1,0 +1,26 @@
+{
+  "name": "@segmentation/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.879.0",
+    "@aws-sdk/util-dynamodb": "^3.879.0",
+    "@segmentation/db": "workspace:*",
+    "@segmentation/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@segmentation/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

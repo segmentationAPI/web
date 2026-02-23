@@ -1,0 +1,36 @@
+{
+  "name": "segmentation",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "db:push": "pnpm -F @segmentation/db db:push",
+    "db:studio": "turbo -F @segmentation/db db:studio",
+    "db:generate": "turbo -F @segmentation/db db:generate",
+    "db:migrate": "turbo -F @segmentation/db db:migrate",
+    "check": "oxlint && oxfmt --write"
+  },
+  "dependencies": {
+    "@segmentation/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@segmentation/config": "workspace:*",
+    "@types/node": "^22.13.14",
+    "lefthook": "^2.0.13",
+    "oxfmt": "^0.26.0",
+    "oxlint": "^1.41.0",
+    "turbo": "^2.6.3",
+    "typescript": "catalog:"
+  },
+  "packageManager": "pnpm@10.28.1"
+}
