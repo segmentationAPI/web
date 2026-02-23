@@ -57,7 +57,7 @@ const uploadCurl = `curl -X PUT "https://s3.amazonaws.com/...signed-url..." \\
 
 export default function DocsPage() {
   return (
-    <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 pb-20 pt-6 sm:gap-10 sm:px-8 sm:pt-8">
+    <main className="mx-auto flex w-full max-w-300 flex-col gap-8 px-4 pb-20 pt-6 sm:gap-10 sm:px-8 sm:pt-8">
       <section className="space-y-5 reveal sm:space-y-6">
         <p className="tone-chip">
           <Braces className="h-4 w-4" />
