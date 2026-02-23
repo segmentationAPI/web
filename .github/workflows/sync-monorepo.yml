@@ -7,7 +7,28 @@ on:
     branches: ["main"]
 
 jobs:
-  move-web:
+  move-web-push:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: olivr/copybara-action@v1.2.5
+        with:
+          ssh_key: ${{ secrets.SSH_KEY }}
+          access_token: ${{ secrets.GH_TOKEN }}
+          sot_repo: segmentationAPI/monorepo
+          sot_branch: main
+          destination_repo: segmentationAPI/web
+          destination_branch: main
+          workflow: init
+          pr_move: |
+            ||web
+
+  move-web-pr:
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v6
