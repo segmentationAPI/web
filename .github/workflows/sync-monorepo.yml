@@ -1,11 +1,10 @@
-name: Sync Web to public repo
+name: Sync Web to monorepo
 
 on:
   push:
     branches: ["main"]
-    paths:
-      - "web/**"
-      - ".github/workflows/sync-web.yml"
+  pull_request_target:
+    branches: ["main"]
 
 jobs:
   move-web:
@@ -23,6 +22,5 @@ jobs:
           sot_branch: main
           destination_repo: segmentationAPI/web
           destination_branch: main
-          push_include: "web/**"
           pr_move: |
             ||web
