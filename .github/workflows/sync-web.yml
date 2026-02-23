@@ -6,6 +6,8 @@ on:
     paths:
       - "web/**"
       - ".github/workflows/sync-web.yml"
+  pull_request_target:
+    branches: ["main"]
 
 jobs:
   move-web:
@@ -23,6 +25,7 @@ jobs:
           sot_branch: main
           destination_repo: segmentationAPI/web
           destination_branch: main
-          push_include: "web/**"
+          push_include: "web/** .github/workflows/sync-web.yml"
           pr_move: |
             ||web
+            web/.github||.github
