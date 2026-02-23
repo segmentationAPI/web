@@ -42,9 +42,7 @@ const presignCurl = `curl -X POST \\
   https://api.segmentationapi.com/v1/uploads/presign \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: YOUR_SEGMENTATION_API_KEY" \\
-  -d '{
-    "contentType": "image/png"
-  }'`;
+  `;
 
 const presignResponse = `{
   "uploadUrl": "https://segmentation-assets-prod.s3.us-east-2.amazonaws.com/inputs/demo-account/upload-001.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=300&X-Amz-Signature=example",
