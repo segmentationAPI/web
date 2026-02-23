@@ -1,0 +1,31 @@
+name: Sync Web to public repo
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "web/**"
+      - ".github/workflows/sync-web.yml"
+  pull_request_target:
+    branches: ["main"]
+
+jobs:
+  move-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: olivr/copybara-action@v1.2.5
+        with:
+          ssh_key: ${{ secrets.SSH_KEY }}
+          access_token: ${{ secrets.GH_TOKEN }}
+          sot_repo: segmentationAPI/monorepo
+          sot_branch: main
+          destination_repo: segmentationAPI/web
+          destination_branch: main
+          push_include: "web/** .github/workflows/sync-web.yml"
+          pr_move: |
+            ||web
+            web/.github||.github
