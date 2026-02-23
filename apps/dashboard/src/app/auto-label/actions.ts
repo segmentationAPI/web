@@ -9,6 +9,7 @@ import {
     image,
 } from "@segmentation/db/schema/app";
 import { SegmentationClient } from "@segmentationapi/sdk";
+import type { CreateBatchSegmentJobRequest } from "@segmentationapi/sdk";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -338,13 +339,20 @@ export async function triggerAutoLabelAction(projectId: string) {
             return fail("Failed to retrieve authentication token.");
         }
 
-        const client = new SegmentationClient({ jwt: tokenResponse.token });
-        const result = await client.createBatchSegmentJob({
-            prompts: project.prompts,
+        const prompts = project.prompts.map(prompt => prompt.trim()).filter(Boolean);
+        if (prompts.length === 0) {
+            return fail("Please configure at least one prompt before running Auto Label.");
+        }
+
+        const request: CreateBatchSegmentJobRequest = {
+            prompts,
             threshold: project.threshold,
             maskThreshold: project.maskThreshold,
             items: projectImages.map(row => ({ inputS3Key: row.s3Path })),
-        } as any);
+        };
+
+        const client = new SegmentationClient({ jwt: tokenResponse.token });
+        const result = await client.createBatchSegmentJob(request);
 
         await db
             .update(autoLabelProject)

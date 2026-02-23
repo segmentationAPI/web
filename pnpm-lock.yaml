@@ -82,8 +82,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/env
       '@segmentationapi/sdk':
-        specifier: ^0.5.0
-        version: 0.5.0
+        specifier: ^0.5.4
+        version: 0.5.4
       '@tanstack/react-form':
         specifier: ^1.28.0
         version: 1.28.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1506,8 +1506,8 @@ packages:
   '@sec-ant/readable-stream@0.4.1':
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
 
-  '@segmentationapi/sdk@0.5.0':
-    resolution: {integrity: sha512-MCqpacGq2Wy8Z6YAGqYE6clbxURVB7Kcdd/4ROWAbdS33PhbIIU+pbfE7O9s8Un9xpnUkLV/YMIodUcEVwR5DA==}
+  '@segmentationapi/sdk@0.5.4':
+    resolution: {integrity: sha512-777jzsf4FZ01tHfsseF93ap43xXev4CtIGKuR9ccZvq4L/Dgu4d/+/AOwnsCqMxUB/6bT4/rCw1FD2YeEEPaVA==}
     engines: {node: '>=18'}
 
   '@sindresorhus/merge-streams@4.0.0':
@@ -5157,7 +5157,7 @@ snapshots:
 
   '@sec-ant/readable-stream@0.4.1': {}
 
-  '@segmentationapi/sdk@0.5.0':
+  '@segmentationapi/sdk@0.5.4':
     dependencies:
       zod: 4.3.6
 
