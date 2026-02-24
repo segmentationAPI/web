@@ -68,7 +68,7 @@ function ModeToggle({
 			<button
 				type="button"
 				onClick={() => onModeChange('video')}
-				className={`rounded-md px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
+				className={`rounded-md px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
 					mode === 'video'
 						? 'bg-primary/30 text-foreground'
 						: 'text-muted-foreground hover:text-foreground'
