@@ -384,47 +384,56 @@ export function usePlaygroundSegmentation() {
 				? parsePositiveInteger(videoSampling.maxFrames, 'Max frames')
 				: undefined;
 
-			const requestPayload: Record<string, unknown> = {
+			const samplingPayload =
+				videoSampling.mode === 'fps'
+					? { fps: parsePositiveNumber(videoSampling.fps, 'FPS') }
+					: videoSampling.mode === 'numFrames'
+						? {
+								numFrames: parsePositiveInteger(
+									videoSampling.numFrames,
+									'Num frames',
+								),
+							}
+						: {};
+
+			const basePayload = {
 				clearOldInputs: videoClearOldInputs,
+				file: selectedVideoFile,
 				frameIdx,
 				signal: abortController.signal,
-				video: selectedVideoFile,
+				...(maxFrames !== undefined ? { maxFrames } : {}),
 			};
 
-			if (videoSampling.mode === 'fps') {
-				requestPayload.fps = parsePositiveNumber(videoSampling.fps, 'FPS');
-			}
-			if (videoSampling.mode === 'numFrames') {
-				requestPayload.numFrames = parsePositiveInteger(
-					videoSampling.numFrames,
-					'Num frames',
-				);
-			}
-			if (maxFrames !== undefined) {
-				requestPayload.maxFrames = maxFrames;
-			}
+			const requestPayload: SegmentVideoRequest =
+				videoPromptMode === 'points'
+					? {
+							...basePayload,
+							...samplingPayload,
+							pointLabels: videoPoints.map((point) => point.label),
+							pointObjectIds: videoPoints.map((point, index) =>
+								point.objectId.trim() || String(index + 1),
+							),
+							points: videoPoints.map(
+								(point): [number, number] => [point.x, point.y],
+							),
+						}
+					: {
+							...basePayload,
+							...samplingPayload,
+							boxObjectIds: videoBoxes.map((box, index) =>
+								box.objectId.trim() || String(index + 1),
+							),
+							boxes: videoBoxes.map(
+								(box): [number, number, number, number] => [
+									box.x1,
+									box.y1,
+									box.x2,
+									box.y2,
+								],
+							),
+						};
 
-			if (videoPromptMode === 'points') {
-				requestPayload.points = videoPoints.map((point) => [point.x, point.y]);
-				requestPayload.pointLabels = videoPoints.map((point) => point.label);
-				requestPayload.pointObjectIds = videoPoints.map((point, index) =>
-					point.objectId.trim() || String(index + 1),
-				);
-			} else {
-				requestPayload.boxes = videoBoxes.map((box) => [
-					box.x1,
-					box.y1,
-					box.x2,
-					box.y2,
-				]);
-				requestPayload.boxObjectIds = videoBoxes.map((box, index) =>
-					box.objectId.trim() || String(index + 1),
-				);
-			}
-
-			const videoResponse = await client.segmentVideo(
-				requestPayload as SegmentVideoRequest,
-			);
+			const videoResponse = await client.segmentVideo(requestPayload);
 
 			if (
 				runAttemptRef.current !== runAttempt ||
