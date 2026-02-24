@@ -149,6 +149,14 @@ export function RequestsPageContent({
 												{formatDate(job.createdAt)}
 											</p>
 										</div>
+										<div>
+											<p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+												Modality
+											</p>
+											<p className="mt-1 text-xs text-muted-foreground">
+												{job.modality}
+											</p>
+										</div>
 									</div>
 									<Button
 										variant="ghost"
@@ -169,6 +177,7 @@ export function RequestsPageContent({
 							<thead className="bg-muted/65 font-mono uppercase tracking-[0.12em] text-muted-foreground">
 								<tr>
 									<th className="px-3 py-2">Job ID</th>
+									<th className="px-3 py-2">Modality</th>
 									<th className="px-3 py-2">Status</th>
 									<th className="px-3 py-2">API key</th>
 									<th className="px-3 py-2">Created</th>
@@ -179,7 +188,7 @@ export function RequestsPageContent({
 								{jobs.length === 0 ? (
 									<tr>
 										<td
-											colSpan={5}
+											colSpan={6}
 											className="px-3 py-8 text-center font-mono text-xs text-muted-foreground"
 										>
 											No API requests recorded yet.
@@ -190,6 +199,9 @@ export function RequestsPageContent({
 										<tr key={job.id} className="border-t border-border/60">
 											<td className="max-w-[240px] truncate px-3 py-2 font-mono text-foreground">
 												{job.id}
+											</td>
+											<td className="px-3 py-2 text-muted-foreground">
+												{job.modality}
 											</td>
 											<td className="px-3 py-2">
 												<StatusPill status={job.status} />
@@ -282,6 +294,12 @@ export function RequestsPageContent({
 										</div>
 										<div className="sm:col-span-2">
 											<span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
+												Modality
+											</span>
+											<p className="mt-1">{selectedJob.modality}</p>
+										</div>
+										<div className="sm:col-span-2">
+											<span className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
 												Prompts
 											</span>
 											<p className="mt-1 break-words">
@@ -301,46 +319,125 @@ export function RequestsPageContent({
 										</div>
 									) : null}
 
-									<section className="space-y-2">
-										<h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-											Input + Combined Masks
-										</h3>
-										{selectedJob.outputs.length === 0 ? (
-											<div className="rounded-lg border border-border/70 bg-muted/55 p-3 text-xs text-muted-foreground">
-												No output images
-											</div>
-										) : !selectedJob.inputImageUrl ? (
-											<div className="rounded-lg border border-border/70 bg-muted/55 p-3 text-xs text-muted-foreground">
-												Missing input image for overlay rendering
-											</div>
-										) : (
-											<div className="space-y-3">
-												<div className="relative overflow-hidden rounded-xl border border-border/70 bg-background/80">
-													<Image
-														src={selectedJob.inputImageUrl}
-														alt="Input image with combined mask overlays"
-														className="block w-full object-cover"
-														width={500}
-														height={500}
-													/>
-													{selectedJob.outputs.map((output, index) =>
-														output.url ? (
-															<div
-																key={`overlay-${output.maskIndex}`}
-																className="pointer-events-none absolute inset-0"
-																style={buildMaskTintStyle(
-																	output.url,
-																	MASK_OVERLAY_COLORS[
-																		index % MASK_OVERLAY_COLORS.length
-																	],
-																)}
-															/>
-														) : null,
-													)}
+									{selectedJob.modality === 'video' ? (
+										<section className="space-y-3">
+											<h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+												Video Output Summary
+											</h3>
+											{selectedJob.inputVideoUrl ? (
+												<video
+													src={selectedJob.inputVideoUrl}
+													controls
+													className="w-full overflow-hidden rounded-xl border border-border/70 bg-background/80"
+												/>
+											) : (
+												<div className="rounded-lg border border-border/70 bg-muted/55 p-3 text-xs text-muted-foreground">
+													Missing input video preview
 												</div>
-											</div>
-										)}
-									</section>
+											)}
+											{selectedJob.videoOutput ? (
+												<div className="space-y-3 rounded-xl border border-border/70 bg-muted/55 p-3 text-xs text-foreground">
+													<div className="grid gap-2 sm:grid-cols-3">
+														<div>
+															<p className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
+																Frames Processed
+															</p>
+															<p className="mt-1">{selectedJob.videoOutput.framesProcessed}</p>
+														</div>
+														<div>
+															<p className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
+																Frames With Masks
+															</p>
+															<p className="mt-1">{selectedJob.videoOutput.framesWithMasks}</p>
+														</div>
+														<div>
+															<p className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
+																Total Masks
+															</p>
+															<p className="mt-1">{selectedJob.videoOutput.totalMasks}</p>
+														</div>
+													</div>
+													<div>
+														<p className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
+															Mask Encoding
+														</p>
+														<p className="mt-1">{selectedJob.videoOutput.maskEncoding}</p>
+													</div>
+													<div className="grid gap-2 sm:grid-cols-2">
+														<a
+															href={selectedJob.videoOutput.manifestUrl}
+															target="_blank"
+															rel="noreferrer"
+															className="inline-flex items-center gap-1 text-primary hover:underline"
+														>
+															<ExternalLink className="size-3.5" aria-hidden />
+															Manifest URL
+														</a>
+														<a
+															href={selectedJob.videoOutput.framesUrl}
+															target="_blank"
+															rel="noreferrer"
+															className="inline-flex items-center gap-1 text-primary hover:underline"
+														>
+															<ExternalLink className="size-3.5" aria-hidden />
+															Frames URL
+														</a>
+													</div>
+													<div>
+														<p className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
+															Output Prefix
+														</p>
+														<p className="mt-1 break-all">{selectedJob.videoOutput.outputS3Prefix}</p>
+													</div>
+												</div>
+											) : (
+												<div className="rounded-lg border border-border/70 bg-muted/55 p-3 text-xs text-muted-foreground">
+													No video output metadata available.
+												</div>
+											)}
+										</section>
+									) : (
+										<section className="space-y-2">
+											<h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+												Input + Combined Masks
+											</h3>
+											{selectedJob.outputs.length === 0 ? (
+												<div className="rounded-lg border border-border/70 bg-muted/55 p-3 text-xs text-muted-foreground">
+													No output images
+												</div>
+											) : !selectedJob.inputImageUrl ? (
+												<div className="rounded-lg border border-border/70 bg-muted/55 p-3 text-xs text-muted-foreground">
+													Missing input image for overlay rendering
+												</div>
+											) : (
+												<div className="space-y-3">
+													<div className="relative overflow-hidden rounded-xl border border-border/70 bg-background/80">
+														<Image
+															src={selectedJob.inputImageUrl}
+															alt="Input image with combined mask overlays"
+															className="block w-full object-cover"
+															width={500}
+															height={500}
+														/>
+														{selectedJob.outputs.map((output, index) =>
+															output.url ? (
+																<div
+																	key={`overlay-${output.maskIndex}`}
+																	className="pointer-events-none absolute inset-0"
+																	style={buildMaskTintStyle(
+																		output.url,
+																		MASK_OVERLAY_COLORS[
+																			index % MASK_OVERLAY_COLORS.length
+																		],
+																	)}
+																/>
+															) : null,
+														)}
+													</div>
+												</div>
+											)}
+										</section>
+									)}
 								</div>
 							)}
 						</div>

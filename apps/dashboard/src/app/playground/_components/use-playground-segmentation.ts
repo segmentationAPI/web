@@ -4,81 +4,25 @@ import {
 	NetworkError,
 	SegmentationApiError,
 	SegmentationClient,
+	type SegmentVideoRequest,
 	UploadError,
 } from '@segmentationapi/sdk';
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { authClient } from '@/lib/auth-client';
 
 import type {
 	PlaygroundErrorState,
+	PlaygroundMode,
 	PlaygroundResult,
 	PlaygroundStatus,
+	PlaygroundVideoBox,
+	PlaygroundVideoPoint,
+	PlaygroundVideoPromptMode,
+	PlaygroundVideoSamplingState,
 	RunButtonState,
 } from './playground-types';
-
-type PlaygroundState = {
-	prompts: string[];
-	selectedFile: File | null;
-	status: PlaygroundStatus;
-	result: PlaygroundResult | null;
-	error: PlaygroundErrorState | null;
-};
-
-type PlaygroundAction =
-	| { type: 'prompts:set'; value: string[] }
-	| { type: 'file:set'; file: File | null }
-	| { type: 'run:start' }
-	| { type: 'run:success'; result: PlaygroundResult }
-	| { type: 'run:error'; error: PlaygroundErrorState };
-
-const initialPlaygroundState: PlaygroundState = {
-	error: null,
-	prompts: [''],
-	result: null,
-	selectedFile: null,
-	status: 'idle',
-};
-
-function playgroundReducer(
-	state: PlaygroundState,
-	action: PlaygroundAction,
-): PlaygroundState {
-	switch (action.type) {
-		case 'prompts:set':
-			return {
-				...state,
-				prompts: action.value,
-			};
-		case 'file:set':
-			return {
-				...state,
-				error: null,
-				result: null,
-				selectedFile: action.file,
-				status: 'idle',
-			};
-		case 'run:start':
-			return {
-				...state,
-				error: null,
-				status: 'running',
-			};
-		case 'run:success':
-			return {
-				...state,
-				result: action.result,
-				status: 'ready',
-			};
-		case 'run:error':
-			return {
-				...state,
-				error: action.error,
-				status: 'idle',
-			};
-	}
-}
 
 function stringifyErrorBody(body: unknown) {
 	if (!body) {
@@ -119,7 +63,7 @@ function parsePlaygroundError(error: unknown): PlaygroundErrorState {
 
 		return {
 			details,
-			title: 'Image upload failed',
+			title: 'File upload failed',
 		};
 	}
 
@@ -152,18 +96,58 @@ function parsePlaygroundError(error: unknown): PlaygroundErrorState {
 	};
 }
 
+function parsePositiveNumber(value: string, fieldName: string): number {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed) || parsed <= 0) {
+		throw new Error(`${fieldName} must be greater than 0`);
+	}
+	return parsed;
+}
+
+function parsePositiveInteger(value: string, fieldName: string): number {
+	const parsed = Number(value);
+	if (!Number.isInteger(parsed) || parsed < 1) {
+		throw new Error(`${fieldName} must be an integer >= 1`);
+	}
+	return parsed;
+}
+
+function parseNonNegativeInteger(value: string, fieldName: string): number {
+	const parsed = Number(value);
+	if (!Number.isInteger(parsed) || parsed < 0) {
+		throw new Error(`${fieldName} must be an integer >= 0`);
+	}
+	return parsed;
+}
+
+const DEFAULT_VIDEO_SAMPLING: PlaygroundVideoSamplingState = {
+	fps: '',
+	maxFrames: '',
+	mode: 'default',
+	numFrames: '',
+};
+
 export function usePlaygroundSegmentation() {
-	const [state, dispatch] = useReducer(
-		playgroundReducer,
-		initialPlaygroundState,
+	const [mode, setMode] = useState<PlaygroundMode>('image');
+	const [prompts, setPrompts] = useState<string[]>(['']);
+	const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+	const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
+	const [videoSampling, setVideoSampling] = useState<PlaygroundVideoSamplingState>(
+		DEFAULT_VIDEO_SAMPLING,
 	);
+	const [videoPromptMode, setVideoPromptMode] =
+		useState<PlaygroundVideoPromptMode>('points');
+	const [videoPoints, setVideoPoints] = useState<PlaygroundVideoPoint[]>([]);
+	const [videoBoxes, setVideoBoxes] = useState<PlaygroundVideoBox[]>([]);
+	const [videoFrameIdx, setVideoFrameIdx] = useState('0');
+	const [videoClearOldInputs, setVideoClearOldInputs] = useState(true);
+
+	const [status, setStatus] = useState<PlaygroundStatus>('idle');
+	const [result, setResult] = useState<PlaygroundResult | null>(null);
+	const [error, setError] = useState<PlaygroundErrorState | null>(null);
+
 	const runAbortRef = useRef<AbortController | null>(null);
 	const runAttemptRef = useRef(0);
-	const stateRef = useRef(state);
-
-	useEffect(() => {
-		stateRef.current = state;
-	}, [state]);
 
 	useEffect(() => {
 		return () => {
@@ -172,37 +156,148 @@ export function usePlaygroundSegmentation() {
 		};
 	}, []);
 
-	const setPrompts = useCallback((value: string[]) => {
-		dispatch({ type: 'prompts:set', value });
+	const resetRunState = useCallback(() => {
+		setError(null);
+		setResult(null);
+		setStatus('idle');
 	}, []);
 
-	const onFileSelected = useCallback((file: File | null) => {
-		runAttemptRef.current += 1;
-		runAbortRef.current?.abort();
-		dispatch({ type: 'file:set', file });
+	const handleModeChange = useCallback(
+		(nextMode: PlaygroundMode) => {
+			runAttemptRef.current += 1;
+			runAbortRef.current?.abort();
+			setMode(nextMode);
+			resetRunState();
+		},
+		[resetRunState],
+	);
+
+	const onImageFileSelected = useCallback(
+		(file: File | null) => {
+			runAttemptRef.current += 1;
+			runAbortRef.current?.abort();
+			setSelectedImageFile(file);
+			resetRunState();
+		},
+		[resetRunState],
+	);
+
+	const onVideoFileSelected = useCallback(
+		(file: File | null) => {
+			runAttemptRef.current += 1;
+			runAbortRef.current?.abort();
+			setSelectedVideoFile(file);
+			resetRunState();
+		},
+		[resetRunState],
+	);
+
+	const onPromptsChange = useCallback(
+		(value: string[]) => {
+			setPrompts(value);
+			setResult(null);
+			setError(null);
+			if (status !== 'running') {
+				setStatus('idle');
+			}
+		},
+		[status],
+	);
+
+	const onVideoSamplingChange = useCallback(
+		(next: Partial<PlaygroundVideoSamplingState>) => {
+			setVideoSampling((current) => ({ ...current, ...next }));
+			setResult(null);
+			setError(null);
+		},
+		[],
+	);
+
+	const onVideoPromptModeChange = useCallback((nextMode: PlaygroundVideoPromptMode) => {
+		setVideoPromptMode(nextMode);
+		setResult(null);
+		setError(null);
+	}, []);
+
+	const onVideoPointCaptured = useCallback((point: { x: number; y: number }) => {
+		setVideoPoints((current) => [
+			...current,
+			{
+				label: 1,
+				objectId: String(current.length + 1),
+				x: point.x,
+				y: point.y,
+			},
+		]);
+		setResult(null);
+		setError(null);
+	}, []);
+
+	const onVideoBoxCaptured = useCallback(
+		(box: { x1: number; x2: number; y1: number; y2: number }) => {
+			setVideoBoxes((current) => [
+				...current,
+				{
+					objectId: String(current.length + 1),
+					x1: box.x1,
+					x2: box.x2,
+					y1: box.y1,
+					y2: box.y2,
+				},
+			]);
+			setResult(null);
+			setError(null);
+		},
+		[],
+	);
+
+	const onVideoPointUpdated = useCallback(
+		(index: number, updates: Partial<Pick<PlaygroundVideoPoint, 'label' | 'objectId'>>) => {
+			setVideoPoints((current) =>
+				current.map((item, itemIndex) =>
+					itemIndex === index ? { ...item, ...updates } : item,
+				),
+			);
+			setResult(null);
+			setError(null);
+		},
+		[],
+	);
+
+	const onVideoBoxUpdated = useCallback(
+		(index: number, updates: Partial<Pick<PlaygroundVideoBox, 'objectId'>>) => {
+			setVideoBoxes((current) =>
+				current.map((item, itemIndex) =>
+					itemIndex === index ? { ...item, ...updates } : item,
+				),
+			);
+			setResult(null);
+			setError(null);
+		},
+		[],
+	);
+
+	const onVideoPointRemoved = useCallback((index: number) => {
+		setVideoPoints((current) => current.filter((_, itemIndex) => itemIndex !== index));
+		setResult(null);
+		setError(null);
+	}, []);
+
+	const onVideoBoxRemoved = useCallback((index: number) => {
+		setVideoBoxes((current) => current.filter((_, itemIndex) => itemIndex !== index));
+		setResult(null);
+		setError(null);
+	}, []);
+
+	const onClearVideoAnnotations = useCallback(() => {
+		setVideoPoints([]);
+		setVideoBoxes([]);
+		setResult(null);
+		setError(null);
 	}, []);
 
 	const onRunRequested = useCallback(async () => {
-		const currentState = stateRef.current;
-		const trimmedPrompts = currentState.prompts.map(p => p.trim()).filter(Boolean);
-
-		if (currentState.status === 'running') {
-			return;
-		}
-
-		if (trimmedPrompts.length === 0) {
-			toast.error('At least one prompt is required');
-			return;
-		}
-
-		if (!currentState.selectedFile) {
-			toast.error('Upload an image to continue');
-			return;
-		}
-
-		const file = currentState.selectedFile;
-		if (file.type && !file.type.startsWith('image/')) {
-			toast.error('Only image files are supported');
+		if (status === 'running') {
 			return;
 		}
 
@@ -210,36 +305,126 @@ export function usePlaygroundSegmentation() {
 		runAbortRef.current?.abort();
 		const abortController = new AbortController();
 		runAbortRef.current = abortController;
-		dispatch({ type: 'run:start' });
+
+		setStatus('running');
+		setError(null);
 
 		try {
 			const { data: tokenData, error: tokenError } = await authClient.token();
 			if (tokenError || !tokenData) {
-				toast.error('Failed to retrieve authentication token');
-				dispatch({
-					type: 'run:error',
-					error: {
-						title: 'Authentication failed',
-						details: [tokenError?.message ?? 'Could not retrieve JWT token.'],
-					},
-				});
-				return;
+				throw new Error(tokenError?.message ?? 'Could not retrieve JWT token.');
 			}
-			const jwtToken = tokenData.token;
 
 			const client = new SegmentationClient({
-				jwt: jwtToken,
+				jwt: tokenData.token,
 			});
 
-			const contentType = file.type || 'image/png';
-			const response = await client.uploadAndSegment({
-				prompts: trimmedPrompts,
-				data: file,
-				contentType,
-				threshold: 0.5,
-				maskThreshold: 0.5,
+			if (mode === 'image') {
+				const trimmedPrompts = prompts.map((value) => value.trim()).filter(Boolean);
+				if (trimmedPrompts.length === 0) {
+					throw new Error('At least one prompt is required');
+				}
+				if (!selectedImageFile) {
+					throw new Error('Upload an image to continue');
+				}
+				if (
+					selectedImageFile.type &&
+					!selectedImageFile.type.startsWith('image/')
+				) {
+					throw new Error('Only image files are supported in image mode');
+				}
+
+				const contentType = selectedImageFile.type || 'image/png';
+				const imageResponse = await client.uploadAndSegment({
+					prompts: trimmedPrompts,
+					data: selectedImageFile,
+					contentType,
+					threshold: 0.5,
+					maskThreshold: 0.5,
+					signal: abortController.signal,
+				});
+
+				if (
+					runAttemptRef.current !== runAttempt ||
+					abortController.signal.aborted
+				) {
+					return;
+				}
+
+				setResult({
+					mode: 'image',
+					previewMasks: imageResponse.masks.map((mask) => ({ url: mask.url })),
+					raw: imageResponse,
+					summary: `Completed with ${imageResponse.masks.length} mask${imageResponse.masks.length === 1 ? '' : 's'}.`,
+				});
+				setStatus('ready');
+				toast.success('Segmentation completed');
+				return;
+			}
+
+			if (!selectedVideoFile) {
+				throw new Error('Upload a video to continue');
+			}
+			if (
+				selectedVideoFile.type &&
+				!selectedVideoFile.type.startsWith('video/')
+			) {
+				throw new Error('Only video files are supported in video mode');
+			}
+
+			if (videoPromptMode === 'points' && videoPoints.length === 0) {
+				throw new Error('Add at least one point in the preview to continue');
+			}
+			if (videoPromptMode === 'boxes' && videoBoxes.length === 0) {
+				throw new Error('Draw at least one box in the preview to continue');
+			}
+
+			const frameIdx = parseNonNegativeInteger(videoFrameIdx || '0', 'Frame index');
+			const maxFrames = videoSampling.maxFrames.trim()
+				? parsePositiveInteger(videoSampling.maxFrames, 'Max frames')
+				: undefined;
+
+			const requestPayload: Record<string, unknown> = {
+				clearOldInputs: videoClearOldInputs,
+				frameIdx,
 				signal: abortController.signal,
-			});
+				video: selectedVideoFile,
+			};
+
+			if (videoSampling.mode === 'fps') {
+				requestPayload.fps = parsePositiveNumber(videoSampling.fps, 'FPS');
+			}
+			if (videoSampling.mode === 'numFrames') {
+				requestPayload.numFrames = parsePositiveInteger(
+					videoSampling.numFrames,
+					'Num frames',
+				);
+			}
+			if (maxFrames !== undefined) {
+				requestPayload.maxFrames = maxFrames;
+			}
+
+			if (videoPromptMode === 'points') {
+				requestPayload.points = videoPoints.map((point) => [point.x, point.y]);
+				requestPayload.pointLabels = videoPoints.map((point) => point.label);
+				requestPayload.pointObjectIds = videoPoints.map((point, index) =>
+					point.objectId.trim() || String(index + 1),
+				);
+			} else {
+				requestPayload.boxes = videoBoxes.map((box) => [
+					box.x1,
+					box.y1,
+					box.x2,
+					box.y2,
+				]);
+				requestPayload.boxObjectIds = videoBoxes.map((box, index) =>
+					box.objectId.trim() || String(index + 1),
+				);
+			}
+
+			const videoResponse = await client.segmentVideo(
+				requestPayload as SegmentVideoRequest,
+			);
 
 			if (
 				runAttemptRef.current !== runAttempt ||
@@ -248,17 +433,14 @@ export function usePlaygroundSegmentation() {
 				return;
 			}
 
-			dispatch({
-				type: 'run:success',
-				result: {
-					raw: response,
-					previewFileIndex: 0,
-					previewMasks: response.masks.map(mask => ({ url: mask.url })),
-					summary: `Completed with ${response.masks.length} mask${response.masks.length === 1 ? '' : 's'}.`,
-				},
+			setResult({
+				mode: 'video',
+				raw: videoResponse,
+				summary: `Processed ${videoResponse.counts.framesProcessed} frames with ${videoResponse.counts.totalMasks} total masks.`,
 			});
-			toast.success('Segmentation completed');
-		} catch (error) {
+			setStatus('ready');
+			toast.success('Video segmentation completed');
+		} catch (runError) {
 			if (
 				runAttemptRef.current !== runAttempt ||
 				abortController.signal.aborted
@@ -266,34 +448,76 @@ export function usePlaygroundSegmentation() {
 				return;
 			}
 
-			console.error(error);
-			const parsedError = parsePlaygroundError(error);
-			dispatch({ type: 'run:error', error: parsedError });
+			const parsedError = parsePlaygroundError(runError);
+			setError(parsedError);
+			setStatus('idle');
 			toast.error(parsedError.title);
 		}
-	}, []);
+	}, [
+		mode,
+		prompts,
+		selectedImageFile,
+		selectedVideoFile,
+		status,
+		videoBoxes,
+		videoClearOldInputs,
+		videoFrameIdx,
+		videoPoints,
+		videoPromptMode,
+		videoSampling,
+	]);
 
 	const runButtonState: RunButtonState =
-		state.status === 'running' ? 'running' : 'default';
+		status === 'running' ? 'running' : 'default';
 
-	const statusMessage =
-		state.status === 'running'
-			? 'Running segmentation...'
-			: state.result
-				? state.result.summary
-				: state.selectedFile
-					? `${state.selectedFile.name} selected.`
-					: null;
+	const statusMessage = useMemo(() => {
+		if (status === 'running') {
+			return mode === 'video'
+				? 'Running video segmentation...'
+				: 'Running segmentation...';
+		}
+		if (result) {
+			return result.summary;
+		}
+		if (mode === 'image' && selectedImageFile) {
+			return `${selectedImageFile.name} selected.`;
+		}
+		if (mode === 'video' && selectedVideoFile) {
+			return `${selectedVideoFile.name} selected.`;
+		}
+		return null;
+	}, [mode, result, selectedImageFile, selectedVideoFile, status]);
 
 	return {
-		error: state.error,
-		onFileSelected,
+		error,
+		handleModeChange,
+		mode,
+		onClearVideoAnnotations,
+		onImageFileSelected,
+		onPromptsChange,
 		onRunRequested,
-		prompts: state.prompts,
-		result: state.result,
+		onVideoBoxCaptured,
+		onVideoBoxRemoved,
+		onVideoBoxUpdated,
+		onVideoFileSelected,
+		onVideoPointCaptured,
+		onVideoPointRemoved,
+		onVideoPointUpdated,
+		onVideoPromptModeChange,
+		onVideoSamplingChange,
+		prompts,
+		result,
 		runButtonState,
-		selectedFile: state.selectedFile,
-		setPrompts,
+		selectedImageFile,
+		selectedVideoFile,
+		setVideoClearOldInputs,
+		setVideoFrameIdx,
 		statusMessage,
+		videoBoxes,
+		videoClearOldInputs,
+		videoFrameIdx,
+		videoPoints,
+		videoPromptMode,
+		videoSampling,
 	};
 }

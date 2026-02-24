@@ -1,5 +1,13 @@
 import { db } from "@segmentation/db";
-import { apiKey, image, job, jobOutputMask, type ApiKey } from "@segmentation/db/schema/app";
+import {
+  apiKey,
+  image,
+  job,
+  jobOutputMask,
+  jobVideoOutput,
+  type ApiKey,
+  videoAsset,
+} from "@segmentation/db/schema/app";
 import { and, count, desc, eq, getTableColumns, gte, isNull } from "drizzle-orm";
 
 import type { BalanceData, JobDetail, JobListItem } from "@/lib/dashboard-types";
@@ -77,11 +85,21 @@ export async function getJobDetailForUser(params: {
     .select({
       ...jobColumns,
       apiKeyPrefix: apiKey.keyPrefix,
-      inputS3Path: image.s3Path,
+      inputImageS3Path: image.s3Path,
+      inputVideoS3Path: videoAsset.s3Path,
+      videoManifestUrl: jobVideoOutput.manifestUrl,
+      videoFramesUrl: jobVideoOutput.framesUrl,
+      videoOutputS3Prefix: jobVideoOutput.outputS3Prefix,
+      videoMaskEncoding: jobVideoOutput.maskEncoding,
+      videoFramesProcessed: jobVideoOutput.framesProcessed,
+      videoFramesWithMasks: jobVideoOutput.framesWithMasks,
+      videoTotalMasks: jobVideoOutput.totalMasks,
     })
     .from(job)
     .leftJoin(apiKey, eq(job.apiKeyId, apiKey.id))
-    .innerJoin(image, eq(job.inputImageId, image.id))
+    .leftJoin(image, eq(job.inputImageId, image.id))
+    .leftJoin(videoAsset, eq(job.inputVideoId, videoAsset.id))
+    .leftJoin(jobVideoOutput, eq(jobVideoOutput.jobId, job.id))
     .where(and(eq(job.userId, params.userId), eq(job.id, params.jobId)))
     .limit(1);
 
@@ -97,12 +115,31 @@ export async function getJobDetailForUser(params: {
 
   return {
     ...row,
-    inputImageUrl: buildAssetUrl(row.inputS3Path),
+    inputImageUrl: buildAssetUrl(row.inputImageS3Path),
+    inputVideoUrl: buildAssetUrl(row.inputVideoS3Path),
     outputs: masks.map((m) => ({
       maskIndex: m.maskIndex,
       url: buildAssetUrl(m.s3Path),
       score: m.score,
       box: m.box,
     })),
+    videoOutput:
+      row.videoManifestUrl &&
+      row.videoFramesUrl &&
+      row.videoOutputS3Prefix &&
+      row.videoMaskEncoding &&
+      row.videoFramesProcessed !== null &&
+      row.videoFramesWithMasks !== null &&
+      row.videoTotalMasks !== null
+        ? {
+            manifestUrl: row.videoManifestUrl,
+            framesUrl: row.videoFramesUrl,
+            outputS3Prefix: row.videoOutputS3Prefix,
+            maskEncoding: row.videoMaskEncoding,
+            framesProcessed: row.videoFramesProcessed,
+            framesWithMasks: row.videoFramesWithMasks,
+            totalMasks: row.videoTotalMasks,
+          }
+        : null,
   };
 }

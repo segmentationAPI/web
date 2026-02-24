@@ -1,6 +1,7 @@
-import { relations, type InferSelectModel } from "drizzle-orm";
+import { relations, sql, type InferSelectModel } from "drizzle-orm";
 import {
   boolean,
+  check,
   doublePrecision,
   index,
   integer,
@@ -19,6 +20,7 @@ import { user } from "./auth";
 
 export const purchaseStatusEnum = pgEnum("purchase_status", ["pending", "completed", "failed"]);
 export const jobStatusEnum = pgEnum("job_status", ["queued", "processing", "success", "failed"]);
+export const jobModalityEnum = pgEnum("job_modality", ["image", "video"]);
 export const batchJobStatusEnum = pgEnum("batch_job_status", [
   "queued",
   "processing",
@@ -107,6 +109,27 @@ export const image = pgTable(
 );
 export type Image = InferSelectModel<typeof image>;
 
+// ── Video Asset ────────────────────────────────────────────────────────────────
+
+export const videoAsset = pgTable(
+  "video_asset",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    s3Path: text("s3_path").notNull(),
+    mimeType: text("mime_type"),
+    sizeBytes: integer("size_bytes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("video_asset_user_id_s3_path_uidx").on(table.userId, table.s3Path),
+    index("video_asset_user_id_idx").on(table.userId),
+  ],
+);
+export type VideoAsset = InferSelectModel<typeof videoAsset>;
+
 // ── Batch Job ───────────────────────────────────────────────────────────────────
 
 export const batchJob = pgTable(
@@ -148,9 +171,9 @@ export const job = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     apiKeyId: text("api_key_id").references(() => apiKey.id, { onDelete: "set null" }),
     batchJobId: text("batch_job_id").references(() => batchJob.id, { onDelete: "cascade" }),
-    inputImageId: text("input_image_id")
-      .notNull()
-      .references(() => image.id, { onDelete: "cascade" }),
+    modality: jobModalityEnum("modality").default("image").notNull(),
+    inputImageId: text("input_image_id").references(() => image.id, { onDelete: "cascade" }),
+    inputVideoId: text("input_video_id").references(() => videoAsset.id, { onDelete: "cascade" }),
     prompts: text("prompts").array().notNull(),
     status: jobStatusEnum("status").default("queued").notNull(),
     errorCode: text("error_code"),
@@ -164,7 +187,16 @@ export const job = pgTable(
   (table) => [
     index("job_user_id_idx").on(table.userId),
     index("job_batch_job_id_idx").on(table.batchJobId),
+    index("job_modality_idx").on(table.modality),
     index("job_status_idx").on(table.status),
+    check(
+      "job_modality_input_check",
+      sql`(
+        (${table.modality} = 'image' AND ${table.inputImageId} IS NOT NULL AND ${table.inputVideoId} IS NULL)
+        OR
+        (${table.modality} = 'video' AND ${table.inputVideoId} IS NOT NULL AND ${table.inputImageId} IS NULL)
+      )`,
+    ),
   ],
 );
 export type Job = InferSelectModel<typeof job>;
@@ -189,6 +221,30 @@ export const jobOutputMask = pgTable(
   ],
 );
 export type JobOutputMask = InferSelectModel<typeof jobOutputMask>;
+
+// ── Job Video Output ────────────────────────────────────────────────────────────
+
+export const jobVideoOutput = pgTable(
+  "job_video_output",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => job.id, { onDelete: "cascade" }),
+    manifestUrl: text("manifest_url").notNull(),
+    framesUrl: text("frames_url").notNull(),
+    outputS3Prefix: text("output_s3_prefix").notNull(),
+    maskEncoding: text("mask_encoding").notNull(),
+    framesProcessed: integer("frames_processed").notNull(),
+    framesWithMasks: integer("frames_with_masks").notNull(),
+    totalMasks: integer("total_masks").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("job_video_output_job_id_uidx").on(table.jobId),
+  ],
+);
+export type JobVideoOutput = InferSelectModel<typeof jobVideoOutput>;
 
 // ── Auto-Label Project ──────────────────────────────────────────────────────────
 
@@ -255,6 +311,11 @@ export const imageRelations = relations(image, ({ one, many }) => ({
   projectLinks: many(autoLabelProjectImage),
 }));
 
+export const videoAssetRelations = relations(videoAsset, ({ one, many }) => ({
+  user: one(user, { fields: [videoAsset.userId], references: [user.id] }),
+  jobs: many(job),
+}));
+
 export const batchJobRelations = relations(batchJob, ({ one, many }) => ({
   user: one(user, { fields: [batchJob.userId], references: [user.id] }),
   apiKey: one(apiKey, { fields: [batchJob.apiKeyId], references: [apiKey.id] }),
@@ -266,11 +327,17 @@ export const jobRelations = relations(job, ({ one, many }) => ({
   apiKey: one(apiKey, { fields: [job.apiKeyId], references: [apiKey.id] }),
   batchJob: one(batchJob, { fields: [job.batchJobId], references: [batchJob.id] }),
   inputImage: one(image, { fields: [job.inputImageId], references: [image.id] }),
+  inputVideo: one(videoAsset, { fields: [job.inputVideoId], references: [videoAsset.id] }),
   outputMasks: many(jobOutputMask),
+  videoOutput: one(jobVideoOutput, { fields: [job.id], references: [jobVideoOutput.jobId] }),
 }));
 
 export const jobOutputMaskRelations = relations(jobOutputMask, ({ one }) => ({
   job: one(job, { fields: [jobOutputMask.jobId], references: [job.id] }),
+}));
+
+export const jobVideoOutputRelations = relations(jobVideoOutput, ({ one }) => ({
+  job: one(job, { fields: [jobVideoOutput.jobId], references: [job.id] }),
 }));
 
 export const autoLabelProjectRelations = relations(autoLabelProject, ({ one, many }) => ({

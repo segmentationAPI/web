@@ -9,8 +9,8 @@ import { usePlaygroundSegmentation } from "./use-playground-segmentation";
 
 export function PlaygroundPageContent() {
   const playground = usePlaygroundSegmentation();
-  const previewMasks = playground.result?.previewMasks ?? [];
-  const previewFile = playground.selectedFile ?? null;
+  const previewMasks =
+    playground.result?.mode === "image" ? playground.result.previewMasks : [];
 
   return (
     <div className="space-y-5">
@@ -25,18 +25,43 @@ export function PlaygroundPageContent() {
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
           <PlaygroundForm
-            onFileSelected={playground.onFileSelected}
-            onPromptsChange={playground.setPrompts}
+            mode={playground.mode}
+            onClearVideoAnnotations={playground.onClearVideoAnnotations}
+            onImageFileSelected={playground.onImageFileSelected}
+            onModeChange={playground.handleModeChange}
+            onPromptsChange={playground.onPromptsChange}
             onRunRequested={playground.onRunRequested}
+            onVideoBoxRemoved={playground.onVideoBoxRemoved}
+            onVideoBoxUpdated={playground.onVideoBoxUpdated}
+            onVideoFileSelected={playground.onVideoFileSelected}
+            onVideoPointRemoved={playground.onVideoPointRemoved}
+            onVideoPointUpdated={playground.onVideoPointUpdated}
+            onVideoPromptModeChange={playground.onVideoPromptModeChange}
+            onVideoSamplingChange={playground.onVideoSamplingChange}
             prompts={playground.prompts}
             runButtonState={playground.runButtonState}
             statusMessage={playground.statusMessage}
+            setVideoClearOldInputs={playground.setVideoClearOldInputs}
+            setVideoFrameIdx={playground.setVideoFrameIdx}
+            videoBoxes={playground.videoBoxes}
+            videoClearOldInputs={playground.videoClearOldInputs}
+            videoFrameIdx={playground.videoFrameIdx}
+            videoPoints={playground.videoPoints}
+            videoPromptMode={playground.videoPromptMode}
+            videoSampling={playground.videoSampling}
           />
 
           <PlaygroundPreview
             hasResult={Boolean(playground.result)}
             masks={previewMasks}
-            selectedFile={previewFile}
+            mode={playground.mode}
+            onVideoBoxCaptured={playground.onVideoBoxCaptured}
+            onVideoPointCaptured={playground.onVideoPointCaptured}
+            selectedImageFile={playground.selectedImageFile}
+            selectedVideoFile={playground.selectedVideoFile}
+            videoBoxes={playground.videoBoxes}
+            videoPoints={playground.videoPoints}
+            videoPromptMode={playground.videoPromptMode}
           />
         </CardContent>
       </Card>

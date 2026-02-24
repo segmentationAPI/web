@@ -1,5 +1,3 @@
-"use client";
-
 import { AlertTriangle } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,4 +27,3 @@ export function PlaygroundErrorCard({ error }: PlaygroundErrorCardProps) {
     </Card>
   );
 }
-
