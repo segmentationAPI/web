@@ -91,6 +91,9 @@ console.log(videoResult.output.framesUrl);
 console.log(videoResult.counts.totalMasks);
 ```
 
+The SDK uploads the video to S3 first using a presigned URL, then submits the
+video segmentation request with the uploaded `inputS3Key`.
+
 Video segmentation supports visual prompts only:
 
 - Provide exactly one prompt mode: `points` or `boxes`

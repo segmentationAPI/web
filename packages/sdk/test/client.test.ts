@@ -27,14 +27,6 @@ function getHeaders(init: RequestInit | undefined): Headers {
   return new Headers(init?.headers);
 }
 
-function getFormData(init: RequestInit | undefined): FormData {
-  const body = init?.body;
-  if (!(body instanceof FormData)) {
-    throw new Error("Expected request body to be FormData");
-  }
-  return body;
-}
-
 describe("SegmentationClient", () => {
   it("validates constructor options", () => {
     const fetchMock = asFetchMock(
@@ -161,24 +153,42 @@ describe("SegmentationClient", () => {
     expect(headers.get("x-api-key")).toBeNull();
   });
 
-  it("maps segmentVideo multipart fields and normalizes response", async () => {
-    const fetchMock = asFetchMock(async () =>
-      jsonResponse({
-        request_id: "video-request-1",
-        status: "success",
-        output: {
-          manifest_url: "https://cdn.example.com/jobs/1/manifest.json",
-          frames_url: "https://cdn.example.com/jobs/1/frames/",
-          output_s3_prefix: "outputs/acct/job-1/video/",
-          mask_encoding: "rle",
-        },
-        counts: {
-          frames_processed: 24,
-          frames_with_masks: 12,
-          total_masks: 30,
-        },
-      }),
-    );
+  it("uploads video through presign before sending segmentVideo request", async () => {
+    const fetchMock = asFetchMock(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/uploads/presign")) {
+        return jsonResponse({
+          uploadUrl: "https://upload.example.com/video-put",
+          inputS3Key: "inputs/acct/video.mp4",
+          bucket: "segmentation-assets-prod",
+          expiresIn: 300,
+        });
+      }
+
+      if (url === "https://upload.example.com/video-put") {
+        return new Response(null, { status: 200 });
+      }
+
+      if (url.endsWith("/segment/video")) {
+        return jsonResponse({
+          request_id: "video-request-1",
+          status: "success",
+          output: {
+            manifest_url: "https://cdn.example.com/jobs/1/manifest.json",
+            frames_url: "https://cdn.example.com/jobs/1/frames/",
+            output_s3_prefix: "outputs/acct/job-1/video/",
+            mask_encoding: "rle",
+          },
+          counts: {
+            frames_processed: 24,
+            frames_with_masks: 12,
+            total_masks: 30,
+          },
+        });
+      }
+
+      return new Response("unexpected call", { status: 500 });
+    });
 
     const client = new SegmentationClient({
       apiKey: "test_key",
@@ -199,21 +209,48 @@ describe("SegmentationClient", () => {
       clearOldInputs: false,
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.segmentationapi.com/v1/segment/video");
-    expect(getHeaders(init).get("x-api-key")).toBe("test_key");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
 
-    const formData = getFormData(init);
-    expect(formData.get("fps")).toBe("2.5");
-    expect(formData.get("max_frames")).toBe("80");
-    expect(formData.get("num_frames")).toBeNull();
-    expect(formData.get("points")).toBe("[[10,20],[30,40]]");
-    expect(formData.get("point_labels")).toBe("[1,0]");
-    expect(formData.get("point_obj_ids")).toBe("[101,101]");
-    expect(formData.get("frame_idx")).toBe("5");
-    expect(formData.get("clear_old_inputs")).toBe("false");
-    expect(formData.get("file")).toBeTruthy();
+    const [presignUrl, presignInit] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    expect(presignUrl).toBe("https://api.segmentationapi.com/v1/uploads/presign");
+    expect(getHeaders(presignInit).get("x-api-key")).toBe("test_key");
+    expect(getHeaders(presignInit).get("content-type")).toBe(
+      "application/octet-stream",
+    );
+
+    const [uploadUrl, uploadInit] = fetchMock.mock.calls[1] as [
+      string,
+      RequestInit,
+    ];
+    expect(uploadUrl).toBe("https://upload.example.com/video-put");
+    expect(uploadInit.method).toBe("PUT");
+    expect(getHeaders(uploadInit).get("content-type")).toBe(
+      "application/octet-stream",
+    );
+
+    const [segmentUrl, segmentInit] = fetchMock.mock.calls[2] as [
+      string,
+      RequestInit,
+    ];
+    expect(segmentUrl).toBe("https://api.segmentationapi.com/v1/segment/video");
+    expect(getHeaders(segmentInit).get("x-api-key")).toBe("test_key");
+    expect(getHeaders(segmentInit).get("content-type")).toBe("application/json");
+    const body = JSON.parse(String(segmentInit.body)) as Record<string, unknown>;
+    expect(body.inputS3Key).toBe("inputs/acct/video.mp4");
+    expect(body.fps).toBe(2.5);
+    expect(body.max_frames).toBe(80);
+    expect(body.num_frames).toBeUndefined();
+    expect(body.points).toEqual([
+      [10, 20],
+      [30, 40],
+    ]);
+    expect(body.point_labels).toEqual([1, 0]);
+    expect(body.point_obj_ids).toEqual([101, 101]);
+    expect(body.frame_idx).toBe(5);
+    expect(body.clear_old_inputs).toBe(false);
 
     expect(result.requestId).toBe("video-request-1");
     expect(result.status).toBe("success");
@@ -227,23 +264,41 @@ describe("SegmentationClient", () => {
   });
 
   it("sends bearer authorization header for segmentVideo requests with jwt", async () => {
-    const fetchMock = asFetchMock(async () =>
-      jsonResponse({
-        requestId: "video-request-jwt",
-        status: "success",
-        output: {
-          manifest_url: "https://cdn.example.com/jobs/2/manifest.json",
-          frames_url: "https://cdn.example.com/jobs/2/frames/",
-          output_s3_prefix: "outputs/acct/job-2/video/",
-          mask_encoding: "rle",
-        },
-        counts: {
-          frames_processed: 8,
-          frames_with_masks: 4,
-          total_masks: 9,
-        },
-      }),
-    );
+    const fetchMock = asFetchMock(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/uploads/presign")) {
+        return jsonResponse({
+          uploadUrl: "https://upload.example.com/video-put-jwt",
+          inputS3Key: "inputs/acct/video-jwt.mp4",
+          bucket: "segmentation-assets-prod",
+          expiresIn: 300,
+        });
+      }
+
+      if (url === "https://upload.example.com/video-put-jwt") {
+        return new Response(null, { status: 200 });
+      }
+
+      if (url.endsWith("/segment/video")) {
+        return jsonResponse({
+          requestId: "video-request-jwt",
+          status: "success",
+          output: {
+            manifest_url: "https://cdn.example.com/jobs/2/manifest.json",
+            frames_url: "https://cdn.example.com/jobs/2/frames/",
+            output_s3_prefix: "outputs/acct/job-2/video/",
+            mask_encoding: "rle",
+          },
+          counts: {
+            frames_processed: 8,
+            frames_with_masks: 4,
+            total_masks: 9,
+          },
+        });
+      }
+
+      return new Response("unexpected call", { status: 500 });
+    });
 
     const client = new SegmentationClient({
       jwt: "jwt_video_token",
@@ -257,9 +312,22 @@ describe("SegmentationClient", () => {
       boxObjectIds: [1],
     });
 
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.segmentationapi.com/v1/jwt/segment/video");
-    const headers = getHeaders(init);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const [presignUrl, presignInit] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    expect(presignUrl).toBe("https://api.segmentationapi.com/v1/jwt/uploads/presign");
+    expect(getHeaders(presignInit).get("authorization")).toBe(
+      "Bearer jwt_video_token",
+    );
+
+    const [segmentUrl, segmentInit] = fetchMock.mock.calls[2] as [
+      string,
+      RequestInit,
+    ];
+    expect(segmentUrl).toBe("https://api.segmentationapi.com/v1/jwt/segment/video");
+    const headers = getHeaders(segmentInit);
     expect(headers.get("authorization")).toBe("Bearer jwt_video_token");
     expect(headers.get("x-api-key")).toBeNull();
   });

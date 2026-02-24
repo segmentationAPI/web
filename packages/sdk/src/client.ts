@@ -91,26 +91,6 @@ function inferContentType(data: BinaryData): string | undefined {
   return undefined;
 }
 
-function toFormDataBlob(data: BinaryData): Blob {
-  if (typeof Blob !== "undefined" && data instanceof Blob) {
-    return data;
-  }
-  if (data instanceof Uint8Array) {
-    // Ensure BlobPart uses a plain ArrayBuffer (not ArrayBufferLike / SharedArrayBuffer).
-    const copied = new Uint8Array(data.byteLength);
-    copied.set(data);
-    return new Blob([copied.buffer], { type: "application/octet-stream" });
-  }
-  throw new TypeError("Unsupported multipart data type.");
-}
-
-function inferFilename(data: BinaryData, fallback: string): string {
-  if (typeof File !== "undefined" && data instanceof File && data.name) {
-    return data.name;
-  }
-  return fallback;
-}
-
 async function readResponseBody(response: Response): Promise<ResponseBody> {
   const text = await response.text();
   if (!text) {
@@ -270,50 +250,56 @@ export class SegmentationClient {
       "segmentVideo",
     );
 
-    const formData = new FormData();
-    formData.append(
-      "file",
-      toFormDataBlob(parsedInput.file),
-      inferFilename(parsedInput.file, "file.bin"),
-    );
+    const contentType = inferContentType(parsedInput.file) ?? "application/octet-stream";
+    const presignedUpload = await this.createPresignedUpload({
+      contentType,
+      signal: parsedInput.signal,
+    });
+
+    await this.uploadImage({
+      uploadUrl: presignedUpload.uploadUrl,
+      data: parsedInput.file,
+      contentType,
+      signal: parsedInput.signal,
+    });
+
+    const requestBody: Record<string, unknown> = {
+      inputS3Key: presignedUpload.inputS3Key,
+      frame_idx: parsedInput.frameIdx ?? 0,
+      clear_old_inputs: parsedInput.clearOldInputs ?? true,
+    };
 
     if (parsedInput.fps !== undefined) {
-      formData.append("fps", String(parsedInput.fps));
+      requestBody.fps = parsedInput.fps;
     }
     if (parsedInput.numFrames !== undefined) {
-      formData.append("num_frames", String(parsedInput.numFrames));
+      requestBody.num_frames = parsedInput.numFrames;
     }
     if (parsedInput.maxFrames !== undefined) {
-      formData.append("max_frames", String(parsedInput.maxFrames));
+      requestBody.max_frames = parsedInput.maxFrames;
     }
 
     if (parsedInput.points !== undefined) {
-      formData.append("points", JSON.stringify(parsedInput.points));
+      requestBody.points = parsedInput.points;
       if (parsedInput.pointLabels !== undefined) {
-        formData.append("point_labels", JSON.stringify(parsedInput.pointLabels));
+        requestBody.point_labels = parsedInput.pointLabels;
       }
       if (parsedInput.pointObjectIds !== undefined) {
-        formData.append(
-          "point_obj_ids",
-          JSON.stringify(parsedInput.pointObjectIds),
-        );
+        requestBody.point_obj_ids = parsedInput.pointObjectIds;
       }
     } else {
-      formData.append("boxes", JSON.stringify(parsedInput.boxes));
+      requestBody.boxes = parsedInput.boxes;
       if (parsedInput.boxObjectIds !== undefined) {
-        formData.append("box_obj_ids", JSON.stringify(parsedInput.boxObjectIds));
+        requestBody.box_obj_ids = parsedInput.boxObjectIds;
       }
     }
 
-    formData.append("frame_idx", String(parsedInput.frameIdx ?? 0));
-    formData.append(
-      "clear_old_inputs",
-      (parsedInput.clearOldInputs ?? true) ? "true" : "false",
-    );
-
     const raw = await this.requestApi({
       path: "/segment/video",
-      body: formData,
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
       signal: parsedInput.signal,
       responseSchema: segmentVideoResponseRawSchema,
       operation: "segmentVideo",
