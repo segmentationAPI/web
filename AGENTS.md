@@ -17,3 +17,6 @@ Primary source lives under each package/app `src/` directory.
 - Keep components and utilities in `src/components` and `src/lib` respectively.
 - Use clear file names by feature, e.g. `dashboard-queries.ts`, `route-auth.ts`.
 - Follow Next.js app router conventions in `src/app` (`page.tsx`, route segments).
+
+
+DO NOT build any of the apps. Due to how your environment is configured, the build will never finish.
