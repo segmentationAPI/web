@@ -15,6 +15,9 @@ const checkoutPayloadSchema = z.object({
   amountUsd: z.number().finite(),
 });
 
+const PAYMENTS_ENABLED = process.env.ENABLE_PAYMENTS === "true";
+const PAYMENTS_DISABLED_MESSAGE = "Payments are currently under construction. Please try again later.";
+
 type CheckoutActionResult =
   | {
       checkoutUrl: string;
@@ -57,6 +60,13 @@ async function getOrCreateStripeCustomer(params: {
 export async function createCheckoutSessionAction(
   input: z.input<typeof checkoutPayloadSchema>,
 ): Promise<CheckoutActionResult> {
+  if (!PAYMENTS_ENABLED) {
+    return {
+      error: PAYMENTS_DISABLED_MESSAGE,
+      ok: false,
+    };
+  }
+
   const session = await requirePageSession();
 
   const parsed = checkoutPayloadSchema.safeParse(input);
