@@ -164,6 +164,11 @@ export function usePlaygroundSegmentation() {
 
 	const handleModeChange = useCallback(
 		(nextMode: PlaygroundMode) => {
+			if (nextMode === 'video') {
+				toast.info('Video mode is under construction.');
+				return;
+			}
+
 			runAttemptRef.current += 1;
 			runAbortRef.current?.abort();
 			setMode(nextMode);

@@ -53,29 +53,30 @@ function ModeToggle({
 	onModeChange: (mode: PlaygroundMode) => void;
 }) {
 	return (
-		<div className="grid grid-cols-2 gap-1 rounded-lg border border-border/70 bg-background/60 p-1">
-			<button
-				type="button"
-				onClick={() => onModeChange('image')}
-				className={`rounded-md px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
-					mode === 'image'
-						? 'bg-primary/30 text-foreground'
-						: 'text-muted-foreground hover:text-foreground'
-				}`}
-			>
-				Image
-			</button>
-			<button
-				type="button"
-				onClick={() => onModeChange('video')}
-				className={`rounded-md px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
-					mode === 'video'
-						? 'bg-primary/30 text-foreground'
-						: 'text-muted-foreground hover:text-foreground'
-				}`}
-			>
-				Video
-			</button>
+		<div className="space-y-1.5 rounded-lg border border-border/70 bg-background/60 p-1">
+			<div className="grid grid-cols-2 gap-1">
+				<button
+					type="button"
+					onClick={() => onModeChange('image')}
+					className={`rounded-md px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
+						mode === 'image'
+							? 'bg-primary/30 text-foreground'
+							: 'text-muted-foreground hover:text-foreground'
+					}`}
+				>
+					Image
+				</button>
+				<button
+					type="button"
+					disabled
+					className="cursor-not-allowed rounded-md px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground/70"
+				>
+					Video
+				</button>
+			</div>
+			<p className="px-1 font-mono text-[10px] uppercase tracking-[0.11em] text-muted-foreground">
+				Video is under construction.
+			</p>
 		</div>
 	);
 }
@@ -129,7 +130,7 @@ export function PlaygroundForm({
 						</label>
 						<div className="flex flex-col gap-2">
 							{prompts.map((prompt, index) => (
-								<div key={`${index}-${prompt}`} className="flex items-center gap-2">
+								<div key={`prompt-${index}`} className="flex items-center gap-2">
 									<input
 										value={prompt}
 										onChange={(event) => {
@@ -437,7 +438,7 @@ export function PlaygroundForm({
 				) : (
 					<>
 						<Sparkles className="size-3.5" aria-hidden />
-						{mode === 'video' ? 'Run Video Segmentation' : 'Run Segmentation'}
+						Run Segmentation
 					</>
 				)}
 			</Button>
