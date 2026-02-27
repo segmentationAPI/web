@@ -14,7 +14,7 @@ async function HomeProtectedContent() {
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex w-full max-w-330 flex-col gap-4 px-3 pb-8 pt-3 sm:gap-5 sm:px-6 sm:pb-10 sm:pt-4">
+    <main className="mx-auto flex w-full max-w-330 flex-col gap-4 px-2 pb-8 pt-3 sm:gap-5 sm:px-6 sm:pb-10 sm:pt-4">
       <Suspense fallback={<OverviewPageLoading />}>
         <HomeProtectedContent />
       </Suspense>
