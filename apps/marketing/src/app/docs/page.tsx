@@ -55,6 +55,20 @@ const uploadCurl = `curl -X PUT "https://s3.amazonaws.com/...signed-url..." \\
   -H "Content-Type: image/png" \\
   --data-binary "@frame-0001.png"`;
 
+const videoAsyncCurl = `curl -X POST \\
+  https://api.segmentationapi.com/v1/segment/video \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: YOUR_SEGMENTATION_API_KEY" \\
+  -d '{
+    "inputS3Key": "inputs/demo-account/video-001.mp4",
+    "points": [[320, 180]],
+    "point_labels": [1]
+  }'`;
+
+const pollCurl = `curl -X GET \\
+  https://api.segmentationapi.com/v1/segment/jobs/JOB_ID \\
+  -H "x-api-key: YOUR_SEGMENTATION_API_KEY"`;
+
 export default function DocsPage() {
   return (
     <main className="mx-auto flex w-full max-w-300 flex-col gap-8 px-4 pb-20 pt-6 sm:gap-10 sm:px-8 sm:pt-8">
@@ -134,6 +148,25 @@ export default function DocsPage() {
           </p>
           <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-3 text-[11px] leading-relaxed text-[#ffcaa9] sm:p-4 sm:text-sm">
             <code>{segmentResponse}</code>
+          </pre>
+        </div>
+      </section>
+
+      <section className="glass-panel reveal rounded-[1.6rem] p-5 sm:p-8">
+        <p className="mb-4 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          <DatabaseZap className="h-4 w-4 text-secondary" />
+          Async jobs
+        </p>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground sm:text-base">
+            Video and batch requests are asynchronous. Create a job, then poll the unified status
+            endpoint.
+          </p>
+          <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-3 text-[11px] leading-relaxed text-[#ffcaa9] sm:p-4 sm:text-sm">
+            <code>{videoAsyncCurl}</code>
+          </pre>
+          <pre className="overflow-x-auto rounded-2xl border border-border/70 bg-[#07090d] p-3 text-[11px] leading-relaxed text-[#ffcaa9] sm:p-4 sm:text-sm">
+            <code>{pollCurl}</code>
           </pre>
         </div>
       </section>

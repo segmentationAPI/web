@@ -17,9 +17,7 @@ function jsonResponse(payload: unknown, status = 200): Response {
   });
 }
 
-function asFetchMock(
-  impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
-) {
+function asFetchMock(impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) {
   return vi.fn(impl) as unknown as FetchFunction & ReturnType<typeof vi.fn>;
 }
 
@@ -29,9 +27,7 @@ function getHeaders(init: RequestInit | undefined): Headers {
 
 describe("SegmentationClient", () => {
   it("validates constructor options", () => {
-    const fetchMock = asFetchMock(
-      async () => new Response(null, { status: 200 }),
-    );
+    const fetchMock = asFetchMock(async () => new Response(null, { status: 200 }));
 
     expect(
       () =>
@@ -172,18 +168,11 @@ describe("SegmentationClient", () => {
       if (url.endsWith("/segment/video")) {
         return jsonResponse({
           request_id: "video-request-1",
-          status: "success",
-          output: {
-            manifest_url: "https://cdn.example.com/jobs/1/manifest.json",
-            frames_url: "https://cdn.example.com/jobs/1/frames/",
-            output_s3_prefix: "outputs/acct/job-1/video/",
-            mask_encoding: "rle",
-          },
-          counts: {
-            frames_processed: 24,
-            frames_with_masks: 12,
-            total_masks: 30,
-          },
+          job_id: "video-job-1",
+          type: "video",
+          status: "queued",
+          total_items: 1,
+          poll_path: "/v1/segment/jobs/video-job-1",
         });
       }
 
@@ -211,30 +200,17 @@ describe("SegmentationClient", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
 
-    const [presignUrl, presignInit] = fetchMock.mock.calls[0] as [
-      string,
-      RequestInit,
-    ];
+    const [presignUrl, presignInit] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(presignUrl).toBe("https://api.segmentationapi.com/v1/uploads/presign");
     expect(getHeaders(presignInit).get("x-api-key")).toBe("test_key");
-    expect(getHeaders(presignInit).get("content-type")).toBe(
-      "application/octet-stream",
-    );
+    expect(getHeaders(presignInit).get("content-type")).toBe("application/octet-stream");
 
-    const [uploadUrl, uploadInit] = fetchMock.mock.calls[1] as [
-      string,
-      RequestInit,
-    ];
+    const [uploadUrl, uploadInit] = fetchMock.mock.calls[1] as [string, RequestInit];
     expect(uploadUrl).toBe("https://upload.example.com/video-put");
     expect(uploadInit.method).toBe("PUT");
-    expect(getHeaders(uploadInit).get("content-type")).toBe(
-      "application/octet-stream",
-    );
+    expect(getHeaders(uploadInit).get("content-type")).toBe("application/octet-stream");
 
-    const [segmentUrl, segmentInit] = fetchMock.mock.calls[2] as [
-      string,
-      RequestInit,
-    ];
+    const [segmentUrl, segmentInit] = fetchMock.mock.calls[2] as [string, RequestInit];
     expect(segmentUrl).toBe("https://api.segmentationapi.com/v1/segment/video");
     expect(getHeaders(segmentInit).get("x-api-key")).toBe("test_key");
     expect(getHeaders(segmentInit).get("content-type")).toBe("application/json");
@@ -253,14 +229,10 @@ describe("SegmentationClient", () => {
     expect(body.clear_old_inputs).toBe(false);
 
     expect(result.requestId).toBe("video-request-1");
-    expect(result.status).toBe("success");
-    expect(result.output.manifestUrl).toBe(
-      "https://cdn.example.com/jobs/1/manifest.json",
-    );
-    expect(result.output.outputS3Prefix).toBe("outputs/acct/job-1/video/");
-    expect(result.counts.framesProcessed).toBe(24);
-    expect(result.counts.framesWithMasks).toBe(12);
-    expect(result.counts.totalMasks).toBe(30);
+    expect(result.jobId).toBe("video-job-1");
+    expect(result.type).toBe("video");
+    expect(result.status).toBe("queued");
+    expect(result.pollPath).toBe("/v1/segment/jobs/video-job-1");
   });
 
   it("sends bearer authorization header for segmentVideo requests with jwt", async () => {
@@ -282,18 +254,11 @@ describe("SegmentationClient", () => {
       if (url.endsWith("/segment/video")) {
         return jsonResponse({
           requestId: "video-request-jwt",
-          status: "success",
-          output: {
-            manifest_url: "https://cdn.example.com/jobs/2/manifest.json",
-            frames_url: "https://cdn.example.com/jobs/2/frames/",
-            output_s3_prefix: "outputs/acct/job-2/video/",
-            mask_encoding: "rle",
-          },
-          counts: {
-            frames_processed: 8,
-            frames_with_masks: 4,
-            total_masks: 9,
-          },
+          job_id: "video-job-jwt",
+          type: "video",
+          status: "queued",
+          total_items: 1,
+          poll_path: "/v1/segment/jobs/video-job-jwt",
         });
       }
 
@@ -313,19 +278,11 @@ describe("SegmentationClient", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
-    const [presignUrl, presignInit] = fetchMock.mock.calls[0] as [
-      string,
-      RequestInit,
-    ];
+    const [presignUrl, presignInit] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(presignUrl).toBe("https://api.segmentationapi.com/v1/jwt/uploads/presign");
-    expect(getHeaders(presignInit).get("authorization")).toBe(
-      "Bearer jwt_video_token",
-    );
+    expect(getHeaders(presignInit).get("authorization")).toBe("Bearer jwt_video_token");
 
-    const [segmentUrl, segmentInit] = fetchMock.mock.calls[2] as [
-      string,
-      RequestInit,
-    ];
+    const [segmentUrl, segmentInit] = fetchMock.mock.calls[2] as [string, RequestInit];
     expect(segmentUrl).toBe("https://api.segmentationapi.com/v1/jwt/segment/video");
     const headers = getHeaders(segmentInit);
     expect(headers.get("authorization")).toBe("Bearer jwt_video_token");
@@ -338,9 +295,10 @@ describe("SegmentationClient", () => {
         {
           requestId: "batch-jwt-1",
           job_id: "batch-job-jwt",
+          type: "image_batch",
           status: "queued",
           total_items: 1,
-          poll_path: "/v1/segment/batch/batch-job-jwt",
+          poll_path: "/v1/segment/jobs/batch-job-jwt",
         },
         202,
       ),
@@ -412,41 +370,25 @@ describe("SegmentationClient", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
 
-    const [presignUrl, presignInit] = fetchMock.mock.calls[0] as [
-      string,
-      RequestInit,
-    ];
-    expect(presignUrl).toBe(
-      "https://api.segmentationapi.com/v1/jwt/uploads/presign",
-    );
-    expect(getHeaders(presignInit).get("authorization")).toBe(
-      "Bearer jwt_upload_token",
-    );
+    const [presignUrl, presignInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(presignUrl).toBe("https://api.segmentationapi.com/v1/jwt/uploads/presign");
+    expect(getHeaders(presignInit).get("authorization")).toBe("Bearer jwt_upload_token");
     expect(getHeaders(presignInit).get("x-api-key")).toBeNull();
 
-    const [segmentUrl, segmentInit] = fetchMock.mock.calls[2] as [
-      string,
-      RequestInit,
-    ];
+    const [segmentUrl, segmentInit] = fetchMock.mock.calls[2] as [string, RequestInit];
     expect(segmentUrl).toBe("https://api.segmentationapi.com/v1/jwt/segment");
-    expect(getHeaders(segmentInit).get("authorization")).toBe(
-      "Bearer jwt_upload_token",
-    );
+    expect(getHeaders(segmentInit).get("authorization")).toBe("Bearer jwt_upload_token");
     expect(getHeaders(segmentInit).get("x-api-key")).toBeNull();
   });
 
   it("fails fast on invalid createPresignedUpload input", async () => {
-    const fetchMock = asFetchMock(
-      async () => new Response(null, { status: 200 }),
-    );
+    const fetchMock = asFetchMock(async () => new Response(null, { status: 200 }));
     const client = new SegmentationClient({
       apiKey: "test_key",
       fetch: fetchMock,
     });
 
-    await expect(
-      client.createPresignedUpload({ contentType: "   " }),
-    ).rejects.toMatchObject({
+    await expect(client.createPresignedUpload({ contentType: "   " })).rejects.toMatchObject({
       direction: "input",
       operation: "createPresignedUpload",
     });
@@ -494,26 +436,19 @@ describe("SegmentationClient", () => {
 
     expect(result.jobId).toBe("job-1");
     expect(result.numInstances).toBe(1);
-    expect(result.outputUrl).toBe(
-      "https://assets.segmentationapi.com/outputs/job-1/",
-    );
-    expect(result.masks[0].url).toBe(
-      "https://assets.segmentationapi.com/outputs/job-1/mask_0.png",
-    );
+    expect(result.outputUrl).toBe("https://assets.segmentationapi.com/outputs/job-1/");
+    expect(result.masks[0].url).toBe("https://assets.segmentationapi.com/outputs/job-1/mask_0.png");
   });
 
   it("throws SegmentationApiError on API failure", async () => {
     const fetchMock = asFetchMock(
       async () =>
-        new Response(
-          JSON.stringify({ message: "invalid key", requestId: "r-123" }),
-          {
-            status: 401,
-            headers: {
-              "content-type": "application/json",
-            },
+        new Response(JSON.stringify({ message: "invalid key", requestId: "r-123" }), {
+          status: 401,
+          headers: {
+            "content-type": "application/json",
           },
-        ),
+        }),
     );
 
     const client = new SegmentationClient({
@@ -536,15 +471,12 @@ describe("SegmentationClient", () => {
   it("extracts requestId from request_id error field", async () => {
     const fetchMock = asFetchMock(
       async () =>
-        new Response(
-          JSON.stringify({ message: "invalid key", request_id: "r-124" }),
-          {
-            status: 401,
-            headers: {
-              "content-type": "application/json",
-            },
+        new Response(JSON.stringify({ message: "invalid key", request_id: "r-124" }), {
+          status: 401,
+          headers: {
+            "content-type": "application/json",
           },
-        ),
+        }),
     );
 
     const client = new SegmentationClient({
@@ -561,9 +493,7 @@ describe("SegmentationClient", () => {
   });
 
   it("throws UploadError on upload failure", async () => {
-    const fetchMock = asFetchMock(
-      async () => new Response("forbidden", { status: 403 }),
-    );
+    const fetchMock = asFetchMock(async () => new Response("forbidden", { status: 403 }));
     const client = new SegmentationClient({
       apiKey: "test_key",
       fetch: fetchMock,
@@ -579,9 +509,7 @@ describe("SegmentationClient", () => {
   });
 
   it("fails fast on invalid uploadImage input", async () => {
-    const fetchMock = asFetchMock(
-      async () => new Response(null, { status: 200 }),
-    );
+    const fetchMock = asFetchMock(async () => new Response(null, { status: 200 }));
     const client = new SegmentationClient({
       apiKey: "test_key",
       fetch: fetchMock,
@@ -611,9 +539,7 @@ describe("SegmentationClient", () => {
   });
 
   it("handles Blob and Uint8Array uploads", async () => {
-    const fetchMock = asFetchMock(
-      async () => new Response(null, { status: 200 }),
-    );
+    const fetchMock = asFetchMock(async () => new Response(null, { status: 200 }));
     const client = new SegmentationClient({
       apiKey: "test_key",
       fetch: fetchMock,
@@ -646,9 +572,9 @@ describe("SegmentationClient", () => {
       fetch: fetchMock,
     });
 
-    await expect(
-      client.createPresignedUpload({ contentType: "image/png" }),
-    ).rejects.toBeInstanceOf(NetworkError);
+    await expect(client.createPresignedUpload({ contentType: "image/png" })).rejects.toBeInstanceOf(
+      NetworkError,
+    );
   });
 
   it("fails fast on invalid segment input", async () => {
@@ -725,7 +651,10 @@ describe("SegmentationClient", () => {
     await expect(
       client.segmentVideo({
         file: new Uint8Array([1]),
-        points: [[1, 2], [3, 4]],
+        points: [
+          [1, 2],
+          [3, 4],
+        ],
         pointLabels: [1],
       } as never),
     ).rejects.toMatchObject({
@@ -750,9 +679,7 @@ describe("SegmentationClient", () => {
       fetch: fetchMock,
     });
 
-    await expect(
-      client.createPresignedUpload({ contentType: "image/png" }),
-    ).rejects.toMatchObject({
+    await expect(client.createPresignedUpload({ contentType: "image/png" })).rejects.toMatchObject({
       direction: "response",
       operation: "createPresignedUpload",
     });
@@ -831,9 +758,7 @@ describe("SegmentationClient", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/uploads/presign");
-    expect(String(fetchMock.mock.calls[1]?.[0])).toBe(
-      "https://upload.example.com/put",
-    );
+    expect(String(fetchMock.mock.calls[1]?.[0])).toBe("https://upload.example.com/put");
     expect(String(fetchMock.mock.calls[2]?.[0])).toContain("/segment");
 
     const segmentBody = JSON.parse(
@@ -849,9 +774,10 @@ describe("SegmentationClient", () => {
         {
           requestId: "batch-request-1",
           job_id: "batch-job-1",
+          type: "image_batch",
           status: "queued",
           total_items: 2,
-          poll_path: "/v1/segment/batch/batch-job-1",
+          poll_path: "/v1/segment/jobs/batch-job-1",
         },
         202,
       ),
@@ -878,22 +804,20 @@ describe("SegmentationClient", () => {
     expect(body.threshold).toBe(0.5);
     expect(body.mask_threshold).toBe(0.6);
     expect(body.maskThreshold).toBeUndefined();
-    expect(body.items).toEqual([
-      { inputS3Key: "inputs/a.png" },
-      { inputS3Key: "inputs/b.png" },
-    ]);
+    expect(body.items).toEqual([{ inputS3Key: "inputs/a.png" }, { inputS3Key: "inputs/b.png" }]);
 
     expect(result.requestId).toBe("batch-request-1");
     expect(result.jobId).toBe("batch-job-1");
     expect(result.totalItems).toBe(2);
-    expect(result.pollPath).toBe("/v1/segment/batch/batch-job-1");
+    expect(result.pollPath).toBe("/v1/segment/jobs/batch-job-1");
   });
 
-  it("gets batch segment job status and normalizes item URLs", async () => {
+  it("gets segment job status and normalizes item URLs", async () => {
     const fetchMock = asFetchMock(async () =>
       jsonResponse({
         requestId: "batch-request-2",
         job_id: "batch-job-2",
+        type: "image_batch",
         status: "processing",
         total_items: 2,
         queued_items: 0,
@@ -902,10 +826,9 @@ describe("SegmentationClient", () => {
         failed_items: 0,
         items: [
           {
-            index: 0,
+            jobId: "task-0",
             inputS3Key: "inputs/a.png",
             status: "success",
-            output_prefix: "outputs/batch-job-2/item-0/",
             num_instances: 1,
             masks: [
               {
@@ -916,7 +839,7 @@ describe("SegmentationClient", () => {
             ],
           },
           {
-            index: 1,
+            jobId: "task-1",
             inputS3Key: "inputs/b.png",
             status: "processing",
           },
@@ -929,27 +852,27 @@ describe("SegmentationClient", () => {
       fetch: fetchMock,
     });
 
-    const result = await client.getBatchSegmentJob({ jobId: "batch-job-2" });
+    const result = await client.getSegmentJob({ jobId: "batch-job-2" });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(
-      "https://api.segmentationapi.com/v1/segment/batch/batch-job-2",
-    );
+    expect(url).toBe("https://api.segmentationapi.com/v1/segment/jobs/batch-job-2");
     expect(init.method).toBe("GET");
     expect(result.status).toBe("processing");
     expect(result.successItems).toBe(1);
-    expect(result.items[0]?.masks?.[0]?.url).toBe(
+    expect(result.type).toBe("image_batch");
+    expect(result.items?.[0]?.masks?.[0]?.url).toBe(
       "https://assets.segmentationapi.com/outputs/batch-job-2/item-0/mask_0.png",
     );
-    expect(result.items[1]?.masks).toBeUndefined();
+    expect(result.items?.[1]?.masks).toBeUndefined();
   });
 
-  it("sends bearer authorization header for getBatchSegmentJob requests", async () => {
+  it("sends bearer authorization header for getSegmentJob requests", async () => {
     const fetchMock = asFetchMock(async () =>
       jsonResponse({
         requestId: "batch-request-2",
         job_id: "batch-job-2",
+        type: "image_batch",
         status: "queued",
         total_items: 1,
         queued_items: 1,
@@ -965,12 +888,10 @@ describe("SegmentationClient", () => {
       fetch: fetchMock,
     });
 
-    await client.getBatchSegmentJob({ jobId: "batch-job-2" });
+    await client.getSegmentJob({ jobId: "batch-job-2" });
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(
-      "https://api.segmentationapi.com/v1/jwt/segment/batch/batch-job-2",
-    );
+    expect(url).toBe("https://api.segmentationapi.com/v1/jwt/segment/jobs/batch-job-2");
     const headers = getHeaders(init);
     expect(headers.get("authorization")).toBe("Bearer jwt_get_token");
     expect(headers.get("x-api-key")).toBeNull();
@@ -994,12 +915,12 @@ describe("SegmentationClient", () => {
     });
 
     await expect(
-      client.getBatchSegmentJob({
+      client.getSegmentJob({
         jobId: "   ",
       }),
     ).rejects.toMatchObject({
       direction: "input",
-      operation: "getBatchSegmentJob",
+      operation: "getSegmentJob",
     });
 
     expect(fetchMock).not.toHaveBeenCalled();

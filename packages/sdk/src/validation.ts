@@ -7,13 +7,14 @@ import type {
   CreateBatchSegmentJobRequest,
   CreatePresignedUploadRequest,
   FetchFunction,
-  GetBatchSegmentJobRequest,
+  GetSegmentJobRequest,
   PresignedUploadRaw,
-  SegmentVideoRequest,
-  SegmentVideoResponseRaw,
+  SegmentJobAcceptedRaw,
+  SegmentJobStatusRaw,
   SegmentMaskRaw,
   SegmentResponseRaw,
   SegmentRequest,
+  SegmentVideoRequest,
   UploadAndSegmentRequest,
   UploadImageRequest,
 } from "./types";
@@ -250,7 +251,7 @@ export const createBatchSegmentJobRequestSchema: z.ZodMiniType<CreateBatchSegmen
     signal: abortSignalSchema,
   });
 
-export const getBatchSegmentJobRequestSchema: z.ZodMiniType<GetBatchSegmentJobRequest> =
+export const getSegmentJobRequestSchema: z.ZodMiniType<GetSegmentJobRequest> =
   z.object({
     jobId: nonEmptyString,
     signal: abortSignalSchema,
@@ -287,33 +288,19 @@ export const segmentResponseRawSchema: z.ZodMiniType<SegmentResponseRaw> =
     masks: z.array(segmentMaskRawSchema),
   });
 
-export const segmentVideoResponseRawSchema: z.ZodMiniType<SegmentVideoResponseRaw> =
-  z.object({
-    requestId: z.optional(z.string()),
-    request_id: z.optional(z.string()),
-    status: nonEmptyString,
-    output: z.object({
-      manifest_url: nonEmptyString,
-      frames_url: nonEmptyString,
-      output_s3_prefix: nonEmptyString,
-      mask_encoding: nonEmptyString,
-    }),
-    counts: z.object({
-      frames_processed: finiteInteger,
-      frames_with_masks: finiteInteger,
-      total_masks: finiteInteger,
-    }),
-  });
-
-export const batchSegmentAcceptedRawSchema: z.ZodMiniType<BatchSegmentAcceptedRaw> =
+export const segmentJobAcceptedRawSchema: z.ZodMiniType<SegmentJobAcceptedRaw> =
   z.object({
     requestId: z.optional(z.string()),
     request_id: z.optional(z.string()),
     job_id: nonEmptyString,
+    type: z.enum(["image_batch", "video"]),
     status: z.literal("queued"),
     total_items: finiteNumber,
     poll_path: nonEmptyString,
   });
+
+export const batchSegmentAcceptedRawSchema: z.ZodMiniType<BatchSegmentAcceptedRaw> =
+  segmentJobAcceptedRawSchema;
 
 export const batchSegmentMaskRawSchema: z.ZodMiniType<BatchSegmentMaskRaw> =
   z.object({
@@ -322,21 +309,45 @@ export const batchSegmentMaskRawSchema: z.ZodMiniType<BatchSegmentMaskRaw> =
     box: z.optional(z.nullable(z.array(finiteNumber))),
   });
 
-export const batchSegmentStatusItemRawSchema = z.object({
+export const segmentJobStatusItemRawSchema = z.object({
+  jobId: nonEmptyString,
   inputS3Key: nonEmptyString,
   status: z.enum(["queued", "processing", "success", "failed"]),
-  output_prefix: z.optional(z.nullable(nonEmptyString)),
   num_instances: z.optional(z.nullable(finiteNumber)),
   masks: z.optional(z.nullable(z.array(batchSegmentMaskRawSchema))),
   error: z.optional(z.nullable(nonEmptyString)),
   error_code: z.optional(z.nullable(nonEmptyString)),
 });
 
-export const batchSegmentStatusRawSchema: z.ZodMiniType<BatchSegmentStatusRaw> =
+export const segmentJobVideoStatusRawSchema = z.object({
+  jobId: nonEmptyString,
+  inputS3Key: nonEmptyString,
+  status: z.enum(["queued", "processing", "success", "failed"]),
+  output: z.optional(
+    z.object({
+      manifest_url: nonEmptyString,
+      frames_url: nonEmptyString,
+      output_s3_prefix: nonEmptyString,
+      mask_encoding: nonEmptyString,
+    }),
+  ),
+  counts: z.optional(
+    z.object({
+      frames_processed: finiteInteger,
+      frames_with_masks: finiteInteger,
+      total_masks: finiteInteger,
+    }),
+  ),
+  error: z.optional(z.nullable(nonEmptyString)),
+  error_code: z.optional(z.nullable(nonEmptyString)),
+});
+
+export const segmentJobStatusRawSchema: z.ZodMiniType<SegmentJobStatusRaw> =
   z.object({
     requestId: z.optional(z.string()),
     request_id: z.optional(z.string()),
     job_id: nonEmptyString,
+    type: z.enum(["image_sync", "image_batch", "video"]),
     status: z.enum([
       "queued",
       "processing",
@@ -349,8 +360,14 @@ export const batchSegmentStatusRawSchema: z.ZodMiniType<BatchSegmentStatusRaw> =
     processing_items: finiteNumber,
     success_items: finiteNumber,
     failed_items: finiteNumber,
-    items: z.array(batchSegmentStatusItemRawSchema),
+    items: z.optional(z.array(segmentJobStatusItemRawSchema)),
+    video: z.optional(segmentJobVideoStatusRawSchema),
+    error: z.optional(nonEmptyString),
+    error_code: z.optional(nonEmptyString),
   });
+
+export const batchSegmentStatusRawSchema: z.ZodMiniType<BatchSegmentStatusRaw> =
+  segmentJobStatusRawSchema;
 
 function normalizeIssues(
   issues: readonly z.core.$ZodIssue[],

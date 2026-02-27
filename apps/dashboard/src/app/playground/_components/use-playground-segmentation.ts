@@ -120,6 +120,20 @@ function parseNonNegativeInteger(value: string, fieldName: string): number {
 	return parsed;
 }
 
+async function waitFor(ms: number, signal: AbortSignal): Promise<void> {
+	await new Promise<void>((resolve, reject) => {
+		const timer = setTimeout(() => {
+			signal.removeEventListener('abort', onAbort);
+			resolve();
+		}, ms);
+		const onAbort = () => {
+			clearTimeout(timer);
+			reject(new Error('Request aborted'));
+		};
+		signal.addEventListener('abort', onAbort, { once: true });
+	});
+}
+
 const DEFAULT_VIDEO_SAMPLING: PlaygroundVideoSamplingState = {
 	fps: '',
 	maxFrames: '',
@@ -164,11 +178,6 @@ export function usePlaygroundSegmentation() {
 
 	const handleModeChange = useCallback(
 		(nextMode: PlaygroundMode) => {
-			if (nextMode === 'video') {
-				toast.info('Video mode is under construction.');
-				return;
-			}
-
 			runAttemptRef.current += 1;
 			runAbortRef.current?.abort();
 			setMode(nextMode);
@@ -438,7 +447,35 @@ export function usePlaygroundSegmentation() {
 							),
 						};
 
-			const videoResponse = await client.segmentVideo(requestPayload);
+			const accepted = await client.segmentVideo(requestPayload);
+			let videoResponse = null;
+
+			for (let attempt = 0; attempt < 120; attempt += 1) {
+				if (
+					runAttemptRef.current !== runAttempt ||
+					abortController.signal.aborted
+				) {
+					return;
+				}
+
+				const statusResponse = await client.getSegmentJob({
+					jobId: accepted.jobId,
+					signal: abortController.signal,
+				});
+
+				const terminal =
+					statusResponse.status === 'completed' ||
+					statusResponse.status === 'completed_with_errors' ||
+					statusResponse.status === 'failed';
+
+				if (!terminal) {
+					await waitFor(1500, abortController.signal);
+					continue;
+				}
+
+				videoResponse = statusResponse;
+				break;
+			}
 
 			if (
 				runAttemptRef.current !== runAttempt ||
@@ -447,10 +484,25 @@ export function usePlaygroundSegmentation() {
 				return;
 			}
 
+			if (!videoResponse) {
+				throw new Error('Timed out waiting for video segmentation job completion');
+			}
+
+			const videoTask = videoResponse.video;
+			const output = videoTask?.output;
+			const counts = videoTask?.counts;
+			if (
+				videoTask?.status !== 'success' ||
+				!output ||
+				!counts
+			) {
+				throw new Error(videoTask?.error || videoResponse.error || 'Video segmentation failed');
+			}
+
 			setResult({
 				mode: 'video',
 				raw: videoResponse,
-				summary: `Processed ${videoResponse.counts.framesProcessed} frames with ${videoResponse.counts.totalMasks} total masks.`,
+				summary: `Processed ${counts.framesProcessed} frames with ${counts.totalMasks} total masks.`,
 			});
 			setStatus('ready');
 			toast.success('Video segmentation completed');

@@ -2,18 +2,19 @@ import type { ZodMiniType } from "zod/mini";
 import { NetworkError, SegmentationApiError, UploadError } from "./errors";
 import {
   normalizeBatchSegmentAccepted,
-  normalizeBatchSegmentStatus,
   normalizePresignedUpload,
   normalizeSegment,
-  normalizeSegmentVideo,
+  normalizeSegmentJobAccepted,
+  normalizeSegmentJobStatus,
 } from "./normalize";
 import {
+  segmentJobAcceptedRawSchema,
+  segmentJobStatusRawSchema,
   batchSegmentAcceptedRawSchema,
-  batchSegmentStatusRawSchema,
   apiErrorBodySchema,
   createBatchSegmentJobRequestSchema,
   createPresignedUploadRequestSchema,
-  getBatchSegmentJobRequestSchema,
+  getSegmentJobRequestSchema,
   parseInputOrThrow,
   parseResponseOrThrow,
   presignedUploadRawSchema,
@@ -22,24 +23,23 @@ import {
   segmentRequestSchema,
   segmentResponseRawSchema,
   segmentVideoRequestSchema,
-  segmentVideoResponseRawSchema,
   uploadAndSegmentRequestSchema,
   uploadImageRequestSchema,
 } from "./validation";
 import type {
   BatchSegmentAcceptedResult,
-  BatchSegmentStatusResult,
   BinaryData,
   CreateBatchSegmentJobRequest,
   CreatePresignedUploadRequest,
   FetchFunction,
-  GetBatchSegmentJobRequest,
+  GetSegmentJobRequest,
   PresignedUploadResult,
   ResponseBody,
+  SegmentJobStatusResult,
   SegmentRequest,
   SegmentResult,
+  SegmentVideoAcceptedResult,
   SegmentVideoRequest,
-  SegmentVideoResult,
   SegmentationClientOptions,
   UploadAndSegmentRequest,
   UploadImageRequest,
@@ -49,9 +49,7 @@ const DEFAULT_BASE_URL = "https://api.segmentationapi.com/v1";
 const DEFAULT_BASE_URL_JWT = "https://api.segmentationapi.com/v1/jwt";
 const DEFAULT_ASSETS_BASE_URL = "https://assets.segmentationapi.com";
 
-type ClientAuth =
-  | { kind: "apiKey"; value: string }
-  | { kind: "jwt"; value: string };
+type ClientAuth = { kind: "apiKey"; value: string } | { kind: "jwt"; value: string };
 
 function getFetchImplementation(fetchImpl?: FetchFunction): FetchFunction {
   if (fetchImpl) {
@@ -60,9 +58,7 @@ function getFetchImplementation(fetchImpl?: FetchFunction): FetchFunction {
   if (typeof globalThis.fetch === "function") {
     return globalThis.fetch.bind(globalThis);
   }
-  throw new Error(
-    "No fetch implementation found. Provide one in SegmentationClient options.",
-  );
+  throw new Error("No fetch implementation found. Provide one in SegmentationClient options.");
 }
 
 function buildApiUrl(baseUrl: string, path: string): string {
@@ -106,13 +102,9 @@ async function readResponseBody(response: Response): Promise<ResponseBody> {
   }
 }
 
-function extractRequestId(
-  response: Response,
-  body: ResponseBody,
-): string | undefined {
+function extractRequestId(response: Response, body: ResponseBody): string | undefined {
   const headerRequestId =
-    response.headers.get("x-request-id") ??
-    response.headers.get("x-amzn-requestid");
+    response.headers.get("x-request-id") ?? response.headers.get("x-amzn-requestid");
   if (headerRequestId) {
     return headerRequestId;
   }
@@ -148,15 +140,12 @@ export class SegmentationClient {
     } else {
       this.auth = { kind: "jwt", value: parsedOptions.jwt! };
     }
-    this.baseUrl =
-      this.auth.kind === "jwt" ? DEFAULT_BASE_URL_JWT : DEFAULT_BASE_URL;
+    this.baseUrl = this.auth.kind === "jwt" ? DEFAULT_BASE_URL_JWT : DEFAULT_BASE_URL;
     this.assetsBaseUrl = DEFAULT_ASSETS_BASE_URL;
     this.fetchImpl = getFetchImplementation(parsedOptions.fetch);
   }
 
-  async createPresignedUpload(
-    input: CreatePresignedUploadRequest,
-  ): Promise<PresignedUploadResult> {
+  async createPresignedUpload(input: CreatePresignedUploadRequest): Promise<PresignedUploadResult> {
     const parsedInput = parseInputOrThrow(
       createPresignedUploadRequestSchema,
       input,
@@ -177,15 +166,10 @@ export class SegmentationClient {
   }
 
   async uploadImage(input: UploadImageRequest): Promise<void> {
-    const parsedInput = parseInputOrThrow(
-      uploadImageRequestSchema,
-      input,
-      "uploadImage",
-    );
+    const parsedInput = parseInputOrThrow(uploadImageRequestSchema, input, "uploadImage");
 
     const headers = new Headers();
-    const contentType =
-      parsedInput.contentType ?? inferContentType(parsedInput.data);
+    const contentType = parsedInput.contentType ?? inferContentType(parsedInput.data);
     if (contentType) {
       headers.set("Content-Type", contentType);
     }
@@ -218,11 +202,7 @@ export class SegmentationClient {
   }
 
   async segment(input: SegmentRequest): Promise<SegmentResult> {
-    const parsedInput = parseInputOrThrow(
-      segmentRequestSchema,
-      input,
-      "segment",
-    );
+    const parsedInput = parseInputOrThrow(segmentRequestSchema, input, "segment");
 
     const raw = await this.requestApi({
       path: "/segment",
@@ -243,12 +223,8 @@ export class SegmentationClient {
     return normalizeSegment(raw, this.assetsBaseUrl);
   }
 
-  async segmentVideo(input: SegmentVideoRequest): Promise<SegmentVideoResult> {
-    const parsedInput = parseInputOrThrow(
-      segmentVideoRequestSchema,
-      input,
-      "segmentVideo",
-    );
+  async segmentVideo(input: SegmentVideoRequest): Promise<SegmentVideoAcceptedResult> {
+    const parsedInput = parseInputOrThrow(segmentVideoRequestSchema, input, "segmentVideo");
 
     const contentType = inferContentType(parsedInput.file) ?? "application/octet-stream";
     const presignedUpload = await this.createPresignedUpload({
@@ -301,21 +277,19 @@ export class SegmentationClient {
       },
       body: JSON.stringify(requestBody),
       signal: parsedInput.signal,
-      responseSchema: segmentVideoResponseRawSchema,
+      responseSchema: segmentJobAcceptedRawSchema,
       operation: "segmentVideo",
     });
 
-    return normalizeSegmentVideo(raw);
+    const normalized = normalizeSegmentJobAccepted(raw);
+    return {
+      ...normalized,
+      type: "video",
+    };
   }
 
-  async uploadAndSegment(
-    input: UploadAndSegmentRequest,
-  ): Promise<SegmentResult> {
-    const parsedInput = parseInputOrThrow(
-      uploadAndSegmentRequestSchema,
-      input,
-      "uploadAndSegment",
-    );
+  async uploadAndSegment(input: UploadAndSegmentRequest): Promise<SegmentResult> {
+    const parsedInput = parseInputOrThrow(uploadAndSegmentRequestSchema, input, "uploadAndSegment");
 
     const presignedUpload = await this.createPresignedUpload({
       contentType: parsedInput.contentType,
@@ -366,24 +340,18 @@ export class SegmentationClient {
     return normalizeBatchSegmentAccepted(raw);
   }
 
-  async getBatchSegmentJob(
-    input: GetBatchSegmentJobRequest,
-  ): Promise<BatchSegmentStatusResult> {
-    const parsedInput = parseInputOrThrow(
-      getBatchSegmentJobRequestSchema,
-      input,
-      "getBatchSegmentJob",
-    );
+  async getSegmentJob(input: GetSegmentJobRequest): Promise<SegmentJobStatusResult> {
+    const parsedInput = parseInputOrThrow(getSegmentJobRequestSchema, input, "getSegmentJob");
 
     const raw = await this.requestApi({
-      path: `/segment/batch/${encodeURIComponent(parsedInput.jobId)}`,
+      path: `/segment/jobs/${encodeURIComponent(parsedInput.jobId)}`,
       method: "GET",
       signal: parsedInput.signal,
-      responseSchema: batchSegmentStatusRawSchema,
-      operation: "getBatchSegmentJob",
+      responseSchema: segmentJobStatusRawSchema,
+      operation: "getSegmentJob",
     });
 
-    return normalizeBatchSegmentStatus(raw, this.assetsBaseUrl);
+    return normalizeSegmentJobStatus(raw, this.assetsBaseUrl);
   }
 
   private async requestApi<TPayload>(input: {
@@ -419,20 +387,13 @@ export class SegmentationClient {
 
     const parsedBody = await readResponseBody(response);
     if (!response.ok) {
-      throw new SegmentationApiError(
-        `API request failed with status ${response.status}.`,
-        {
-          status: response.status,
-          body: parsedBody,
-          requestId: extractRequestId(response, parsedBody),
-        },
-      );
+      throw new SegmentationApiError(`API request failed with status ${response.status}.`, {
+        status: response.status,
+        body: parsedBody,
+        requestId: extractRequestId(response, parsedBody),
+      });
     }
 
-    return parseResponseOrThrow(
-      input.responseSchema,
-      parsedBody,
-      input.operation,
-    );
+    return parseResponseOrThrow(input.responseSchema, parsedBody, input.operation);
   }
 }

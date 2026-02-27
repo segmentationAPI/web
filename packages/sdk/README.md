@@ -64,7 +64,7 @@ const accepted = await client.createBatchSegmentJob({
   ],
 });
 
-const status = await client.getBatchSegmentJob({ jobId: accepted.jobId });
+const status = await client.getSegmentJob({ jobId: accepted.jobId });
 console.log(status.status, status.successItems, status.failedItems);
 console.log(status.items[0]?.masks?.[0]?.url);
 ```
@@ -72,7 +72,7 @@ console.log(status.items[0]?.masks?.[0]?.url);
 ## Video Segmentation Flow
 
 ```ts
-const videoResult = await client.segmentVideo({
+const accepted = await client.segmentVideo({
   file: videoFile, // Blob/File/Uint8Array
   fps: 2, // or numFrames
   maxFrames: 120,
@@ -86,9 +86,12 @@ const videoResult = await client.segmentVideo({
   clearOldInputs: true,
 });
 
-console.log(videoResult.output.manifestUrl);
-console.log(videoResult.output.framesUrl);
-console.log(videoResult.counts.totalMasks);
+const status = await client.getSegmentJob({ jobId: accepted.jobId });
+if (status.video?.status === "success") {
+  console.log(status.video.output?.manifestUrl);
+  console.log(status.video.output?.framesUrl);
+  console.log(status.video.counts?.totalMasks);
+}
 ```
 
 The SDK uploads the video to S3 first using a presigned URL, then submits the

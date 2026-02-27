@@ -1,7 +1,6 @@
-import { relations, sql, type InferSelectModel } from "drizzle-orm";
+import { relations, type InferSelectModel } from "drizzle-orm";
 import {
   boolean,
-  check,
   doublePrecision,
   index,
   integer,
@@ -19,13 +18,24 @@ import { user } from "./auth";
 // ── Enums ───────────────────────────────────────────────────────────────────────
 
 export const purchaseStatusEnum = pgEnum("purchase_status", ["pending", "completed", "failed"]);
-export const jobStatusEnum = pgEnum("job_status", ["queued", "processing", "success", "failed"]);
-export const jobModalityEnum = pgEnum("job_modality", ["image", "video"]);
-export const batchJobStatusEnum = pgEnum("batch_job_status", [
+export const segAssetTypeEnum = pgEnum("seg_asset_type", ["image", "video"]);
+export const segRequestTypeEnum = pgEnum("seg_request_type", [
+  "image_sync",
+  "image_batch",
+  "video",
+]);
+export const segRequestStatusEnum = pgEnum("seg_request_status", [
   "queued",
   "processing",
   "completed",
   "completed_with_errors",
+  "failed",
+]);
+export const segTaskTypeEnum = pgEnum("seg_task_type", ["image", "video"]);
+export const segTaskStatusEnum = pgEnum("seg_task_status", [
+  "queued",
+  "processing",
+  "success",
   "failed",
 ]);
 
@@ -88,63 +98,47 @@ export const creditPurchase = pgTable(
   ],
 );
 
-// ── Image ───────────────────────────────────────────────────────────────────────
+// ── Segmentation Asset ─────────────────────────────────────────────────────────
 
-export const image = pgTable(
-  "image",
+export const segAsset = pgTable(
+  "seg_asset",
   {
     id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    s3Path: text("s3_path").notNull(),
-    width: integer("width"),
-    height: integer("height"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [
-    uniqueIndex("image_user_id_s3_path_uidx").on(table.userId, table.s3Path),
-    index("image_user_id_idx").on(table.userId),
-  ],
-);
-export type Image = InferSelectModel<typeof image>;
-
-// ── Video Asset ────────────────────────────────────────────────────────────────
-
-export const videoAsset = pgTable(
-  "video_asset",
-  {
-    id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    assetType: segAssetTypeEnum("asset_type").notNull(),
     s3Path: text("s3_path").notNull(),
     mimeType: text("mime_type"),
     sizeBytes: integer("size_bytes"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex("video_asset_user_id_s3_path_uidx").on(table.userId, table.s3Path),
-    index("video_asset_user_id_idx").on(table.userId),
+    uniqueIndex("seg_asset_user_id_s3_path_uidx").on(table.userId, table.s3Path),
+    index("seg_asset_user_id_idx").on(table.userId),
+    index("seg_asset_type_idx").on(table.assetType),
   ],
 );
-export type VideoAsset = InferSelectModel<typeof videoAsset>;
+export type SegAsset = InferSelectModel<typeof segAsset>;
 
-// ── Batch Job ───────────────────────────────────────────────────────────────────
+// ── Segmentation Request ───────────────────────────────────────────────────────
 
-export const batchJob = pgTable(
-  "batch_job",
+export const segRequest = pgTable(
+  "seg_request",
   {
     id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     apiKeyId: text("api_key_id").references(() => apiKey.id, { onDelete: "set null" }),
+    requestType: segRequestTypeEnum("request_type").notNull(),
     prompts: text("prompts").array().notNull(),
-    status: batchJobStatusEnum("status").default("queued").notNull(),
-    totalItems: integer("total_items").default(0).notNull(),
-    successItems: integer("success_items").default(0).notNull(),
-    failedItems: integer("failed_items").default(0).notNull(),
+    status: segRequestStatusEnum("status").default("queued").notNull(),
+    totalTasks: integer("total_tasks").default(0).notNull(),
+    queuedTasks: integer("queued_tasks").default(0).notNull(),
+    processingTasks: integer("processing_tasks").default(0).notNull(),
+    successTasks: integer("success_tasks").default(0).notNull(),
+    failedTasks: integer("failed_tasks").default(0).notNull(),
     errorCode: text("error_code"),
     errorMessage: text("error_message"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -154,28 +148,33 @@ export const batchJob = pgTable(
       .notNull(),
   },
   (table) => [
-    index("batch_job_user_id_idx").on(table.userId),
-    index("batch_job_status_idx").on(table.status),
+    index("seg_request_user_id_idx").on(table.userId),
+    index("seg_request_status_idx").on(table.status),
+    index("seg_request_type_idx").on(table.requestType),
   ],
 );
-export type BatchJob = InferSelectModel<typeof batchJob>;
+export type SegRequest = InferSelectModel<typeof segRequest>;
 
-// ── Job ─────────────────────────────────────────────────────────────────────────
+// ── Segmentation Task ──────────────────────────────────────────────────────────
 
-export const job = pgTable(
-  "job",
+export const segTask = pgTable(
+  "seg_task",
   {
     id: text("id").primaryKey(),
+    requestId: text("request_id")
+      .notNull()
+      .references(() => segRequest.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    apiKeyId: text("api_key_id").references(() => apiKey.id, { onDelete: "set null" }),
-    batchJobId: text("batch_job_id").references(() => batchJob.id, { onDelete: "cascade" }),
-    modality: jobModalityEnum("modality").default("image").notNull(),
-    inputImageId: text("input_image_id").references(() => image.id, { onDelete: "cascade" }),
-    inputVideoId: text("input_video_id").references(() => videoAsset.id, { onDelete: "cascade" }),
-    prompts: text("prompts").array().notNull(),
-    status: jobStatusEnum("status").default("queued").notNull(),
+    taskType: segTaskTypeEnum("task_type").notNull(),
+    status: segTaskStatusEnum("status").default("queued").notNull(),
+    inputAssetId: text("input_asset_id")
+      .notNull()
+      .references(() => segAsset.id, { onDelete: "cascade" }),
+    threshold: doublePrecision("threshold"),
+    maskThreshold: doublePrecision("mask_threshold"),
+    videoParams: jsonb("video_params"),
     errorCode: text("error_code"),
     errorMessage: text("error_message"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -185,52 +184,42 @@ export const job = pgTable(
       .notNull(),
   },
   (table) => [
-    index("job_user_id_idx").on(table.userId),
-    index("job_batch_job_id_idx").on(table.batchJobId),
-    index("job_modality_idx").on(table.modality),
-    index("job_status_idx").on(table.status),
-    check(
-      "job_modality_input_check",
-      sql`(
-        (${table.modality} = 'image' AND ${table.inputImageId} IS NOT NULL AND ${table.inputVideoId} IS NULL)
-        OR
-        (${table.modality} = 'video' AND ${table.inputVideoId} IS NOT NULL AND ${table.inputImageId} IS NULL)
-      )`,
-    ),
+    index("seg_task_request_id_idx").on(table.requestId),
+    index("seg_task_user_id_idx").on(table.userId),
+    index("seg_task_status_idx").on(table.status),
+    index("seg_task_type_idx").on(table.taskType),
   ],
 );
-export type Job = InferSelectModel<typeof job>;
+export type SegTask = InferSelectModel<typeof segTask>;
 
-// ── Job Output Mask ─────────────────────────────────────────────────────────────
+// ── Segmentation Task Masks ────────────────────────────────────────────────────
 
-export const jobOutputMask = pgTable(
-  "job_output_mask",
+export const segTaskMask = pgTable(
+  "seg_task_mask",
   {
     id: text("id").primaryKey(),
-    jobId: text("job_id")
+    taskId: text("task_id")
       .notNull()
-      .references(() => job.id, { onDelete: "cascade" }),
+      .references(() => segTask.id, { onDelete: "cascade" }),
     maskIndex: integer("mask_index").notNull(),
     s3Path: text("s3_path").notNull(),
     score: doublePrecision("score"),
     box: jsonb("box").$type<[number, number, number, number]>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => [
-    index("job_output_mask_job_id_idx").on(table.jobId),
-  ],
+  (table) => [index("seg_task_mask_task_id_idx").on(table.taskId)],
 );
-export type JobOutputMask = InferSelectModel<typeof jobOutputMask>;
+export type SegTaskMask = InferSelectModel<typeof segTaskMask>;
 
-// ── Job Video Output ────────────────────────────────────────────────────────────
+// ── Segmentation Task Video Output ─────────────────────────────────────────────
 
-export const jobVideoOutput = pgTable(
-  "job_video_output",
+export const segTaskVideoOutput = pgTable(
+  "seg_task_video_output",
   {
     id: text("id").primaryKey(),
-    jobId: text("job_id")
+    taskId: text("task_id")
       .notNull()
-      .references(() => job.id, { onDelete: "cascade" }),
+      .references(() => segTask.id, { onDelete: "cascade" }),
     manifestUrl: text("manifest_url").notNull(),
     framesUrl: text("frames_url").notNull(),
     outputS3Prefix: text("output_s3_prefix").notNull(),
@@ -240,11 +229,9 @@ export const jobVideoOutput = pgTable(
     totalMasks: integer("total_masks").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => [
-    uniqueIndex("job_video_output_job_id_uidx").on(table.jobId),
-  ],
+  (table) => [uniqueIndex("seg_task_video_output_task_id_uidx").on(table.taskId)],
 );
-export type JobVideoOutput = InferSelectModel<typeof jobVideoOutput>;
+export type SegTaskVideoOutput = InferSelectModel<typeof segTaskVideoOutput>;
 
 // ── Auto-Label Project ──────────────────────────────────────────────────────────
 
@@ -260,7 +247,9 @@ export const autoLabelProject = pgTable(
     prompts: text("prompts").array().notNull(),
     threshold: doublePrecision("threshold").default(0.5).notNull(),
     maskThreshold: doublePrecision("mask_threshold").default(0.5).notNull(),
-    latestBatchJobId: text("latest_batch_job_id").references(() => batchJob.id, { onDelete: "set null" }),
+    latestRequestId: text("latest_request_id").references(() => segRequest.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -270,12 +259,12 @@ export const autoLabelProject = pgTable(
   (table) => [
     index("auto_label_project_user_id_idx").on(table.userId),
     index("auto_label_project_user_id_created_at_idx").on(table.userId, table.createdAt.desc()),
-    index("auto_label_project_latest_batch_job_id_idx").on(table.latestBatchJobId),
+    index("auto_label_project_latest_request_id_idx").on(table.latestRequestId),
   ],
 );
 export type AutoLabelProject = InferSelectModel<typeof autoLabelProject>;
 
-// ── Auto-Label Project ↔ Image (junction) ───────────────────────────────────────
+// ── Auto-Label Project ↔ Asset (junction) ─────────────────────────────────────
 
 export const autoLabelProjectImage = pgTable(
   "auto_label_project_image",
@@ -285,7 +274,7 @@ export const autoLabelProjectImage = pgTable(
       .references(() => autoLabelProject.id, { onDelete: "cascade" }),
     imageId: text("image_id")
       .notNull()
-      .references(() => image.id, { onDelete: "cascade" }),
+      .references(() => segAsset.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
@@ -297,57 +286,59 @@ export const autoLabelProjectImage = pgTable(
 
 export const apiKeyRelations = relations(apiKey, ({ one, many }) => ({
   user: one(user, { fields: [apiKey.userId], references: [user.id] }),
-  jobs: many(job),
-  batchJobs: many(batchJob),
+  requests: many(segRequest),
 }));
 
 export const creditPurchaseRelations = relations(creditPurchase, ({ one }) => ({
   user: one(user, { fields: [creditPurchase.userId], references: [user.id] }),
 }));
 
-export const imageRelations = relations(image, ({ one, many }) => ({
-  user: one(user, { fields: [image.userId], references: [user.id] }),
-  jobs: many(job),
+export const segAssetRelations = relations(segAsset, ({ one, many }) => ({
+  user: one(user, { fields: [segAsset.userId], references: [user.id] }),
+  tasks: many(segTask),
   projectLinks: many(autoLabelProjectImage),
 }));
 
-export const videoAssetRelations = relations(videoAsset, ({ one, many }) => ({
-  user: one(user, { fields: [videoAsset.userId], references: [user.id] }),
-  jobs: many(job),
+export const segRequestRelations = relations(segRequest, ({ one, many }) => ({
+  user: one(user, { fields: [segRequest.userId], references: [user.id] }),
+  apiKey: one(apiKey, { fields: [segRequest.apiKeyId], references: [apiKey.id] }),
+  tasks: many(segTask),
+  autoLabelProjects: many(autoLabelProject),
 }));
 
-export const batchJobRelations = relations(batchJob, ({ one, many }) => ({
-  user: one(user, { fields: [batchJob.userId], references: [user.id] }),
-  apiKey: one(apiKey, { fields: [batchJob.apiKeyId], references: [apiKey.id] }),
-  jobs: many(job),
+export const segTaskRelations = relations(segTask, ({ one, many }) => ({
+  request: one(segRequest, { fields: [segTask.requestId], references: [segRequest.id] }),
+  user: one(user, { fields: [segTask.userId], references: [user.id] }),
+  inputAsset: one(segAsset, { fields: [segTask.inputAssetId], references: [segAsset.id] }),
+  masks: many(segTaskMask),
+  videoOutput: one(segTaskVideoOutput, {
+    fields: [segTask.id],
+    references: [segTaskVideoOutput.taskId],
+  }),
 }));
 
-export const jobRelations = relations(job, ({ one, many }) => ({
-  user: one(user, { fields: [job.userId], references: [user.id] }),
-  apiKey: one(apiKey, { fields: [job.apiKeyId], references: [apiKey.id] }),
-  batchJob: one(batchJob, { fields: [job.batchJobId], references: [batchJob.id] }),
-  inputImage: one(image, { fields: [job.inputImageId], references: [image.id] }),
-  inputVideo: one(videoAsset, { fields: [job.inputVideoId], references: [videoAsset.id] }),
-  outputMasks: many(jobOutputMask),
-  videoOutput: one(jobVideoOutput, { fields: [job.id], references: [jobVideoOutput.jobId] }),
+export const segTaskMaskRelations = relations(segTaskMask, ({ one }) => ({
+  task: one(segTask, { fields: [segTaskMask.taskId], references: [segTask.id] }),
 }));
 
-export const jobOutputMaskRelations = relations(jobOutputMask, ({ one }) => ({
-  job: one(job, { fields: [jobOutputMask.jobId], references: [job.id] }),
-}));
-
-export const jobVideoOutputRelations = relations(jobVideoOutput, ({ one }) => ({
-  job: one(job, { fields: [jobVideoOutput.jobId], references: [job.id] }),
+export const segTaskVideoOutputRelations = relations(segTaskVideoOutput, ({ one }) => ({
+  task: one(segTask, { fields: [segTaskVideoOutput.taskId], references: [segTask.id] }),
 }));
 
 export const autoLabelProjectRelations = relations(autoLabelProject, ({ one, many }) => ({
   user: one(user, { fields: [autoLabelProject.userId], references: [user.id] }),
   apiKey: one(apiKey, { fields: [autoLabelProject.apiKeyId], references: [apiKey.id] }),
-  latestBatchJob: one(batchJob, { fields: [autoLabelProject.latestBatchJobId], references: [batchJob.id] }),
+  latestRequest: one(segRequest, {
+    fields: [autoLabelProject.latestRequestId],
+    references: [segRequest.id],
+  }),
   imageLinks: many(autoLabelProjectImage),
 }));
 
 export const autoLabelProjectImageRelations = relations(autoLabelProjectImage, ({ one }) => ({
-  project: one(autoLabelProject, { fields: [autoLabelProjectImage.projectId], references: [autoLabelProject.id] }),
-  image: one(image, { fields: [autoLabelProjectImage.imageId], references: [image.id] }),
+  project: one(autoLabelProject, {
+    fields: [autoLabelProjectImage.projectId],
+    references: [autoLabelProject.id],
+  }),
+  asset: one(segAsset, { fields: [autoLabelProjectImage.imageId], references: [segAsset.id] }),
 }));

@@ -32,11 +32,11 @@
   ],
   "scripts": {
     "clean": "rm -rf dist coverage",
-    "build": "tsup",
+    "build:release": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run typecheck"
+    "prepublishOnly": "pnpm run build:release && pnpm run test && pnpm run typecheck"
   },
   "keywords": [
     "segmentation",

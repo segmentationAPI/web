@@ -1,4 +1,4 @@
-import type { SegmentResult, SegmentVideoResult } from '@segmentationapi/sdk';
+import type { SegmentJobStatusResult, SegmentResult } from '@segmentationapi/sdk';
 
 export type PlaygroundMaskPreview = {
 	url: string;
@@ -32,7 +32,7 @@ export type PlaygroundResult =
 	  }
 	| {
 			mode: 'video';
-			raw: SegmentVideoResult;
+			raw: SegmentJobStatusResult;
 			summary: string;
 	  };
 

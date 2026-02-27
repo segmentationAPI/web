@@ -1,15 +1,23 @@
-import type { Job, JobOutputMask } from "@segmentation/db/schema/app";
-
 export type BalanceData = {
   tokenUsageLast24h: number;
   tokensRemaining: number;
 };
 
-export type JobListItem = Job & {
+export type JobListItem = {
+  apiKeyId: string | null;
   apiKeyPrefix: string | null;
+  createdAt: Date;
+  errorCode: string | null;
+  errorMessage: string | null;
+  id: string;
+  modality: "image" | "video";
+  prompts: string[];
+  status: "queued" | "processing" | "success" | "failed";
+  updatedAt: Date;
+  userId: string;
 };
 
-export type JobDetail = Job & {
+export type JobDetail = JobListItem & {
   apiKeyPrefix: string | null;
   inputImageUrl: string | null;
   inputVideoUrl: string | null;
