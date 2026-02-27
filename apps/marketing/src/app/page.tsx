@@ -46,7 +46,7 @@ const sampleRequest = `curl -X POST \\
     "prompts": ["painting"],
     "inputS3Key": "inputs/demo-account/upload-001.png",
     "threshold": 0.5,
-    "mask_threshold": 0.5
+    "maskThreshold": 0.5
   }'`;
 
 export default function HomePage() {

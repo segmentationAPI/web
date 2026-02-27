@@ -16,14 +16,14 @@ const segmentCurl = `curl -X POST \\
     "prompts": ["painting"],
     "inputS3Key": "inputs/demo-account/upload-001.png",
     "threshold": 0.5,
-    "mask_threshold": 0.5
+    "maskThreshold": 0.5
   }'`;
 
 const segmentResponse = `{
   "requestId": "req_demo_001",
-  "job_id": "job_demo_001",
-  "num_instances": 2,
-  "output_prefix": "outputs/demo-account/job_demo_001/",
+  "jobId": "job_demo_001",
+  "numInstances": 2,
+  "outputPrefix": "outputs/demo-account/job_demo_001/",
   "masks": [
     {
       "key": "outputs/demo-account/job_demo_001/mask_0.png",
@@ -62,7 +62,7 @@ const videoAsyncCurl = `curl -X POST \\
   -d '{
     "inputS3Key": "inputs/demo-account/video-001.mp4",
     "points": [[320, 180]],
-    "point_labels": [1]
+    "pointLabels": [1]
   }'`;
 
 const pollCurl = `curl -X GET \\

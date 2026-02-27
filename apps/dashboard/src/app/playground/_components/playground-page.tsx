@@ -41,10 +41,8 @@ export function PlaygroundPageContent() {
             prompts={playground.prompts}
             runButtonState={playground.runButtonState}
             statusMessage={playground.statusMessage}
-            setVideoClearOldInputs={playground.setVideoClearOldInputs}
             setVideoFrameIdx={playground.setVideoFrameIdx}
             videoBoxes={playground.videoBoxes}
-            videoClearOldInputs={playground.videoClearOldInputs}
             videoFrameIdx={playground.videoFrameIdx}
             videoPoints={playground.videoPoints}
             videoPromptMode={playground.videoPromptMode}

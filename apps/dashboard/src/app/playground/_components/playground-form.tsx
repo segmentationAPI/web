@@ -36,12 +36,10 @@ type PlaygroundFormProps = {
 	runButtonState: RunButtonState;
 	statusMessage: string | null;
 	videoBoxes: PlaygroundVideoBox[];
-	videoClearOldInputs: boolean;
 	videoFrameIdx: string;
 	videoPoints: PlaygroundVideoPoint[];
 	videoPromptMode: PlaygroundVideoPromptMode;
 	videoSampling: PlaygroundVideoSamplingState;
-	setVideoClearOldInputs: (value: boolean) => void;
 	setVideoFrameIdx: (value: string) => void;
 };
 
@@ -99,12 +97,10 @@ export function PlaygroundForm({
 	runButtonState,
 	statusMessage,
 	videoBoxes,
-	videoClearOldInputs,
 	videoFrameIdx,
 	videoPoints,
 	videoPromptMode,
 	videoSampling,
-	setVideoClearOldInputs,
 	setVideoFrameIdx,
 }: PlaygroundFormProps) {
 	return (
@@ -220,7 +216,7 @@ export function PlaygroundForm({
 											: 'text-muted-foreground hover:text-foreground'
 									}`}
 								>
-									{samplingMode === 'numFrames' ? 'num_frames' : samplingMode}
+									{samplingMode}
 								</button>
 							))}
 						</div>
@@ -244,7 +240,7 @@ export function PlaygroundForm({
 								onChange={(event) =>
 									onVideoSamplingChange({ numFrames: event.target.value })
 								}
-								placeholder="num_frames"
+								placeholder="numFrames"
 								className="h-9 border-input bg-background/70 text-xs"
 							/>
 						) : null}
@@ -254,7 +250,7 @@ export function PlaygroundForm({
 							min="1"
 							value={videoSampling.maxFrames}
 							onChange={(event) => onVideoSamplingChange({ maxFrames: event.target.value })}
-							placeholder="max_frames (optional)"
+							placeholder="maxFrames (optional)"
 							className="h-9 border-input bg-background/70 text-xs"
 						/>
 					</div>
@@ -288,25 +284,16 @@ export function PlaygroundForm({
 							</button>
 						</div>
 
-						<div className="grid gap-2 sm:grid-cols-2">
+						<div className="grid gap-2">
 							<Input
 								type="number"
 								step="1"
 								min="0"
 								value={videoFrameIdx}
 								onChange={(event) => setVideoFrameIdx(event.target.value)}
-								placeholder="frame_idx"
+								placeholder="frameIdx"
 								className="h-9 border-input bg-background/70 text-xs"
 							/>
-							<label className="flex items-center gap-2 rounded-md border border-border/70 px-2 py-1.5 text-xs text-muted-foreground">
-								<input
-									type="checkbox"
-									checked={videoClearOldInputs}
-									onChange={(event) => setVideoClearOldInputs(event.target.checked)}
-									className="size-3.5"
-								/>
-								clear_old_inputs
-							</label>
 						</div>
 
 						<p className="font-mono text-[10px] uppercase tracking-[0.11em] text-muted-foreground">

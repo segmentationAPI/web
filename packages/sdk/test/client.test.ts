@@ -119,9 +119,9 @@ describe("SegmentationClient", () => {
     const fetchMock = asFetchMock(async () =>
       jsonResponse({
         requestId: "request-jwt",
-        job_id: "job-jwt",
-        num_instances: 1,
-        output_prefix: "outputs/job-jwt/",
+        jobId: "job-jwt",
+        numInstances: 1,
+        outputPrefix: "outputs/job-jwt/",
         masks: [
           {
             key: "outputs/job-jwt/mask_0.png",
@@ -167,12 +167,12 @@ describe("SegmentationClient", () => {
 
       if (url.endsWith("/segment/video")) {
         return jsonResponse({
-          request_id: "video-request-1",
-          job_id: "video-job-1",
+          requestId: "video-request-1",
+          jobId: "video-job-1",
           type: "video",
           status: "queued",
-          total_items: 1,
-          poll_path: "/v1/segment/jobs/video-job-1",
+          totalItems: 1,
+          pollPath: "/v1/jobs/video-job-1",
         });
       }
 
@@ -195,7 +195,6 @@ describe("SegmentationClient", () => {
       pointLabels: [1, 0],
       pointObjectIds: [101, 101],
       frameIdx: 5,
-      clearOldInputs: false,
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -217,22 +216,21 @@ describe("SegmentationClient", () => {
     const body = JSON.parse(String(segmentInit.body)) as Record<string, unknown>;
     expect(body.inputS3Key).toBe("inputs/acct/video.mp4");
     expect(body.fps).toBe(2.5);
-    expect(body.max_frames).toBe(80);
-    expect(body.num_frames).toBeUndefined();
+    expect(body.maxFrames).toBe(80);
+    expect(body.numFrames).toBeUndefined();
     expect(body.points).toEqual([
       [10, 20],
       [30, 40],
     ]);
-    expect(body.point_labels).toEqual([1, 0]);
-    expect(body.point_obj_ids).toEqual([101, 101]);
-    expect(body.frame_idx).toBe(5);
-    expect(body.clear_old_inputs).toBe(false);
+    expect(body.pointLabels).toEqual([1, 0]);
+    expect(body.pointObjectIds).toEqual([101, 101]);
+    expect(body.frameIdx).toBe(5);
 
     expect(result.requestId).toBe("video-request-1");
     expect(result.jobId).toBe("video-job-1");
     expect(result.type).toBe("video");
     expect(result.status).toBe("queued");
-    expect(result.pollPath).toBe("/v1/segment/jobs/video-job-1");
+    expect(result.pollPath).toBe("/v1/jobs/video-job-1");
   });
 
   it("sends bearer authorization header for segmentVideo requests with jwt", async () => {
@@ -254,11 +252,11 @@ describe("SegmentationClient", () => {
       if (url.endsWith("/segment/video")) {
         return jsonResponse({
           requestId: "video-request-jwt",
-          job_id: "video-job-jwt",
+          jobId: "video-job-jwt",
           type: "video",
           status: "queued",
-          total_items: 1,
-          poll_path: "/v1/segment/jobs/video-job-jwt",
+          totalItems: 1,
+          pollPath: "/v1/jobs/video-job-jwt",
         });
       }
 
@@ -294,11 +292,11 @@ describe("SegmentationClient", () => {
       jsonResponse(
         {
           requestId: "batch-jwt-1",
-          job_id: "batch-job-jwt",
+          jobId: "batch-job-jwt",
           type: "image_batch",
           status: "queued",
-          total_items: 1,
-          poll_path: "/v1/segment/jobs/batch-job-jwt",
+          totalItems: 1,
+          pollPath: "/v1/jobs/batch-job-jwt",
         },
         202,
       ),
@@ -341,9 +339,9 @@ describe("SegmentationClient", () => {
       if (url.endsWith("/segment")) {
         return jsonResponse({
           requestId: "request-jwt-3",
-          job_id: "job-jwt-3",
-          num_instances: 1,
-          output_prefix: "outputs/job-jwt-3/",
+          jobId: "job-jwt-3",
+          numInstances: 1,
+          outputPrefix: "outputs/job-jwt-3/",
           masks: [
             {
               key: "outputs/job-jwt-3/mask_0.png",
@@ -400,9 +398,9 @@ describe("SegmentationClient", () => {
     const fetchMock = asFetchMock(async () =>
       jsonResponse({
         requestId: "request-1",
-        job_id: "job-1",
-        num_instances: 1,
-        output_prefix: "outputs/job-1/",
+        jobId: "job-1",
+        numInstances: 1,
+        outputPrefix: "outputs/job-1/",
         masks: [
           {
             key: "outputs/job-1/mask_0.png",
@@ -431,8 +429,7 @@ describe("SegmentationClient", () => {
     expect(body.prompts).toEqual(["painting"]);
     expect(body.inputS3Key).toBe("inputs/demo.png");
     expect(body.threshold).toBe(0.5);
-    expect(body.mask_threshold).toBe(0.6);
-    expect(body.maskThreshold).toBeUndefined();
+    expect(body.maskThreshold).toBe(0.6);
 
     expect(result.jobId).toBe("job-1");
     expect(result.numInstances).toBe(1);
@@ -468,10 +465,10 @@ describe("SegmentationClient", () => {
     });
   });
 
-  it("extracts requestId from request_id error field", async () => {
+  it("extracts requestId from requestId error field", async () => {
     const fetchMock = asFetchMock(
       async () =>
-        new Response(JSON.stringify({ message: "invalid key", request_id: "r-124" }), {
+        new Response(JSON.stringify({ message: "invalid key", requestId: "r-124" }), {
           status: 401,
           headers: {
             "content-type": "application/json",
@@ -689,9 +686,9 @@ describe("SegmentationClient", () => {
     const fetchMock = asFetchMock(async () =>
       jsonResponse({
         requestId: "request-4",
-        job_id: "job-4",
-        num_instances: 1,
-        output_prefix: "outputs/job-4/",
+        jobId: "job-4",
+        numInstances: 1,
+        outputPrefix: "outputs/job-4/",
         masks: [{ key: "outputs/job-4/mask_0.png", score: 0.9, box: "bad" }],
       }),
     );
@@ -729,9 +726,9 @@ describe("SegmentationClient", () => {
       if (url.endsWith("/segment")) {
         return jsonResponse({
           requestId: "request-3",
-          job_id: "job-3",
-          num_instances: 1,
-          output_prefix: "outputs/job-3/",
+          jobId: "job-3",
+          numInstances: 1,
+          outputPrefix: "outputs/job-3/",
           masks: [
             {
               key: "outputs/job-3/mask_0.png",
@@ -773,11 +770,11 @@ describe("SegmentationClient", () => {
       jsonResponse(
         {
           requestId: "batch-request-1",
-          job_id: "batch-job-1",
+          jobId: "batch-job-1",
           type: "image_batch",
           status: "queued",
-          total_items: 2,
-          poll_path: "/v1/segment/jobs/batch-job-1",
+          totalItems: 2,
+          pollPath: "/v1/jobs/batch-job-1",
         },
         202,
       ),
@@ -802,34 +799,33 @@ describe("SegmentationClient", () => {
     const body = JSON.parse(String(init.body)) as Record<string, unknown>;
     expect(body.prompts).toEqual(["cat"]);
     expect(body.threshold).toBe(0.5);
-    expect(body.mask_threshold).toBe(0.6);
-    expect(body.maskThreshold).toBeUndefined();
+    expect(body.maskThreshold).toBe(0.6);
     expect(body.items).toEqual([{ inputS3Key: "inputs/a.png" }, { inputS3Key: "inputs/b.png" }]);
 
     expect(result.requestId).toBe("batch-request-1");
     expect(result.jobId).toBe("batch-job-1");
     expect(result.totalItems).toBe(2);
-    expect(result.pollPath).toBe("/v1/segment/jobs/batch-job-1");
+    expect(result.pollPath).toBe("/v1/jobs/batch-job-1");
   });
 
   it("gets segment job status and normalizes item URLs", async () => {
     const fetchMock = asFetchMock(async () =>
       jsonResponse({
         requestId: "batch-request-2",
-        job_id: "batch-job-2",
+        jobId: "batch-job-2",
         type: "image_batch",
         status: "processing",
-        total_items: 2,
-        queued_items: 0,
-        processing_items: 1,
-        success_items: 1,
-        failed_items: 0,
+        totalItems: 2,
+        queuedItems: 0,
+        processingItems: 1,
+        successItems: 1,
+        failedItems: 0,
         items: [
           {
             jobId: "task-0",
             inputS3Key: "inputs/a.png",
             status: "success",
-            num_instances: 1,
+            numInstances: 1,
             masks: [
               {
                 key: "outputs/batch-job-2/item-0/mask_0.png",
@@ -856,7 +852,7 @@ describe("SegmentationClient", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.segmentationapi.com/v1/segment/jobs/batch-job-2");
+    expect(url).toBe("https://api.segmentationapi.com/v1/jobs/batch-job-2");
     expect(init.method).toBe("GET");
     expect(result.status).toBe("processing");
     expect(result.successItems).toBe(1);
@@ -871,14 +867,14 @@ describe("SegmentationClient", () => {
     const fetchMock = asFetchMock(async () =>
       jsonResponse({
         requestId: "batch-request-2",
-        job_id: "batch-job-2",
+        jobId: "batch-job-2",
         type: "image_batch",
         status: "queued",
-        total_items: 1,
-        queued_items: 1,
-        processing_items: 0,
-        success_items: 0,
-        failed_items: 0,
+        totalItems: 1,
+        queuedItems: 1,
+        processingItems: 0,
+        successItems: 0,
+        failedItems: 0,
         items: [],
       }),
     );
@@ -891,7 +887,7 @@ describe("SegmentationClient", () => {
     await client.getSegmentJob({ jobId: "batch-job-2" });
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.segmentationapi.com/v1/jwt/segment/jobs/batch-job-2");
+    expect(url).toBe("https://api.segmentationapi.com/v1/jwt/jobs/batch-job-2");
     const headers = getHeaders(init);
     expect(headers.get("authorization")).toBe("Bearer jwt_get_token");
     expect(headers.get("x-api-key")).toBeNull();

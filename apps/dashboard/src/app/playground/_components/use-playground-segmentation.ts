@@ -154,7 +154,6 @@ export function usePlaygroundSegmentation() {
 	const [videoPoints, setVideoPoints] = useState<PlaygroundVideoPoint[]>([]);
 	const [videoBoxes, setVideoBoxes] = useState<PlaygroundVideoBox[]>([]);
 	const [videoFrameIdx, setVideoFrameIdx] = useState('0');
-	const [videoClearOldInputs, setVideoClearOldInputs] = useState(true);
 
 	const [status, setStatus] = useState<PlaygroundStatus>('idle');
 	const [result, setResult] = useState<PlaygroundResult | null>(null);
@@ -411,7 +410,6 @@ export function usePlaygroundSegmentation() {
 						: {};
 
 			const basePayload = {
-				clearOldInputs: videoClearOldInputs,
 				file: selectedVideoFile,
 				frameIdx,
 				signal: abortController.signal,
@@ -523,14 +521,13 @@ export function usePlaygroundSegmentation() {
 		mode,
 		prompts,
 		selectedImageFile,
-		selectedVideoFile,
-		status,
-		videoBoxes,
-		videoClearOldInputs,
-		videoFrameIdx,
-		videoPoints,
-		videoPromptMode,
-		videoSampling,
+			selectedVideoFile,
+			status,
+			videoBoxes,
+			videoFrameIdx,
+			videoPoints,
+			videoPromptMode,
+			videoSampling,
 	]);
 
 	const runButtonState: RunButtonState =
@@ -572,18 +569,16 @@ export function usePlaygroundSegmentation() {
 		onVideoPromptModeChange,
 		onVideoSamplingChange,
 		prompts,
-		result,
-		runButtonState,
-		selectedImageFile,
-		selectedVideoFile,
-		setVideoClearOldInputs,
-		setVideoFrameIdx,
-		statusMessage,
-		videoBoxes,
-		videoClearOldInputs,
-		videoFrameIdx,
-		videoPoints,
-		videoPromptMode,
+			result,
+			runButtonState,
+			selectedImageFile,
+			selectedVideoFile,
+			setVideoFrameIdx,
+			statusMessage,
+			videoBoxes,
+			videoFrameIdx,
+			videoPoints,
+			videoPromptMode,
 		videoSampling,
 	};
 }

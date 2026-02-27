@@ -35,7 +35,7 @@ const result = await client.segment({
 });
 
 console.log(result.jobId);
-console.log(result.outputUrl); // https://assets.segmentationapi.com/<output_prefix>
+console.log(result.outputUrl); // https://assets.segmentationapi.com/<outputPrefix>
 console.log(result.masks[0]?.url);
 ```
 
@@ -83,12 +83,11 @@ const accepted = await client.segmentVideo({
   pointLabels: [1, 0],
   pointObjectIds: [1, 1],
   frameIdx: 0,
-  clearOldInputs: true,
 });
 
 const status = await client.getSegmentJob({ jobId: accepted.jobId });
 if (status.video?.status === "success") {
-  console.log(status.video.output?.manifestUrl);
+  console.log(status.video.output?.framesUrl);
   console.log(status.video.output?.framesUrl);
   console.log(status.video.counts?.totalMasks);
 }

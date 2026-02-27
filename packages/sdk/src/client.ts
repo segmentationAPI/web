@@ -1,13 +1,6 @@
 import type { ZodMiniType } from "zod/mini";
 import { NetworkError, SegmentationApiError, UploadError } from "./errors";
 import {
-  normalizeBatchSegmentAccepted,
-  normalizePresignedUpload,
-  normalizeSegment,
-  normalizeSegmentJobAccepted,
-  normalizeSegmentJobStatus,
-} from "./normalize";
-import {
   segmentJobAcceptedRawSchema,
   segmentJobStatusRawSchema,
   batchSegmentAcceptedRawSchema,
@@ -33,6 +26,9 @@ import type {
   CreatePresignedUploadRequest,
   FetchFunction,
   GetSegmentJobRequest,
+  SegmentJobAcceptedRaw,
+  SegmentJobStatusRaw,
+  SegmentResponseRaw,
   PresignedUploadResult,
   ResponseBody,
   SegmentJobStatusResult,
@@ -65,6 +61,12 @@ function buildApiUrl(baseUrl: string, path: string): string {
   const normalizedBase = baseUrl.replace(/\/+$/g, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${normalizedBase}${normalizedPath}`;
+}
+
+function joinUrl(baseUrl: string, path: string): string {
+  const normalizedBase = baseUrl.replace(/\/+$/g, "");
+  const normalizedPath = path.replace(/^\/+/g, "");
+  return `${normalizedBase}/${normalizedPath}`;
 }
 
 function toUploadBody(data: BinaryData): Blob | ArrayBuffer {
@@ -111,15 +113,110 @@ function extractRequestId(response: Response, body: ResponseBody): string | unde
 
   const parsed = apiErrorBodySchema.safeParse(body);
   if (parsed.success) {
-    if (parsed.data.requestId !== undefined) {
+    if (parsed.data.requestId) {
       return parsed.data.requestId;
-    }
-    if (parsed.data.request_id !== undefined) {
-      return parsed.data.request_id;
     }
   }
 
   return undefined;
+}
+
+function buildPresignedUploadResult(raw: PresignedUploadResult["raw"]): PresignedUploadResult {
+  return {
+    uploadUrl: raw.uploadUrl,
+    inputS3Key: raw.inputS3Key,
+    bucket: raw.bucket,
+    expiresIn: raw.expiresIn,
+    raw,
+  };
+}
+
+function buildSegmentResult(raw: SegmentResponseRaw, assetsBaseUrl: string): SegmentResult {
+  return {
+    requestId: raw.requestId ?? "",
+    jobId: raw.jobId,
+    numInstances: raw.numInstances,
+    outputPrefix: raw.outputPrefix,
+    outputUrl: joinUrl(assetsBaseUrl, raw.outputPrefix),
+    masks: raw.masks.map((mask) => ({
+      key: mask.key,
+      score: mask.score,
+      box: mask.box,
+      url: joinUrl(assetsBaseUrl, mask.key),
+    })),
+    raw,
+  };
+}
+
+function buildSegmentJobAcceptedResult(
+  raw: SegmentJobAcceptedRaw,
+): SegmentVideoAcceptedResult | BatchSegmentAcceptedResult {
+  return {
+    requestId: raw.requestId ?? "",
+    jobId: raw.jobId,
+    type: raw.type,
+    status: raw.status,
+    totalItems: raw.totalItems,
+    pollPath: raw.pollPath,
+    raw,
+  };
+}
+
+function buildSegmentJobStatusResult(
+  raw: SegmentJobStatusRaw,
+  assetsBaseUrl: string,
+): SegmentJobStatusResult {
+  return {
+    requestId: raw.requestId ?? "",
+    jobId: raw.jobId,
+    type: raw.type,
+    status: raw.status,
+    totalItems: raw.totalItems,
+    queuedItems: raw.queuedItems,
+    processingItems: raw.processingItems,
+    successItems: raw.successItems,
+    failedItems: raw.failedItems,
+    items: raw.items?.map((item) => ({
+      jobId: item.jobId,
+      inputS3Key: item.inputS3Key,
+      status: item.status,
+      numInstances: item.numInstances ?? undefined,
+      masks: item.masks?.map((mask) => ({
+        key: mask.key,
+        score: mask.score ?? undefined,
+        box: mask.box ?? undefined,
+        url: joinUrl(assetsBaseUrl, mask.key),
+      })),
+      error: item.error ?? undefined,
+      errorCode: item.errorCode ?? undefined,
+    })),
+    video: raw.video
+      ? {
+          jobId: raw.video.jobId,
+          inputS3Key: raw.video.inputS3Key,
+          status: raw.video.status,
+          output: raw.video.output
+            ? {
+                framesUrl: raw.video.output.framesUrl,
+                outputS3Prefix: raw.video.output.outputS3Prefix,
+                maskEncoding: raw.video.output.maskEncoding,
+              }
+            : undefined,
+          counts: raw.video.counts
+            ? {
+                framesProcessed: raw.video.counts.framesProcessed,
+                framesWithMasks: raw.video.counts.framesWithMasks,
+                totalMasks: raw.video.counts.totalMasks,
+              }
+            : undefined,
+          error: raw.video.error ?? undefined,
+          errorCode: raw.video.errorCode ?? undefined,
+        }
+      : undefined,
+    error: raw.error,
+    errorCode: raw.errorCode,
+    raw,
+  };
 }
 
 export class SegmentationClient {
@@ -162,7 +259,7 @@ export class SegmentationClient {
       operation: "createPresignedUpload",
     });
 
-    return normalizePresignedUpload(raw);
+    return buildPresignedUploadResult(raw);
   }
 
   async uploadImage(input: UploadImageRequest): Promise<void> {
@@ -213,14 +310,14 @@ export class SegmentationClient {
         prompts: parsedInput.prompts,
         inputS3Key: parsedInput.inputS3Key,
         threshold: parsedInput.threshold,
-        mask_threshold: parsedInput.maskThreshold,
+        maskThreshold: parsedInput.maskThreshold,
       }),
       signal: parsedInput.signal,
       responseSchema: segmentResponseRawSchema,
       operation: "segment",
     });
 
-    return normalizeSegment(raw, this.assetsBaseUrl);
+    return buildSegmentResult(raw, this.assetsBaseUrl);
   }
 
   async segmentVideo(input: SegmentVideoRequest): Promise<SegmentVideoAcceptedResult> {
@@ -241,32 +338,31 @@ export class SegmentationClient {
 
     const requestBody: Record<string, unknown> = {
       inputS3Key: presignedUpload.inputS3Key,
-      frame_idx: parsedInput.frameIdx ?? 0,
-      clear_old_inputs: parsedInput.clearOldInputs ?? true,
+      frameIdx: parsedInput.frameIdx ?? 0,
     };
 
     if (parsedInput.fps !== undefined) {
       requestBody.fps = parsedInput.fps;
     }
     if (parsedInput.numFrames !== undefined) {
-      requestBody.num_frames = parsedInput.numFrames;
+      requestBody.numFrames = parsedInput.numFrames;
     }
     if (parsedInput.maxFrames !== undefined) {
-      requestBody.max_frames = parsedInput.maxFrames;
+      requestBody.maxFrames = parsedInput.maxFrames;
     }
 
     if (parsedInput.points !== undefined) {
       requestBody.points = parsedInput.points;
       if (parsedInput.pointLabels !== undefined) {
-        requestBody.point_labels = parsedInput.pointLabels;
+        requestBody.pointLabels = parsedInput.pointLabels;
       }
       if (parsedInput.pointObjectIds !== undefined) {
-        requestBody.point_obj_ids = parsedInput.pointObjectIds;
+        requestBody.pointObjectIds = parsedInput.pointObjectIds;
       }
     } else {
       requestBody.boxes = parsedInput.boxes;
       if (parsedInput.boxObjectIds !== undefined) {
-        requestBody.box_obj_ids = parsedInput.boxObjectIds;
+        requestBody.boxObjectIds = parsedInput.boxObjectIds;
       }
     }
 
@@ -281,9 +377,8 @@ export class SegmentationClient {
       operation: "segmentVideo",
     });
 
-    const normalized = normalizeSegmentJobAccepted(raw);
     return {
-      ...normalized,
+      ...buildSegmentJobAcceptedResult(raw),
       type: "video",
     };
   }
@@ -329,7 +424,7 @@ export class SegmentationClient {
       body: JSON.stringify({
         prompts: parsedInput.prompts,
         threshold: parsedInput.threshold,
-        mask_threshold: parsedInput.maskThreshold,
+        maskThreshold: parsedInput.maskThreshold,
         items: parsedInput.items,
       }),
       signal: parsedInput.signal,
@@ -337,21 +432,24 @@ export class SegmentationClient {
       operation: "createBatchSegmentJob",
     });
 
-    return normalizeBatchSegmentAccepted(raw);
+    return {
+      ...buildSegmentJobAcceptedResult(raw),
+      type: "image_batch",
+    };
   }
 
   async getSegmentJob(input: GetSegmentJobRequest): Promise<SegmentJobStatusResult> {
     const parsedInput = parseInputOrThrow(getSegmentJobRequestSchema, input, "getSegmentJob");
 
     const raw = await this.requestApi({
-      path: `/segment/jobs/${encodeURIComponent(parsedInput.jobId)}`,
+      path: `/jobs/${encodeURIComponent(parsedInput.jobId)}`,
       method: "GET",
       signal: parsedInput.signal,
       responseSchema: segmentJobStatusRawSchema,
       operation: "getSegmentJob",
     });
 
-    return normalizeSegmentJobStatus(raw, this.assetsBaseUrl);
+    return buildSegmentJobStatusResult(raw, this.assetsBaseUrl);
   }
 
   private async requestApi<TPayload>(input: {

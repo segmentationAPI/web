@@ -197,7 +197,6 @@ const segmentVideoBaseSchema = z.object({
   file: binaryDataSchema,
   maxFrames: z.optional(finiteInteger),
   frameIdx: z.optional(finiteInteger),
-  clearOldInputs: z.optional(z.boolean()),
   text: z.optional(z.never("Field `text` is not supported for video segmentation.")),
   signal: abortSignalSchema,
 });
@@ -261,7 +260,6 @@ export const responseBodyRecordSchema = z.record(z.string(), z.unknown());
 
 export const apiErrorBodySchema = z.object({
   requestId: z.optional(z.string()),
-  request_id: z.optional(z.string()),
 });
 
 export const presignedUploadRawSchema: z.ZodMiniType<PresignedUploadRaw> =
@@ -281,22 +279,20 @@ export const segmentMaskRawSchema: z.ZodMiniType<SegmentMaskRaw> = z.object({
 export const segmentResponseRawSchema: z.ZodMiniType<SegmentResponseRaw> =
   z.object({
     requestId: z.optional(z.string()),
-    request_id: z.optional(z.string()),
-    job_id: nonEmptyString,
-    num_instances: finiteNumber,
-    output_prefix: nonEmptyString,
+    jobId: nonEmptyString,
+    numInstances: finiteNumber,
+    outputPrefix: nonEmptyString,
     masks: z.array(segmentMaskRawSchema),
   });
 
 export const segmentJobAcceptedRawSchema: z.ZodMiniType<SegmentJobAcceptedRaw> =
   z.object({
     requestId: z.optional(z.string()),
-    request_id: z.optional(z.string()),
-    job_id: nonEmptyString,
+    jobId: nonEmptyString,
     type: z.enum(["image_batch", "video"]),
     status: z.literal("queued"),
-    total_items: finiteNumber,
-    poll_path: nonEmptyString,
+    totalItems: finiteNumber,
+    pollPath: nonEmptyString,
   });
 
 export const batchSegmentAcceptedRawSchema: z.ZodMiniType<BatchSegmentAcceptedRaw> =
@@ -313,10 +309,10 @@ export const segmentJobStatusItemRawSchema = z.object({
   jobId: nonEmptyString,
   inputS3Key: nonEmptyString,
   status: z.enum(["queued", "processing", "success", "failed"]),
-  num_instances: z.optional(z.nullable(finiteNumber)),
+  numInstances: z.optional(z.nullable(finiteNumber)),
   masks: z.optional(z.nullable(z.array(batchSegmentMaskRawSchema))),
   error: z.optional(z.nullable(nonEmptyString)),
-  error_code: z.optional(z.nullable(nonEmptyString)),
+  errorCode: z.optional(z.nullable(nonEmptyString)),
 });
 
 export const segmentJobVideoStatusRawSchema = z.object({
@@ -325,28 +321,26 @@ export const segmentJobVideoStatusRawSchema = z.object({
   status: z.enum(["queued", "processing", "success", "failed"]),
   output: z.optional(
     z.object({
-      manifest_url: nonEmptyString,
-      frames_url: nonEmptyString,
-      output_s3_prefix: nonEmptyString,
-      mask_encoding: nonEmptyString,
+      framesUrl: nonEmptyString,
+      outputS3Prefix: nonEmptyString,
+      maskEncoding: nonEmptyString,
     }),
   ),
   counts: z.optional(
     z.object({
-      frames_processed: finiteInteger,
-      frames_with_masks: finiteInteger,
-      total_masks: finiteInteger,
+      framesProcessed: finiteInteger,
+      framesWithMasks: finiteInteger,
+      totalMasks: finiteInteger,
     }),
   ),
   error: z.optional(z.nullable(nonEmptyString)),
-  error_code: z.optional(z.nullable(nonEmptyString)),
+  errorCode: z.optional(z.nullable(nonEmptyString)),
 });
 
 export const segmentJobStatusRawSchema: z.ZodMiniType<SegmentJobStatusRaw> =
   z.object({
     requestId: z.optional(z.string()),
-    request_id: z.optional(z.string()),
-    job_id: nonEmptyString,
+    jobId: nonEmptyString,
     type: z.enum(["image_sync", "image_batch", "video"]),
     status: z.enum([
       "queued",
@@ -355,15 +349,15 @@ export const segmentJobStatusRawSchema: z.ZodMiniType<SegmentJobStatusRaw> =
       "completed_with_errors",
       "failed",
     ]),
-    total_items: finiteNumber,
-    queued_items: finiteNumber,
-    processing_items: finiteNumber,
-    success_items: finiteNumber,
-    failed_items: finiteNumber,
+    totalItems: finiteNumber,
+    queuedItems: finiteNumber,
+    processingItems: finiteNumber,
+    successItems: finiteNumber,
+    failedItems: finiteNumber,
     items: z.optional(z.array(segmentJobStatusItemRawSchema)),
     video: z.optional(segmentJobVideoStatusRawSchema),
     error: z.optional(nonEmptyString),
-    error_code: z.optional(nonEmptyString),
+    errorCode: z.optional(nonEmptyString),
   });
 
 export const batchSegmentStatusRawSchema: z.ZodMiniType<BatchSegmentStatusRaw> =

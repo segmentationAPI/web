@@ -69,7 +69,6 @@ export type SegmentVideoRequest = (SegmentVideoPointsPrompt | SegmentVideoBoxesP
     file: BinaryData;
     maxFrames?: number;
     frameIdx?: number;
-    clearOldInputs?: boolean;
     signal?: AbortSignal;
   };
 
@@ -121,10 +120,9 @@ export interface SegmentMaskRaw {
 
 export interface SegmentResponseRaw {
   requestId?: string;
-  request_id?: string;
-  job_id: string;
-  num_instances: number;
-  output_prefix: string;
+  jobId: string;
+  numInstances: number;
+  outputPrefix: string;
   masks: SegmentMaskRaw[];
 }
 
@@ -140,12 +138,11 @@ export type SegmentJobTaskStatus = "queued" | "processing" | "success" | "failed
 
 export interface SegmentJobAcceptedRaw {
   requestId?: string;
-  request_id?: string;
-  job_id: string;
+  jobId: string;
   type: SegmentJobAcceptedType;
   status: "queued";
-  total_items: number;
-  poll_path: string;
+  totalItems: number;
+  pollPath: string;
 }
 
 export interface BatchSegmentAcceptedRaw extends SegmentJobAcceptedRaw {}
@@ -160,23 +157,22 @@ export interface SegmentJobStatusImageItemRaw {
   jobId: string;
   inputS3Key: string;
   status: SegmentJobTaskStatus;
-  num_instances?: number | null;
+  numInstances?: number | null;
   masks?: BatchSegmentMaskRaw[] | null;
   error?: string | null;
-  error_code?: string | null;
+  errorCode?: string | null;
 }
 
 export interface SegmentJobVideoOutputRaw {
-  manifest_url: string;
-  frames_url: string;
-  output_s3_prefix: string;
-  mask_encoding: string;
+  framesUrl: string;
+  outputS3Prefix: string;
+  maskEncoding: string;
 }
 
 export interface SegmentJobVideoCountsRaw {
-  frames_processed: number;
-  frames_with_masks: number;
-  total_masks: number;
+  framesProcessed: number;
+  framesWithMasks: number;
+  totalMasks: number;
 }
 
 export interface SegmentJobVideoStatusRaw {
@@ -186,24 +182,23 @@ export interface SegmentJobVideoStatusRaw {
   output?: SegmentJobVideoOutputRaw;
   counts?: SegmentJobVideoCountsRaw;
   error?: string | null;
-  error_code?: string | null;
+  errorCode?: string | null;
 }
 
 export interface SegmentJobStatusRaw {
   requestId?: string;
-  request_id?: string;
-  job_id: string;
+  jobId: string;
   type: SegmentJobType;
   status: SegmentJobRequestStatus;
-  total_items: number;
-  queued_items: number;
-  processing_items: number;
-  success_items: number;
-  failed_items: number;
+  totalItems: number;
+  queuedItems: number;
+  processingItems: number;
+  successItems: number;
+  failedItems: number;
   items?: SegmentJobStatusImageItemRaw[];
   video?: SegmentJobVideoStatusRaw;
   error?: string;
-  error_code?: string;
+  errorCode?: string;
 }
 
 export interface BatchSegmentStatusItemRaw extends SegmentJobStatusImageItemRaw {}
@@ -275,7 +270,6 @@ export interface SegmentJobVideoStatus {
   inputS3Key: string;
   status: SegmentJobTaskStatus;
   output?: {
-    manifestUrl: string;
     framesUrl: string;
     outputS3Prefix: string;
     maskEncoding: string;
