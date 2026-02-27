@@ -6,7 +6,6 @@ import {
   autoLabelProject,
   autoLabelProjectImage,
   segAsset,
-  segRequest,
 } from "@segmentation/db/schema/app";
 import { SegmentationClient } from "@segmentationapi/sdk";
 import type { CreateBatchSegmentJobRequest } from "@segmentationapi/sdk";
@@ -16,12 +15,14 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 
+import { getDynamoJob } from "@/lib/server/aws/dynamo";
 import { requirePageSession } from "@/lib/server/page-auth";
 import { createProjectSchema, registerImagesSchema, updateProjectSchema } from "./schemas";
 
 // ── Types ────────────────────────────────────────────────────────────────────────
 
 type ProjectStatus = "Running" | "Ready" | "Draft";
+type ActiveJob = Awaited<ReturnType<typeof getDynamoJob>>;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
@@ -40,7 +41,7 @@ async function findUserProject(userId: string, projectId: string) {
 
 function deriveProjectStatus(
   imageCount: number,
-  job: typeof segRequest.$inferSelect | null,
+  job: ActiveJob | null,
 ): ProjectStatus {
   if (job && (job.status === "queued" || job.status === "processing")) {
     return "Running";
@@ -79,16 +80,20 @@ export async function getProjects() {
         .where(inArray(autoLabelProjectImage.projectId, projectIds))
         .groupBy(autoLabelProjectImage.projectId),
       requestIds.length > 0
-        ? db.select().from(segRequest).where(inArray(segRequest.id, requestIds))
-        : [],
+        ? Promise.all(requestIds.map((requestId) => getDynamoJob(session.user.id, requestId)))
+        : Promise.resolve([]),
     ]);
 
     const imagesByProject = Object.fromEntries(counts.map((r) => [r.projectId, r.count]));
-    const jobsById = Object.fromEntries(jobs.map((j) => [j.id, j]));
+    const jobsById = new Map(
+      jobs
+        .filter((job): job is NonNullable<ActiveJob> => Boolean(job))
+        .map((job) => [job.jobId, job]),
+    );
 
     const enriched = projects.map((p) => {
       const imageCount = imagesByProject[p.id] ?? 0;
-      const job = p.latestRequestId ? (jobsById[p.latestRequestId] ?? null) : null;
+      const job = p.latestRequestId ? (jobsById.get(p.latestRequestId) ?? null) : null;
 
       return {
         ...p,
@@ -132,14 +137,7 @@ export async function getProject(projectId: string) {
         .innerJoin(segAsset, eq(autoLabelProjectImage.imageId, segAsset.id))
         .where(eq(autoLabelProjectImage.projectId, projectId))
         .orderBy(desc(segAsset.createdAt)),
-      project.latestRequestId
-        ? db
-            .select()
-            .from(segRequest)
-            .where(eq(segRequest.id, project.latestRequestId))
-            .limit(1)
-            .then(([j]) => j ?? null)
-        : null,
+      project.latestRequestId ? getDynamoJob(session.user.id, project.latestRequestId) : null,
     ]);
 
     return { project, images, activeRequest, ok: true as const };

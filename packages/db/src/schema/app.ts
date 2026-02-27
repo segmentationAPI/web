@@ -115,6 +115,7 @@ export const autoLabelProject = pgTable(
     prompts: text("prompts").array().notNull(),
     threshold: doublePrecision("threshold").default(0.5).notNull(),
     maskThreshold: doublePrecision("mask_threshold").default(0.5).notNull(),
+    latestRequestId: text("latest_request_id"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -124,6 +125,7 @@ export const autoLabelProject = pgTable(
   (table) => [
     index("auto_label_project_user_id_idx").on(table.userId),
     index("auto_label_project_user_id_created_at_idx").on(table.userId, table.createdAt.desc()),
+    index("auto_label_project_latest_request_id_idx").on(table.latestRequestId),
   ],
 );
 export type AutoLabelProject = InferSelectModel<typeof autoLabelProject>;
@@ -148,7 +150,7 @@ export const autoLabelProjectImage = pgTable(
 
 // ── Relations ───────────────────────────────────────────────────────────────────
 
-export const apiKeyRelations = relations(apiKey, ({ one, many }) => ({
+export const apiKeyRelations = relations(apiKey, ({ one }) => ({
   user: one(user, { fields: [apiKey.userId], references: [user.id] }),
 }));
 

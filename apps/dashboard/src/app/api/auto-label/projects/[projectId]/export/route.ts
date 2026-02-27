@@ -1,10 +1,11 @@
 import { db } from "@segmentation/db";
-import { autoLabelProject, segAsset, segTask, segTaskMask } from "@segmentation/db/schema/app";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { autoLabelProject } from "@segmentation/db/schema/app";
+import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import archiver from "archiver";
 
 import { requirePageSession } from "@/lib/server/page-auth";
+import { listDynamoTasksForJob } from "@/lib/server/aws/dynamo";
 import { buildAssetUrl } from "@/lib/server/aws/s3";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -203,56 +204,31 @@ export async function GET(
   if (!project.latestRequestId)
     return new NextResponse("No segmentation request has been run yet", { status: 400 });
 
-  const successfulJobs = await db
-    .select({
-      jobId: segTask.id,
-      s3Path: segAsset.s3Path,
-      width: sql<number | null>`NULL`,
-      height: sql<number | null>`NULL`,
-    })
-    .from(segTask)
-    .innerJoin(segAsset, eq(segTask.inputAssetId, segAsset.id))
-    .where(
-      and(
-        eq(segTask.requestId, project.latestRequestId),
-        eq(segTask.userId, session.user.id),
-        eq(segTask.taskType, "image"),
-        eq(segTask.status, "success"),
-      ),
-    );
+  const tasks = await listDynamoTasksForJob(session.user.id, project.latestRequestId);
+  const successfulJobs = tasks
+    .filter((task) => task.taskType === "image" && task.status === "success" && task.inputS3Key)
+    .map((task) => ({
+      jobId: task.id,
+      s3Path: task.inputS3Key as string,
+      width: null,
+      height: null,
+      masks: task.masks,
+    }));
 
   if (successfulJobs.length === 0) {
     return new NextResponse("No completed masks available for export", { status: 404 });
-  }
-
-  const jobIds = successfulJobs.map((j) => String(j.jobId));
-  const masks = await db
-    .select()
-    .from(segTaskMask)
-    .where(inArray(segTaskMask.taskId, jobIds))
-    .orderBy(segTaskMask.maskIndex);
-
-  const masksByJob = new Map<string, MaskEntry[]>();
-  for (const m of masks) {
-    const entry: MaskEntry = {
-      s3Path: m.s3Path,
-      maskIndex: m.maskIndex,
-      score: m.score,
-      box: m.box,
-    };
-    const existing = masksByJob.get(m.taskId);
-    if (existing) {
-      existing.push(entry);
-    } else {
-      masksByJob.set(m.taskId, [entry]);
-    }
   }
 
   const items: ExportItem[] = successfulJobs.map((j) => ({
     fileName: fileNameFromS3Path(String(j.s3Path)),
     imageWidth: j.width,
     imageHeight: j.height,
-    masks: masksByJob.get(String(j.jobId)) ?? [],
+    masks: j.masks.map((mask) => ({
+      s3Path: mask.s3Path,
+      maskIndex: mask.maskIndex,
+      score: mask.score,
+      box: mask.box,
+    })),
   }));
 
   const archive = archiver("zip", { zlib: { level: 5 } });
