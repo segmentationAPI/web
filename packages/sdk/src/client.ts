@@ -1,11 +1,10 @@
 import type { ZodMiniType } from "zod/mini";
 import { NetworkError, SegmentationApiError, UploadError } from "./errors";
 import {
-  segmentJobAcceptedRawSchema,
-  segmentJobStatusRawSchema,
-  batchSegmentAcceptedRawSchema,
+  jobAcceptedRawSchema,
+  jobStatusRawSchema,
   apiErrorBodySchema,
-  createBatchSegmentJobRequestSchema,
+  createJobRequestSchema,
   createPresignedUploadRequestSchema,
   getSegmentJobRequestSchema,
   parseInputOrThrow,
@@ -13,31 +12,25 @@ import {
   presignedUploadRawSchema,
   responseBodyRecordSchema,
   segmentationClientOptionsSchema,
-  segmentRequestSchema,
-  segmentResponseRawSchema,
   segmentVideoRequestSchema,
-  uploadAndSegmentRequestSchema,
+  uploadAndCreateJobRequestSchema,
   uploadImageRequestSchema,
 } from "./validation";
 import type {
-  BatchSegmentAcceptedResult,
   BinaryData,
-  CreateBatchSegmentJobRequest,
+  CreateJobRequest,
   CreatePresignedUploadRequest,
   FetchFunction,
   GetSegmentJobRequest,
-  SegmentJobAcceptedRaw,
-  SegmentJobStatusRaw,
-  SegmentResponseRaw,
+  JobAcceptedRaw,
+  JobAcceptedResult,
+  JobStatusRaw,
   PresignedUploadResult,
   ResponseBody,
-  SegmentJobStatusResult,
-  SegmentRequest,
-  SegmentResult,
-  SegmentVideoAcceptedResult,
+  JobStatusResult,
   SegmentVideoRequest,
   SegmentationClientOptions,
-  UploadAndSegmentRequest,
+  UploadAndCreateJobRequest,
   UploadImageRequest,
 } from "./types";
 
@@ -138,41 +131,21 @@ function buildPresignedUploadResult(raw: PresignedUploadResult["raw"]): Presigne
   };
 }
 
-function buildSegmentResult(raw: SegmentResponseRaw, assetsBaseUrl: string): SegmentResult {
-  return {
-    requestId: raw.requestId ?? "",
-    jobId: raw.jobId,
-    numInstances: raw.numInstances,
-    outputPrefix: raw.outputPrefix,
-    outputUrl: joinUrl(assetsBaseUrl, raw.outputPrefix),
-    masks: raw.masks.map((mask) => ({
-      key: mask.key,
-      score: mask.score,
-      box: mask.box,
-      url: joinUrl(assetsBaseUrl, mask.key),
-    })),
-    raw,
-  };
-}
-
-function buildSegmentJobAcceptedResult(
-  raw: SegmentJobAcceptedRaw,
-): SegmentVideoAcceptedResult | BatchSegmentAcceptedResult {
+function buildJobAcceptedResult(raw: JobAcceptedRaw): JobAcceptedResult {
   return {
     requestId: raw.requestId ?? "",
     jobId: raw.jobId,
     type: raw.type,
     status: raw.status,
     totalItems: raw.totalItems,
-    pollPath: raw.pollPath,
     raw,
   };
 }
 
-function buildSegmentJobStatusResult(
-  raw: SegmentJobStatusRaw,
+function buildJobStatusResult(
+  raw: JobStatusRaw,
   assetsBaseUrl: string,
-): SegmentJobStatusResult {
+): JobStatusResult {
   return {
     requestId: raw.requestId ?? "",
     jobId: raw.jobId,
@@ -184,10 +157,9 @@ function buildSegmentJobStatusResult(
     successItems: raw.successItems,
     failedItems: raw.failedItems,
     items: raw.items?.map((item) => ({
-      jobId: item.jobId,
+      workId: item.workId,
       inputS3Key: item.inputS3Key,
       status: item.status,
-      numInstances: item.numInstances ?? undefined,
       masks: item.masks?.map((mask) => ({
         key: mask.key,
         score: mask.score ?? undefined,
@@ -195,33 +167,8 @@ function buildSegmentJobStatusResult(
         url: joinUrl(assetsBaseUrl, mask.key),
       })),
       error: item.error ?? undefined,
-      errorCode: item.errorCode ?? undefined,
     })),
-    video: raw.video
-      ? {
-          jobId: raw.video.jobId,
-          inputS3Key: raw.video.inputS3Key,
-          status: raw.video.status,
-          output: raw.video.output
-            ? {
-                framesUrl: raw.video.output.framesUrl,
-                outputS3Prefix: raw.video.output.outputS3Prefix,
-                maskEncoding: raw.video.output.maskEncoding,
-              }
-            : undefined,
-          counts: raw.video.counts
-            ? {
-                framesProcessed: raw.video.counts.framesProcessed,
-                framesWithMasks: raw.video.counts.framesWithMasks,
-                totalMasks: raw.video.counts.totalMasks,
-              }
-            : undefined,
-          error: raw.video.error ?? undefined,
-          errorCode: raw.video.errorCode ?? undefined,
-        }
-      : undefined,
     error: raw.error,
-    errorCode: raw.errorCode,
     raw,
   };
 }
@@ -305,40 +252,7 @@ export class SegmentationClient {
     }
   }
 
-  async segment(input: SegmentRequest): Promise<SegmentResult> {
-    const parsedInput = parseInputOrThrow(segmentRequestSchema, input, "segment");
-    const prompts = normalizePrompts(parsedInput.prompts);
-
-    const payload: Record<string, unknown> = {
-      inputS3Key: parsedInput.inputS3Key,
-      threshold: parsedInput.threshold,
-      maskThreshold: parsedInput.maskThreshold,
-    };
-    if (prompts.length > 0) {
-      payload.prompts = prompts;
-    }
-    if (parsedInput.boxes !== undefined) {
-      payload.boxes = parsedInput.boxes;
-    }
-    if (parsedInput.boxLabels !== undefined) {
-      payload.boxLabels = parsedInput.boxLabels;
-    }
-
-    const raw = await this.requestApi({
-      path: "/segment",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(payload),
-      signal: parsedInput.signal,
-      responseSchema: segmentResponseRawSchema,
-      operation: "segment",
-    });
-
-    return buildSegmentResult(raw, this.assetsBaseUrl);
-  }
-
-  async segmentVideo(input: SegmentVideoRequest): Promise<SegmentVideoAcceptedResult> {
+  async segmentVideo(input: SegmentVideoRequest): Promise<JobAcceptedResult> {
     const parsedInput = parseInputOrThrow(segmentVideoRequestSchema, input, "segmentVideo");
 
     const contentType = inferContentType(parsedInput.file) ?? "application/octet-stream";
@@ -355,7 +269,8 @@ export class SegmentationClient {
     });
 
     const requestBody: Record<string, unknown> = {
-      inputS3Key: presignedUpload.inputS3Key,
+      type: "video",
+      items: [{ inputS3Key: presignedUpload.inputS3Key }],
       frameIdx: parsedInput.frameIdx ?? 0,
     };
 
@@ -370,75 +285,43 @@ export class SegmentationClient {
     }
 
     if (parsedInput.points !== undefined) {
-      requestBody.points = parsedInput.points;
-      if (parsedInput.pointLabels !== undefined) {
-        requestBody.pointLabels = parsedInput.pointLabels;
-      }
-      if (parsedInput.pointObjectIds !== undefined) {
-        requestBody.pointObjectIds = parsedInput.pointObjectIds;
-      }
+      requestBody.points = parsedInput.points.map((p, i) => ({
+        coordinates: p,
+        isPositive: parsedInput.pointLabels?.[i] === 1 || parsedInput.pointLabels?.[i] === undefined,
+        objectId: parsedInput.pointObjectIds?.[i] !== undefined ? String(parsedInput.pointObjectIds[i]) : undefined,
+      }));
     } else {
-      requestBody.boxes = parsedInput.boxes;
-      if (parsedInput.boxObjectIds !== undefined) {
-        requestBody.boxObjectIds = parsedInput.boxObjectIds;
-      }
+      requestBody.boxes = parsedInput.boxes!.map((b, i) => ({
+        coordinates: b,
+        isPositive: true,
+        objectId: parsedInput.boxObjectIds?.[i] !== undefined ? String(parsedInput.boxObjectIds[i]) : undefined,
+      }));
     }
 
     const raw = await this.requestApi({
-      path: "/segment/video",
+      path: "/jobs",
       headers: {
         "content-type": "application/json",
       },
       body: JSON.stringify(requestBody),
       signal: parsedInput.signal,
-      responseSchema: segmentJobAcceptedRawSchema,
+      responseSchema: jobAcceptedRawSchema,
       operation: "segmentVideo",
     });
 
-    return {
-      ...buildSegmentJobAcceptedResult(raw),
-      type: "video",
-    };
+    return buildJobAcceptedResult(raw);
   }
 
-  async uploadAndSegment(input: UploadAndSegmentRequest): Promise<SegmentResult> {
-    const parsedInput = parseInputOrThrow(uploadAndSegmentRequestSchema, input, "uploadAndSegment");
-    const prompts = normalizePrompts(parsedInput.prompts);
-
-    const presignedUpload = await this.createPresignedUpload({
-      contentType: parsedInput.contentType,
-      signal: parsedInput.signal,
-    });
-
-    await this.uploadImage({
-      uploadUrl: presignedUpload.uploadUrl,
-      data: parsedInput.data,
-      contentType: parsedInput.contentType,
-      signal: parsedInput.signal,
-    });
-
-    return this.segment({
-      prompts,
-      boxes: parsedInput.boxes,
-      boxLabels: parsedInput.boxLabels,
-      inputS3Key: presignedUpload.inputS3Key,
-      threshold: parsedInput.threshold,
-      maskThreshold: parsedInput.maskThreshold,
-      signal: parsedInput.signal,
-    });
-  }
-
-  async createBatchSegmentJob(
-    input: CreateBatchSegmentJobRequest,
-  ): Promise<BatchSegmentAcceptedResult> {
+  async createJob(input: CreateJobRequest): Promise<JobAcceptedResult> {
     const parsedInput = parseInputOrThrow(
-      createBatchSegmentJobRequestSchema,
+      createJobRequestSchema,
       input,
-      "createBatchSegmentJob",
+      "createJob",
     );
     const prompts = normalizePrompts(parsedInput.prompts);
 
     const payload: Record<string, unknown> = {
+      type: parsedInput.type,
       threshold: parsedInput.threshold,
       maskThreshold: parsedInput.maskThreshold,
       items: parsedInput.items,
@@ -452,36 +335,76 @@ export class SegmentationClient {
     if (parsedInput.boxLabels !== undefined) {
       payload.boxLabels = parsedInput.boxLabels;
     }
+    if (parsedInput.points !== undefined) {
+      payload.points = parsedInput.points;
+    }
 
     const raw = await this.requestApi({
-      path: "/segment/batch",
+      path: "/jobs",
       headers: {
         "content-type": "application/json",
       },
       body: JSON.stringify(payload),
       signal: parsedInput.signal,
-      responseSchema: batchSegmentAcceptedRawSchema,
-      operation: "createBatchSegmentJob",
+      responseSchema: jobAcceptedRawSchema,
+      operation: "createJob",
     });
 
-    return {
-      ...buildSegmentJobAcceptedResult(raw),
-      type: "image_batch",
-    };
+    return buildJobAcceptedResult(raw);
   }
 
-  async getSegmentJob(input: GetSegmentJobRequest): Promise<SegmentJobStatusResult> {
+  async uploadAndCreateJob(
+    input: UploadAndCreateJobRequest,
+    onProgress?: (done: number, total: number) => void,
+  ): Promise<JobAcceptedResult> {
+    const parsedInput = parseInputOrThrow(
+      uploadAndCreateJobRequestSchema,
+      input,
+      "uploadAndCreateJob",
+    );
+
+    const uploadedKeys: string[] = [];
+    for (let i = 0; i < parsedInput.files.length; i++) {
+      const file = parsedInput.files[i]!;
+      const presigned = await this.createPresignedUpload({
+        contentType: file.contentType,
+        signal: parsedInput.signal,
+      });
+      await this.uploadImage({
+        uploadUrl: presigned.uploadUrl,
+        data: file.data,
+        contentType: file.contentType,
+        signal: parsedInput.signal,
+      });
+      uploadedKeys.push(presigned.inputS3Key);
+      onProgress?.(i + 1, parsedInput.files.length);
+    }
+
+    return this.createJob({
+      type: parsedInput.type,
+      prompts: parsedInput.prompts,
+      boxes: parsedInput.boxes,
+      boxLabels: parsedInput.boxLabels,
+      points: parsedInput.points,
+      threshold: parsedInput.threshold,
+      maskThreshold: parsedInput.maskThreshold,
+      items: uploadedKeys.map((inputS3Key) => ({ inputS3Key })),
+      signal: parsedInput.signal,
+    });
+  }
+
+  async getSegmentJob(input: GetSegmentJobRequest): Promise<JobStatusResult> {
     const parsedInput = parseInputOrThrow(getSegmentJobRequestSchema, input, "getSegmentJob");
 
     const raw = await this.requestApi({
       path: `/jobs/${encodeURIComponent(parsedInput.jobId)}`,
       method: "GET",
       signal: parsedInput.signal,
-      responseSchema: segmentJobStatusRawSchema,
+      responseSchema: jobStatusRawSchema,
       operation: "getSegmentJob",
     });
 
-    return buildSegmentJobStatusResult(raw, this.assetsBaseUrl);
+    return buildJobStatusResult(raw, this.assetsBaseUrl);
   }
 
   private async requestApi<TPayload>(input: {

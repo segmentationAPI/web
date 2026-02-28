@@ -1,21 +1,17 @@
 import * as z from "zod/mini";
 import { ValidationError, type ValidationIssue } from "./errors";
 import type {
-  BatchSegmentAcceptedRaw,
-  BatchSegmentMaskRaw,
-  BatchSegmentStatusRaw,
-  CreateBatchSegmentJobRequest,
+  CreateJobRequest,
   CreatePresignedUploadRequest,
   FetchFunction,
   GetSegmentJobRequest,
+  JobAcceptedRaw,
+  JobStatusItemRaw,
+  JobStatusRaw,
+  MaskResultRaw,
   PresignedUploadRaw,
-  SegmentJobAcceptedRaw,
-  SegmentJobStatusRaw,
-  SegmentMaskRaw,
-  SegmentResponseRaw,
-  SegmentRequest,
   SegmentVideoRequest,
-  UploadAndSegmentRequest,
+  UploadAndCreateJobRequest,
   UploadImageRequest,
 } from "./types";
 
@@ -94,28 +90,61 @@ export const imageBoxSchema = z.array(finiteNumber).check(
 
 export const imageBoxesSchema = z.array(imageBoxSchema);
 
-function hasPromptOrBoxes(value: { prompts?: string[]; boxes?: number[][] }): boolean {
-  const hasPrompts = Array.isArray(value.prompts) && value.prompts.length > 0;
-  const hasBoxes = Array.isArray(value.boxes) && value.boxes.length > 0;
-  return hasPrompts || hasBoxes;
-}
+const pointSchema = z.object({
+  coordinates: z.tuple([finiteNumber, finiteNumber]),
+  isPositive: z.optional(z.boolean()),
+  objectId: z.optional(z.string()),
+});
 
-export const segmentRequestSchema: z.ZodMiniType<SegmentRequest> = z
-  .object({
+const boxInputSchema = z.object({
+  coordinates: z.array(finiteNumber).check(
+    z.refine((value) => value.length >= 4, "Each box must have at least 4 coordinates."),
+  ),
+  isPositive: z.optional(z.boolean()),
+  objectId: z.optional(z.string()),
+});
+
+const batchSegmentItemInputSchema = z.object({
+  inputS3Key: nonEmptyString,
+});
+
+export const createJobRequestSchema: z.ZodMiniType<CreateJobRequest> =
+  z.object({
+    type: z.enum(["image_batch", "video"]),
     prompts: z.optional(promptsSchema),
     boxes: z.optional(imageBoxesSchema),
     boxLabels: z.optional(z.array(finiteNumber)),
-    inputS3Key: nonEmptyString,
+    points: z.optional(z.array(pointSchema)),
+    threshold: z.optional(finiteNumber),
+    maskThreshold: z.optional(finiteNumber),
+    items: z.array(batchSegmentItemInputSchema).check(
+      z.refine((value) => value.length >= 1, "Expected at least 1 item."),
+      z.refine((value) => value.length <= 100, "Expected at most 100 items."),
+    ),
+    signal: abortSignalSchema,
+  });
+
+const uploadFileSchema = z.object({
+  data: binaryDataSchema,
+  contentType: nonEmptyString,
+});
+
+export const uploadAndCreateJobRequestSchema: z.ZodMiniType<UploadAndCreateJobRequest> =
+  z.object({
+    type: z.enum(["image_batch", "video"]),
+    prompts: z.optional(promptsSchema),
+    boxes: z.optional(imageBoxesSchema),
+    boxLabels: z.optional(z.array(finiteNumber)),
+    points: z.optional(z.array(pointSchema)),
+    files: z.array(uploadFileSchema).check(
+      z.refine((value) => value.length >= 1, "Expected at least 1 file."),
+    ),
     threshold: z.optional(finiteNumber),
     maskThreshold: z.optional(finiteNumber),
     signal: abortSignalSchema,
-  })
-  .check(
-    z.refine(
-      hasPromptOrBoxes,
-      "Provide at least one prompt: `prompts` or `boxes`.",
-    ),
-  );
+  });
+
+// --- Video request schemas (reused from before) ---
 
 const segmentVideoPointSchema = z.tuple([finiteNumber, finiteNumber]);
 
@@ -244,55 +273,13 @@ export const segmentVideoRequestSchema: z.ZodMiniType<SegmentVideoRequest> = z
     ),
   );
 
-export const uploadAndSegmentRequestSchema: z.ZodMiniType<UploadAndSegmentRequest> =
-  z
-    .object({
-      prompts: z.optional(promptsSchema),
-      boxes: z.optional(imageBoxesSchema),
-      boxLabels: z.optional(z.array(finiteNumber)),
-      data: binaryDataSchema,
-      contentType: nonEmptyString,
-      threshold: z.optional(finiteNumber),
-      maskThreshold: z.optional(finiteNumber),
-      signal: abortSignalSchema,
-    })
-    .check(
-      z.refine(
-        hasPromptOrBoxes,
-        "Provide at least one prompt: `prompts` or `boxes`.",
-      ),
-    );
-
-export const batchSegmentItemInputSchema = z.object({
-  inputS3Key: nonEmptyString,
-});
-
-export const createBatchSegmentJobRequestSchema: z.ZodMiniType<CreateBatchSegmentJobRequest> =
-  z
-    .object({
-      prompts: z.optional(promptsSchema),
-      boxes: z.optional(imageBoxesSchema),
-      boxLabels: z.optional(z.array(finiteNumber)),
-      threshold: z.optional(finiteNumber),
-      maskThreshold: z.optional(finiteNumber),
-      items: z.array(batchSegmentItemInputSchema).check(
-        z.refine((value) => value.length >= 1, "Expected at least 1 item."),
-        z.refine((value) => value.length <= 100, "Expected at most 100 items."),
-      ),
-      signal: abortSignalSchema,
-    })
-    .check(
-      z.refine(
-        hasPromptOrBoxes,
-        "Provide at least one prompt: `prompts` or `boxes`.",
-      ),
-    );
-
 export const getSegmentJobRequestSchema: z.ZodMiniType<GetSegmentJobRequest> =
   z.object({
     jobId: nonEmptyString,
     signal: abortSignalSchema,
   });
+
+// --- Response schemas ---
 
 export const responseBodyRecordSchema = z.record(z.string(), z.unknown());
 
@@ -308,78 +295,35 @@ export const presignedUploadRawSchema: z.ZodMiniType<PresignedUploadRaw> =
     expiresIn: finiteNumber,
   });
 
-export const segmentMaskRawSchema: z.ZodMiniType<SegmentMaskRaw> = z.object({
-  key: nonEmptyString,
-  score: finiteNumber,
-  box: z.array(finiteNumber),
-});
-
-export const segmentResponseRawSchema: z.ZodMiniType<SegmentResponseRaw> =
-  z.object({
-    requestId: z.optional(z.string()),
-    jobId: nonEmptyString,
-    numInstances: finiteNumber,
-    outputPrefix: nonEmptyString,
-    masks: z.array(segmentMaskRawSchema),
-  });
-
-export const segmentJobAcceptedRawSchema: z.ZodMiniType<SegmentJobAcceptedRaw> =
+export const jobAcceptedRawSchema: z.ZodMiniType<JobAcceptedRaw> =
   z.object({
     requestId: z.optional(z.string()),
     jobId: nonEmptyString,
     type: z.enum(["image_batch", "video"]),
     status: z.literal("queued"),
     totalItems: finiteNumber,
-    pollPath: nonEmptyString,
   });
 
-export const batchSegmentAcceptedRawSchema: z.ZodMiniType<BatchSegmentAcceptedRaw> =
-  segmentJobAcceptedRawSchema;
-
-export const batchSegmentMaskRawSchema: z.ZodMiniType<BatchSegmentMaskRaw> =
+export const maskResultRawSchema: z.ZodMiniType<MaskResultRaw> =
   z.object({
     key: nonEmptyString,
     score: z.optional(z.nullable(finiteNumber)),
     box: z.optional(z.nullable(z.array(finiteNumber))),
   });
 
-export const segmentJobStatusItemRawSchema = z.object({
-  jobId: nonEmptyString,
-  inputS3Key: nonEmptyString,
-  status: z.enum(["queued", "processing", "success", "failed"]),
-  numInstances: z.optional(z.nullable(finiteNumber)),
-  masks: z.optional(z.nullable(z.array(batchSegmentMaskRawSchema))),
+export const jobStatusItemRawSchema: z.ZodMiniType<JobStatusItemRaw> = z.object({
+  workId: nonEmptyString,
+  inputS3Key: z.optional(nonEmptyString),
+  status: z.enum(["queued", "running", "success", "failed"]),
+  masks: z.optional(z.nullable(z.array(maskResultRawSchema))),
   error: z.optional(z.nullable(nonEmptyString)),
-  errorCode: z.optional(z.nullable(nonEmptyString)),
 });
 
-export const segmentJobVideoStatusRawSchema = z.object({
-  jobId: nonEmptyString,
-  inputS3Key: nonEmptyString,
-  status: z.enum(["queued", "processing", "success", "failed"]),
-  output: z.optional(
-    z.object({
-      framesUrl: nonEmptyString,
-      outputS3Prefix: nonEmptyString,
-      maskEncoding: nonEmptyString,
-    }),
-  ),
-  counts: z.optional(
-    z.object({
-      framesProcessed: finiteInteger,
-      framesWithMasks: finiteInteger,
-      totalMasks: finiteInteger,
-    }),
-  ),
-  error: z.optional(z.nullable(nonEmptyString)),
-  errorCode: z.optional(z.nullable(nonEmptyString)),
-});
-
-export const segmentJobStatusRawSchema: z.ZodMiniType<SegmentJobStatusRaw> =
+export const jobStatusRawSchema: z.ZodMiniType<JobStatusRaw> =
   z.object({
     requestId: z.optional(z.string()),
     jobId: nonEmptyString,
-    type: z.enum(["image_sync", "image_batch", "video"]),
+    type: z.enum(["image_batch", "video"]),
     status: z.enum([
       "queued",
       "processing",
@@ -392,14 +336,11 @@ export const segmentJobStatusRawSchema: z.ZodMiniType<SegmentJobStatusRaw> =
     processingItems: finiteNumber,
     successItems: finiteNumber,
     failedItems: finiteNumber,
-    items: z.optional(z.array(segmentJobStatusItemRawSchema)),
-    video: z.optional(segmentJobVideoStatusRawSchema),
+    items: z.optional(z.array(jobStatusItemRawSchema)),
     error: z.optional(nonEmptyString),
-    errorCode: z.optional(nonEmptyString),
   });
 
-export const batchSegmentStatusRawSchema: z.ZodMiniType<BatchSegmentStatusRaw> =
-  segmentJobStatusRawSchema;
+// --- Parse helpers ---
 
 function normalizeIssues(
   issues: readonly z.core.$ZodIssue[],

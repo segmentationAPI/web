@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Sparkles, Trash2, X } from "lucide-react";
 import {
   SegmentationClient,
-  type SegmentJobStatusResult,
-  type SegmentResult,
+  type JobStatusResult,
+  type JobType,
 } from "@segmentationapi/sdk";
 import { toast } from "sonner";
 
@@ -16,39 +16,29 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 
-type JobKind = "none" | "single-image" | "batch-image" | "video" | "mixed";
+type FileKind = "image" | "video" | "none";
 
 type RunState = {
-  batchJobId?: string;
-  maskCount?: number;
+  jobId?: string;
   mode: "idle" | "running" | "ready";
-  selectedType?: JobKind;
-  singleImageResult?: SegmentResult;
-  videoJobId?: string;
+  selectedType?: JobType;
 };
 
-function classifyFiles(files: File[]): JobKind {
-  const imageCount = files.filter((f) => f.type.startsWith("image/")).length;
-  const videoCount = files.filter((f) => f.type.startsWith("video/")).length;
+function classifyFiles(files: File[]): FileKind {
+  const hasImages = files.some((f) => f.type.startsWith("image/"));
+  const hasVideos = files.some((f) => f.type.startsWith("video/"));
 
-  if (imageCount === 0 && videoCount === 0) return "none";
-  if (imageCount > 0 && videoCount > 0) return "mixed";
-  if (videoCount > 0) return "video";
-  if (imageCount === 1) return "single-image";
-  return "batch-image";
+  if (hasImages && hasVideos) return "none"; // mixed not supported
+  if (hasVideos) return "video";
+  if (hasImages) return "image";
+  return "none";
 }
 
 function trimPrompts(prompts: string[]) {
   return prompts.map((p) => p.trim()).filter(Boolean);
 }
 
-function fileKind(file: File) {
-  if (file.type.startsWith("image/")) return "image";
-  if (file.type.startsWith("video/")) return "video";
-  return "other";
-}
-
-function isJobComplete(status: SegmentJobStatusResult["status"] | undefined) {
+function isJobComplete(status: JobStatusResult["status"] | undefined) {
   return status === "completed" || status === "completed_with_errors" || status === "failed";
 }
 
@@ -96,7 +86,7 @@ export function UnifiedStudio() {
     done: 0,
     total: 0,
   });
-  const [jobStatus, setJobStatus] = useState<SegmentJobStatusResult | null>(null);
+  const [jobStatus, setJobStatus] = useState<JobStatusResult | null>(null);
   const [statusRefreshing, setStatusRefreshing] = useState(false);
   const [batchCarouselIndex, setBatchCarouselIndex] = useState(0);
 
@@ -107,25 +97,14 @@ export function UnifiedStudio() {
   const [currentBox, setCurrentBox] = useState<number[] | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  const jobKind = useMemo(() => classifyFiles(files), [files]);
-  const firstImage = useMemo(
-    () => files.find((file) => file.type.startsWith("image/")) ?? null,
-    [files],
-  );
+  const fileKind = useMemo(() => classifyFiles(files), [files]);
+  const isMixed = useMemo(() => {
+    const hasImages = files.some((f) => f.type.startsWith("image/"));
+    const hasVideos = files.some((f) => f.type.startsWith("video/"));
+    return hasImages && hasVideos;
+  }, [files]);
 
-  const imagePreviewUrl = useMemo(() => {
-    if (!firstImage) return null;
-    return URL.createObjectURL(firstImage);
-  }, [firstImage]);
-
-  useEffect(() => {
-    if (!imagePreviewUrl) return;
-    return () => {
-      URL.revokeObjectURL(imagePreviewUrl);
-    };
-  }, [imagePreviewUrl]);
-
-  const batchImageFiles = useMemo(
+  const imageFiles = useMemo(
     () => files.filter((file) => file.type.startsWith("image/")),
     [files],
   );
@@ -134,9 +113,21 @@ export function UnifiedStudio() {
     [files],
   );
 
-  const batchImagePreviewUrls = useMemo(
-    () => batchImageFiles.map((file) => URL.createObjectURL(file)),
-    [batchImageFiles],
+  const firstImagePreviewUrl = useMemo(() => {
+    if (imageFiles.length === 0) return null;
+    return URL.createObjectURL(imageFiles[0]!);
+  }, [imageFiles]);
+
+  useEffect(() => {
+    if (!firstImagePreviewUrl) return;
+    return () => {
+      URL.revokeObjectURL(firstImagePreviewUrl);
+    };
+  }, [firstImagePreviewUrl]);
+
+  const imagePreviewUrls = useMemo(
+    () => imageFiles.map((file) => URL.createObjectURL(file)),
+    [imageFiles],
   );
   const videoPreviewUrl = useMemo(() => {
     if (!firstVideoFile) return null;
@@ -145,11 +136,11 @@ export function UnifiedStudio() {
 
   useEffect(() => {
     return () => {
-      for (const url of batchImagePreviewUrls) {
+      for (const url of imagePreviewUrls) {
         URL.revokeObjectURL(url);
       }
     };
-  }, [batchImagePreviewUrls]);
+  }, [imagePreviewUrls]);
 
   useEffect(() => {
     if (!videoPreviewUrl) return;
@@ -158,37 +149,27 @@ export function UnifiedStudio() {
     };
   }, [videoPreviewUrl]);
 
-  const canRun =
-    runState.mode !== "running" &&
-    (jobKind === "single-image" || jobKind === "batch-image" || jobKind === "video");
+  const canRun = runState.mode !== "running" && fileKind !== "none";
   const modeLabel =
-    jobKind === "single-image"
-      ? "Single (Sync)"
-      : jobKind === "batch-image"
-        ? "Batch"
-        : jobKind === "video"
-          ? "Video"
-          : jobKind === "mixed"
-            ? "Mixed Unsupported"
-            : "Select Files";
+    fileKind === "image"
+      ? "Image Batch"
+      : fileKind === "video"
+        ? "Video"
+        : isMixed
+          ? "Mixed Unsupported"
+          : "Select Files";
   const modeBadgeClass =
-    jobKind === "single-image"
-      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200"
-      : jobKind === "batch-image"
-        ? "border-sky-500/40 bg-sky-500/15 text-sky-200"
-        : jobKind === "video"
-          ? "border-amber-500/40 bg-amber-500/15 text-amber-200"
-          : jobKind === "mixed"
-            ? "border-destructive/45 bg-destructive/15 text-destructive"
-            : "border-border/60 bg-background/50 text-muted-foreground";
+    fileKind === "image"
+      ? "border-sky-500/40 bg-sky-500/15 text-sky-200"
+      : fileKind === "video"
+        ? "border-amber-500/40 bg-amber-500/15 text-amber-200"
+        : isMixed
+          ? "border-destructive/45 bg-destructive/15 text-destructive"
+          : "border-border/60 bg-background/50 text-muted-foreground";
 
-  const currentAsyncJobId = runState.batchJobId ?? runState.videoJobId ?? null;
-  const hasOutputs =
-    runState.mode === "ready" &&
-    ((runState.selectedType === "single-image" && Boolean(runState.singleImageResult)) ||
-      ((runState.selectedType === "batch-image" || runState.selectedType === "video") &&
-        Boolean(currentAsyncJobId)));
-  const isPreviewMode = (jobKind === "single-image" || jobKind === "batch-image") && Boolean(imagePreviewUrl);
+  const currentAsyncJobId = runState.jobId ?? null;
+  const hasOutputs = runState.mode === "ready" && Boolean(currentAsyncJobId);
+  const isImagePreviewMode = fileKind === "image" && Boolean(firstImagePreviewUrl);
 
   const progressText = jobStatus
     ? `${jobStatus.successItems + jobStatus.failedItems}/${jobStatus.totalItems}`
@@ -210,8 +191,7 @@ export function UnifiedStudio() {
 
   function onFilesSelected(next: FileList | null) {
     const selected = Array.from(next ?? []).filter((file) => {
-      const kind = fileKind(file);
-      return kind === "image" || kind === "video";
+      return file.type.startsWith("image/") || file.type.startsWith("video/");
     });
     setFiles(selected);
     setRunState({ mode: "idle" });
@@ -300,39 +280,14 @@ export function UnifiedStudio() {
     if (!canRun) return;
 
     const cleanPrompts = trimPrompts(prompts);
-    setRunState({ mode: "running", selectedType: jobKind });
+    setRunState({ mode: "running", selectedType: fileKind === "video" ? "video" : "image_batch" });
     setJobStatus(null);
     setBatchCarouselIndex(0);
 
     try {
       const client = await getAuthedClient();
 
-      if (jobKind === "single-image") {
-        const file = files.find((f) => f.type.startsWith("image/"));
-        if (!file) throw new Error("Please select one image.");
-
-        const result = await client.uploadAndSegment({
-          prompts: cleanPrompts,
-          boxes: boxes.length > 0 ? boxes : undefined,
-          boxLabels: boxes.length > 0 ? boxes.map((_) => 1) : undefined,
-          data: file,
-          contentType: file.type || "image/png",
-          threshold: 0.5,
-          maskThreshold: 0.5,
-        });
-
-        setRunState({
-          mode: "ready",
-          selectedType: "single-image",
-          singleImageResult: result,
-          maskCount: result.masks.length,
-        });
-        setUploadProgress({ done: 0, total: 0 });
-        toast.success("Image job completed.");
-        return;
-      }
-
-      if (jobKind === "video") {
+      if (fileKind === "video") {
         const videoFiles = files.filter((f) => f.type.startsWith("video/"));
         if (videoFiles.length !== 1) {
           throw new Error("Video job requires exactly one video file.");
@@ -352,7 +307,7 @@ export function UnifiedStudio() {
         setRunState({
           mode: "ready",
           selectedType: "video",
-          videoJobId: accepted.jobId,
+          jobId: accepted.jobId,
         });
         setUploadProgress({ done: 0, total: 0 });
         toast.success("Video job submitted.");
@@ -360,44 +315,36 @@ export function UnifiedStudio() {
         return;
       }
 
-      const imageFiles = files.filter((f) => f.type.startsWith("image/"));
-      if (imageFiles.length < 2) {
-        throw new Error("Batch job requires multiple images.");
+      // Image batch (1 or more images)
+      if (imageFiles.length < 1) {
+        throw new Error("Please select at least one image.");
       }
 
-      setUploadProgress({ done: 0, total: imageFiles.length });
-      const uploaded: string[] = [];
-
-      for (let i = 0; i < imageFiles.length; i += 1) {
-        const file = imageFiles[i]!;
-        const contentType = file.type || "image/png";
-
-        const presigned = await client.createPresignedUpload({ contentType });
-        await client.uploadImage({
-          uploadUrl: presigned.uploadUrl,
-          data: file,
-          contentType,
-        });
-        uploaded.push(presigned.inputS3Key);
-        setUploadProgress({ done: i + 1, total: imageFiles.length });
-      }
-
-      const accepted = await client.createBatchSegmentJob({
-        prompts: cleanPrompts,
-        boxes: boxes.length > 0 ? boxes : undefined,
-        boxLabels: boxes.length > 0 ? boxes.map((_) => 1) : undefined,
-        threshold: 0.5,
-        maskThreshold: 0.5,
-        items: uploaded.map((inputS3Key) => ({ inputS3Key })),
-      });
+      const accepted = await client.uploadAndCreateJob(
+        {
+          type: "image_batch",
+          prompts: cleanPrompts.length > 0 ? cleanPrompts : undefined,
+          boxes: boxes.length > 0 ? boxes : undefined,
+          boxLabels: boxes.length > 0 ? boxes.map((_) => 1) : undefined,
+          threshold: 0.5,
+          maskThreshold: 0.5,
+          files: imageFiles.map((file) => ({
+            data: file,
+            contentType: file.type || "image/png",
+          })),
+        },
+        (done, total) => {
+          setUploadProgress({ done, total });
+        },
+      );
 
       setRunState({
         mode: "ready",
-        selectedType: "batch-image",
-        batchJobId: accepted.jobId,
+        selectedType: "image_batch",
+        jobId: accepted.jobId,
       });
       setUploadProgress({ done: 0, total: 0 });
-      toast.success("Batch job submitted.");
+      toast.success("Image job submitted.");
       await refreshJobStatus(accepted.jobId, true);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Job failed.";
@@ -416,11 +363,9 @@ export function UnifiedStudio() {
     if (!imageRef.current || !imageDims) return null;
     const rect = imageRef.current.getBoundingClientRect();
     
-    // Calculate the mouse position relative to the image element
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Scale coordinates to the original image dimensions
     const scaleX = imageDims.w / rect.width;
     const scaleY = imageDims.h / rect.height;
     
@@ -451,7 +396,6 @@ export function UnifiedStudio() {
     if (!isDrawing || !currentBox) return;
     setIsDrawing(false);
     
-    // Only add if it's an actual box (width > 5 & height > 5 to avoid accidental clicks)
     const x1 = Math.min(currentBox[0], currentBox[2]);
     const y1 = Math.min(currentBox[1], currentBox[3]);
     const x2 = Math.max(currentBox[0], currentBox[2]);
@@ -463,7 +407,7 @@ export function UnifiedStudio() {
     setCurrentBox(null);
   }
 
-  function renderBox(box: number[], key: string, isDrawing = false) {
+  function renderBox(box: number[], key: string, isDrawingBox = false) {
     if (!imageDims) return null;
     
     const x1 = Math.min(box[0], box[2]);
@@ -479,7 +423,7 @@ export function UnifiedStudio() {
     return (
       <div
         key={key}
-        className={`absolute border-2 pointer-events-none ${isDrawing ? 'border-primary border-dashed bg-primary/10' : 'border-emerald-500 bg-emerald-500/20'}`}
+        className={`absolute border-2 pointer-events-none ${isDrawingBox ? 'border-primary border-dashed bg-primary/10' : 'border-emerald-500 bg-emerald-500/20'}`}
         style={{
           left: `${left}%`,
           top: `${top}%`,
@@ -489,6 +433,18 @@ export function UnifiedStudio() {
       />
     );
   }
+
+  // Get masks for single-image view from the first job status item
+  const singleImageMasks = runState.mode === "ready" &&
+    runState.selectedType === "image_batch" &&
+    imageFiles.length === 1 &&
+    jobStatus &&
+    isJobComplete(jobStatus.status) &&
+    jobStatus.items?.[0]?.masks
+    ? jobStatus.items[0].masks
+    : null;
+
+  const isSingleImageView = imageFiles.length === 1 && runState.selectedType === "image_batch";
 
   return (
     <section className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 p-4 sm:p-5">
@@ -590,9 +546,9 @@ export function UnifiedStudio() {
               </Empty>
             )}
 
-            {jobKind === "mixed" ? (
+            {isMixed ? (
               <p className="font-mono text-[10px] uppercase tracking-[0.11em] text-destructive">
-                Mixed image + video submission is not supported yet. Select one type per run.
+                Mixed image + video submission is not supported. Select one type per run.
               </p>
             ) : null}
           </div>
@@ -659,7 +615,7 @@ export function UnifiedStudio() {
             ) : null}
           </div>
 
-          {!hasOutputs && !isPreviewMode ? (
+          {!hasOutputs && !isImagePreviewMode ? (
             <Empty className="mt-2 border-0 bg-transparent p-0 text-left">
               <EmptyHeader className="items-start">
                 <EmptyTitle className="text-sm">No output yet</EmptyTitle>
@@ -670,11 +626,12 @@ export function UnifiedStudio() {
             </Empty>
           ) : null}
 
-          {isPreviewMode ? (
+          {/* Single image preview with bounding boxes + mask overlay */}
+          {isImagePreviewMode && isSingleImageView ? (
             <div className="mt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                  {runState.mode === "ready" && runState.singleImageResult ? `${runState.maskCount ?? 0} masks detected` : boxes.length > 0 ? `${boxes.length} objects selected` : 'Draw bounding boxes to select objects'}
+                  {singleImageMasks ? `${singleImageMasks.length} masks detected` : boxes.length > 0 ? `${boxes.length} objects selected` : 'Draw bounding boxes to select objects'}
                 </p>
                 {boxes.length > 0 && !hasOutputs ? (
                   <Button
@@ -697,14 +654,14 @@ export function UnifiedStudio() {
               >
                 <img 
                   ref={imageRef}
-                  src={imagePreviewUrl!} 
+                  src={firstImagePreviewUrl!} 
                   alt="Selected" 
                   className="h-auto w-full pointer-events-none" 
                   draggable={false}
                   onLoad={handleImageLoad}
                 />
                 
-                {runState.mode === "ready" && runState.singleImageResult?.masks.map((mask, index) => (
+                {singleImageMasks?.map((mask, index) => (
                   <img
                     key={`${mask.key}-${index}`}
                     src={mask.url}
@@ -716,16 +673,29 @@ export function UnifiedStudio() {
                 {!hasOutputs && boxes.map((box, index) => renderBox(box, `box-${index}`))}
                 {!hasOutputs && currentBox && renderBox(currentBox, 'current-box', true)}
               </div>
+
+              {runState.mode === "ready" && runState.jobId && jobStatus ? (
+                <div className="rounded-lg border border-border/60 bg-background/30 p-3">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                    Job: {runState.jobId}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Status: {jobStatus.status.replaceAll("_", " ")}
+                  </p>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
+          {/* Batch image (multi-image) results with carousel */}
           {runState.mode === "ready" &&
-          runState.selectedType === "batch-image" &&
-          runState.batchJobId ? (
+          runState.selectedType === "image_batch" &&
+          !isSingleImageView &&
+          runState.jobId ? (
             <div className="mt-3 space-y-3">
               <div className="rounded-lg border border-border/60 bg-background/30 p-3">
                 <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                  Batch job: {runState.batchJobId}
+                  Batch job: {runState.jobId}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Status: {jobStatus?.status.replaceAll("_", " ") ?? "queued"}
@@ -738,9 +708,9 @@ export function UnifiedStudio() {
               {activeBatchItem ? (
                 <div className="space-y-2">
                   <div className="relative overflow-hidden rounded-lg border border-border/60">
-                    {batchImagePreviewUrls[batchCarouselIndex] ? (
+                    {imagePreviewUrls[batchCarouselIndex] ? (
                       <img
-                        src={batchImagePreviewUrls[batchCarouselIndex]}
+                        src={imagePreviewUrls[batchCarouselIndex]}
                         alt={`Batch input ${batchCarouselIndex + 1}`}
                         className="h-auto w-full"
                       />
@@ -795,13 +765,14 @@ export function UnifiedStudio() {
             </div>
           ) : null}
 
+          {/* Video results */}
           {runState.mode === "ready" &&
           runState.selectedType === "video" &&
-          runState.videoJobId ? (
+          runState.jobId ? (
             <div className="mt-3 space-y-3">
               <div className="rounded-lg border border-border/60 bg-background/30 p-3">
                 <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                  Video job: {runState.videoJobId}
+                  Video job: {runState.jobId}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Status: {jobStatus?.status.replaceAll("_", " ") ?? "queued"}
@@ -819,30 +790,6 @@ export function UnifiedStudio() {
                 />
               ) : (
                 <p className="text-sm text-muted-foreground">Video preview unavailable.</p>
-              )}
-
-              {jobStatus?.video?.counts ? (
-                <div className="grid gap-2 rounded-lg border border-border/60 bg-background/30 p-3 text-xs text-muted-foreground sm:grid-cols-3">
-                  <p>Frames: {jobStatus.video.counts.framesProcessed}</p>
-                  <p>With masks: {jobStatus.video.counts.framesWithMasks}</p>
-                  <p>Masks: {jobStatus.video.counts.totalMasks}</p>
-                </div>
-              ) : null}
-
-              {jobStatus?.video?.output ? (
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  <a
-                    href={jobStatus.video.output.framesUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-foreground underline"
-                  >
-                    Frames URL
-                  </a>
-                  <p className="break-all">{jobStatus.video.output.outputS3Prefix}</p>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No video output metadata yet. Refresh to check.</p>
               )}
             </div>
           ) : null}
