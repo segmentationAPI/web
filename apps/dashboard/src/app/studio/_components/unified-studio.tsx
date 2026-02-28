@@ -89,7 +89,7 @@ async function getVideoCenterPoint(file: File): Promise<[number, number]> {
 }
 
 export function UnifiedStudio() {
-  const [prompts, setPrompts] = useState<string[]>([""]);
+  const [prompts, setPrompts] = useState<string[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [runState, setRunState] = useState<RunState>({ mode: "idle" });
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number }>({
@@ -212,7 +212,7 @@ export function UnifiedStudio() {
   }
 
   function resetStudio() {
-    setPrompts([""]);
+    setPrompts([]);
     setFiles([]);
     setRunState({ mode: "idle" });
     setUploadProgress({ done: 0, total: 0 });
@@ -294,7 +294,7 @@ export function UnifiedStudio() {
         if (!file) throw new Error("Please select one image.");
 
         const result = await client.uploadAndSegment({
-          ...(cleanPrompts.length > 0 ? { prompts: cleanPrompts } : {}),
+          prompts: cleanPrompts,
           data: file,
           contentType: file.type || "image/png",
           threshold: 0.5,
@@ -363,7 +363,7 @@ export function UnifiedStudio() {
       }
 
       const accepted = await client.createBatchSegmentJob({
-        ...(cleanPrompts.length > 0 ? { prompts: cleanPrompts } : {}),
+        prompts: cleanPrompts,
         threshold: 0.5,
         maskThreshold: 0.5,
         items: uploaded.map((inputS3Key) => ({ inputS3Key })),
@@ -418,17 +418,15 @@ export function UnifiedStudio() {
                   placeholder="object to segment (optional)"
                   className="h-9 w-full rounded-lg border-input bg-background/65 text-xs"
                 />
-                {prompts.length > 1 ? (
-                  <Button
-                    type="button"
-                    onClick={() => setPrompts((current) => current.filter((_, i) => i !== index))}
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 shrink-0 text-muted-foreground transition-colors hover:text-destructive"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                ) : null}
+                <Button
+                  type="button"
+                  onClick={() => setPrompts((current) => current.filter((_, i) => i !== index))}
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 shrink-0 text-muted-foreground transition-colors hover:text-destructive"
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
               </div>
             ))}
             <Button

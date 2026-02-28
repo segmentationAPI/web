@@ -89,13 +89,11 @@ function inferContentType(data: BinaryData): string | undefined {
   return undefined;
 }
 
-function normalizePrompts(prompts: string[] | undefined): string[] | undefined {
+function normalizePrompts(prompts: string[] | undefined): string[] {
   if (!prompts) {
-    return undefined;
+    return [];
   }
-
-  const trimmed = prompts.map((prompt) => prompt.trim()).filter((prompt) => prompt.length > 0);
-  return trimmed.length > 0 ? trimmed : undefined;
+  return prompts.map((prompt) => prompt.trim()).filter((prompt) => prompt.length > 0);
 }
 
 async function readResponseBody(response: Response): Promise<ResponseBody> {
@@ -317,7 +315,7 @@ export class SegmentationClient {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        ...(prompts ? { prompts } : {}),
+        prompts,
         inputS3Key: parsedInput.inputS3Key,
         threshold: parsedInput.threshold,
         maskThreshold: parsedInput.maskThreshold,
@@ -410,7 +408,7 @@ export class SegmentationClient {
     });
 
     return this.segment({
-      ...(prompts ? { prompts } : {}),
+      prompts,
       inputS3Key: presignedUpload.inputS3Key,
       threshold: parsedInput.threshold,
       maskThreshold: parsedInput.maskThreshold,
@@ -434,7 +432,7 @@ export class SegmentationClient {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        ...(prompts ? { prompts } : {}),
+        prompts,
         threshold: parsedInput.threshold,
         maskThreshold: parsedInput.maskThreshold,
         items: parsedInput.items,
