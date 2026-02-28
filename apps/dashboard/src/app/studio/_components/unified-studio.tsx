@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Sparkles, Trash2, X } from "lucide-react";
 import {
   SegmentationClient,
   type SegmentJobStatusResult,
@@ -100,6 +100,13 @@ export function UnifiedStudio() {
   const [statusRefreshing, setStatusRefreshing] = useState(false);
   const [batchCarouselIndex, setBatchCarouselIndex] = useState(0);
 
+  // Bounding box state
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [imageDims, setImageDims] = useState<{ w: number; h: number } | null>(null);
+  const [boxes, setBoxes] = useState<number[][]>([]);
+  const [currentBox, setCurrentBox] = useState<number[] | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
   const jobKind = useMemo(() => classifyFiles(files), [files]);
   const firstImage = useMemo(
     () => files.find((file) => file.type.startsWith("image/")) ?? null,
@@ -176,11 +183,12 @@ export function UnifiedStudio() {
             : "border-border/60 bg-background/50 text-muted-foreground";
 
   const currentAsyncJobId = runState.batchJobId ?? runState.videoJobId ?? null;
-  const hasResult =
+  const hasOutputs =
     runState.mode === "ready" &&
     ((runState.selectedType === "single-image" && Boolean(runState.singleImageResult)) ||
       ((runState.selectedType === "batch-image" || runState.selectedType === "video") &&
         Boolean(currentAsyncJobId)));
+  const isPreviewMode = (jobKind === "single-image" || jobKind === "batch-image") && Boolean(imagePreviewUrl);
 
   const progressText = jobStatus
     ? `${jobStatus.successItems + jobStatus.failedItems}/${jobStatus.totalItems}`
@@ -193,6 +201,13 @@ export function UnifiedStudio() {
     setPrompts(next);
   }
 
+  function resetBoxState() {
+    setBoxes([]);
+    setCurrentBox(null);
+    setIsDrawing(false);
+    setImageDims(null);
+  }
+
   function onFilesSelected(next: FileList | null) {
     const selected = Array.from(next ?? []).filter((file) => {
       const kind = fileKind(file);
@@ -202,6 +217,7 @@ export function UnifiedStudio() {
     setRunState({ mode: "idle" });
     setJobStatus(null);
     setBatchCarouselIndex(0);
+    resetBoxState();
   }
 
   function removeFile(index: number) {
@@ -209,6 +225,7 @@ export function UnifiedStudio() {
     setRunState({ mode: "idle" });
     setJobStatus(null);
     setBatchCarouselIndex(0);
+    resetBoxState();
   }
 
   function resetStudio() {
@@ -218,6 +235,7 @@ export function UnifiedStudio() {
     setUploadProgress({ done: 0, total: 0 });
     setJobStatus(null);
     setBatchCarouselIndex(0);
+    resetBoxState();
   }
 
   async function refreshJobStatus(jobIdOverride?: string, silent = false) {
@@ -295,6 +313,8 @@ export function UnifiedStudio() {
 
         const result = await client.uploadAndSegment({
           prompts: cleanPrompts,
+          boxes: boxes.length > 0 ? boxes : undefined,
+          boxLabels: boxes.length > 0 ? boxes.map((_) => 1) : undefined,
           data: file,
           contentType: file.type || "image/png",
           threshold: 0.5,
@@ -364,6 +384,8 @@ export function UnifiedStudio() {
 
       const accepted = await client.createBatchSegmentJob({
         prompts: cleanPrompts,
+        boxes: boxes.length > 0 ? boxes : undefined,
+        boxLabels: boxes.length > 0 ? boxes.map((_) => 1) : undefined,
         threshold: 0.5,
         maskThreshold: 0.5,
         items: uploaded.map((inputS3Key) => ({ inputS3Key })),
@@ -383,6 +405,89 @@ export function UnifiedStudio() {
       setUploadProgress({ done: 0, total: 0 });
       toast.error(message);
     }
+  }
+
+  function handleImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    const { naturalWidth, naturalHeight } = e.currentTarget;
+    setImageDims({ w: naturalWidth, h: naturalHeight });
+  }
+
+  function getMouseCoords(e: React.MouseEvent<HTMLDivElement>): [number, number] | null {
+    if (!imageRef.current || !imageDims) return null;
+    const rect = imageRef.current.getBoundingClientRect();
+    
+    // Calculate the mouse position relative to the image element
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Scale coordinates to the original image dimensions
+    const scaleX = imageDims.w / rect.width;
+    const scaleY = imageDims.h / rect.height;
+    
+    const imageX = Math.round(x * scaleX);
+    const imageY = Math.round(y * scaleY);
+    
+    return [
+      Math.max(0, Math.min(imageX, imageDims.w)),
+      Math.max(0, Math.min(imageY, imageDims.h))
+    ];
+  }
+
+  function handleMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+    const coords = getMouseCoords(e);
+    if (!coords) return;
+    setIsDrawing(true);
+    setCurrentBox([coords[0], coords[1], coords[0], coords[1]]);
+  }
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!isDrawing || !currentBox) return;
+    const coords = getMouseCoords(e);
+    if (!coords) return;
+    setCurrentBox([currentBox[0], currentBox[1], coords[0], coords[1]]);
+  }
+
+  function handleMouseUp() {
+    if (!isDrawing || !currentBox) return;
+    setIsDrawing(false);
+    
+    // Only add if it's an actual box (width > 5 & height > 5 to avoid accidental clicks)
+    const x1 = Math.min(currentBox[0], currentBox[2]);
+    const y1 = Math.min(currentBox[1], currentBox[3]);
+    const x2 = Math.max(currentBox[0], currentBox[2]);
+    const y2 = Math.max(currentBox[1], currentBox[3]);
+
+    if (x2 - x1 > 5 && y2 - y1 > 5) {
+      setBoxes((current) => [...current, [x1, y1, x2, y2]]);
+    }
+    setCurrentBox(null);
+  }
+
+  function renderBox(box: number[], key: string, isDrawing = false) {
+    if (!imageDims) return null;
+    
+    const x1 = Math.min(box[0], box[2]);
+    const y1 = Math.min(box[1], box[3]);
+    const x2 = Math.max(box[0], box[2]);
+    const y2 = Math.max(box[1], box[3]);
+    
+    const left = (x1 / imageDims.w) * 100;
+    const top = (y1 / imageDims.h) * 100;
+    const width = ((x2 - x1) / imageDims.w) * 100;
+    const height = ((y2 - y1) / imageDims.h) * 100;
+
+    return (
+      <div
+        key={key}
+        className={`absolute border-2 pointer-events-none ${isDrawing ? 'border-primary border-dashed bg-primary/10' : 'border-emerald-500 bg-emerald-500/20'}`}
+        style={{
+          left: `${left}%`,
+          top: `${top}%`,
+          width: `${width}%`,
+          height: `${height}%`,
+        }}
+      />
+    );
   }
 
   return (
@@ -554,7 +659,7 @@ export function UnifiedStudio() {
             ) : null}
           </div>
 
-          {!hasResult ? (
+          {!hasOutputs && !isPreviewMode ? (
             <Empty className="mt-2 border-0 bg-transparent p-0 text-left">
               <EmptyHeader className="items-start">
                 <EmptyTitle className="text-sm">No output yet</EmptyTitle>
@@ -565,26 +670,52 @@ export function UnifiedStudio() {
             </Empty>
           ) : null}
 
-          {runState.mode === "ready" &&
-          runState.selectedType === "single-image" &&
-          runState.singleImageResult ? (
+          {isPreviewMode ? (
             <div className="mt-3 space-y-3">
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                {runState.maskCount ?? 0} masks detected
-              </p>
-              {imagePreviewUrl ? (
-                <div className="relative overflow-hidden rounded-lg border border-border/60">
-                  <img src={imagePreviewUrl} alt="Selected" className="h-auto w-full" />
-                  {runState.singleImageResult.masks.map((mask, index) => (
-                    <img
-                      key={`${mask.key}-${index}`}
-                      src={mask.url}
-                      alt={`Mask ${index + 1}`}
-                      className="pointer-events-none absolute inset-0 h-full w-full object-cover mix-blend-screen opacity-65"
-                    />
-                  ))}
-                </div>
-              ) : null}
+              <div className="flex items-center justify-between">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  {runState.mode === "ready" && runState.singleImageResult ? `${runState.maskCount ?? 0} masks detected` : boxes.length > 0 ? `${boxes.length} objects selected` : 'Draw bounding boxes to select objects'}
+                </p>
+                {boxes.length > 0 && !hasOutputs ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setBoxes([])}
+                    className="h-6 px-2 text-[10px] uppercase font-mono tracking-[0.11em] text-muted-foreground hover:text-destructive"
+                  >
+                    Clear Boxes
+                  </Button>
+                ) : null}
+              </div>
+              <div 
+                className={`relative overflow-hidden rounded-lg border border-border/60 select-none ${!hasOutputs ? 'cursor-crosshair' : ''}`}
+                onMouseDown={!hasOutputs ? handleMouseDown : undefined}
+                onMouseMove={!hasOutputs ? handleMouseMove : undefined}
+                onMouseUp={!hasOutputs ? handleMouseUp : undefined}
+                onMouseLeave={!hasOutputs ? handleMouseUp : undefined}
+              >
+                <img 
+                  ref={imageRef}
+                  src={imagePreviewUrl!} 
+                  alt="Selected" 
+                  className="h-auto w-full pointer-events-none" 
+                  draggable={false}
+                  onLoad={handleImageLoad}
+                />
+                
+                {runState.mode === "ready" && runState.singleImageResult?.masks.map((mask, index) => (
+                  <img
+                    key={`${mask.key}-${index}`}
+                    src={mask.url}
+                    alt={`Mask ${index + 1}`}
+                    className="pointer-events-none absolute inset-0 h-full w-full object-cover mix-blend-screen opacity-65"
+                  />
+                ))}
+
+                {!hasOutputs && boxes.map((box, index) => renderBox(box, `box-${index}`))}
+                {!hasOutputs && currentBox && renderBox(currentBox, 'current-box', true)}
+              </div>
             </div>
           ) : null}
 
