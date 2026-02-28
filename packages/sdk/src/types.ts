@@ -23,6 +23,8 @@ export interface CreatePresignedUploadRequest {
 
 export interface SegmentRequest {
   prompts?: string[];
+  boxes?: number[][];
+  boxLabels?: number[];
   inputS3Key: string;
   threshold?: number;
   maskThreshold?: number;
@@ -78,6 +80,8 @@ export interface BatchSegmentItemInput {
 
 export interface CreateBatchSegmentJobRequest {
   prompts?: string[];
+  boxes?: number[][];
+  boxLabels?: number[];
   threshold?: number;
   maskThreshold?: number;
   items: BatchSegmentItemInput[];
@@ -98,6 +102,8 @@ export interface UploadImageRequest {
 
 export interface UploadAndSegmentRequest {
   prompts?: string[];
+  boxes?: number[][];
+  boxLabels?: number[];
   data: BinaryData;
   contentType: string;
   threshold?: number;

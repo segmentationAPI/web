@@ -437,6 +437,46 @@ describe("SegmentationClient", () => {
     expect(result.masks[0].url).toBe("https://assets.segmentationapi.com/outputs/job-1/mask_0.png");
   });
 
+  it("sends segment request with boxes instead of prompts", async () => {
+    const fetchMock = asFetchMock(async () =>
+      jsonResponse({
+        requestId: "request-box",
+        jobId: "job-box",
+        numInstances: 1,
+        outputPrefix: "outputs/job-box/",
+        masks: [
+          {
+            key: "outputs/job-box/mask_0.png",
+            score: 0.88,
+            box: [10, 20, 30, 40],
+          },
+        ],
+      }),
+    );
+
+    const client = new SegmentationClient({
+      apiKey: "test_key",
+      fetch: fetchMock,
+    });
+
+    const result = await client.segment({
+      boxes: [[10, 20, 30, 40]],
+      boxLabels: [1],
+      inputS3Key: "inputs/demo.png",
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(body.prompts).toBeUndefined();
+    expect(body.boxes).toEqual([[10, 20, 30, 40]]);
+    expect(body.boxLabels).toEqual([1]);
+    expect(body.inputS3Key).toBe("inputs/demo.png");
+
+    expect(result.jobId).toBe("job-box");
+    expect(result.numInstances).toBe(1);
+  });
+
   it("throws SegmentationApiError on API failure", async () => {
     const fetchMock = asFetchMock(
       async () =>
@@ -594,6 +634,15 @@ describe("SegmentationClient", () => {
     await expect(
       client.segment({
         prompts: [] as string[],
+        inputS3Key: "inputs/demo.png",
+      }),
+    ).rejects.toMatchObject({
+      direction: "input",
+      operation: "segment",
+    });
+
+    await expect(
+      client.segment({
         inputS3Key: "inputs/demo.png",
       }),
     ).rejects.toMatchObject({
@@ -766,29 +815,29 @@ describe("SegmentationClient", () => {
     expect(result.jobId).toBe("job-3");
   });
 
-  it("omits prompts in uploadAndSegment when prompt list is empty", async () => {
+  it("sends boxes without prompts in uploadAndSegment", async () => {
     const fetchMock = asFetchMock(async (input) => {
       const url = String(input);
 
       if (url.endsWith("/uploads/presign")) {
         return jsonResponse({
-          uploadUrl: "https://upload.example.com/put-optional",
-          inputS3Key: "inputs/flow-optional.png",
+          uploadUrl: "https://upload.example.com/put-boxes",
+          inputS3Key: "inputs/flow-boxes.png",
           bucket: "segmentation-assets-prod",
           expiresIn: 300,
         });
       }
 
-      if (url === "https://upload.example.com/put-optional") {
+      if (url === "https://upload.example.com/put-boxes") {
         return new Response(null, { status: 200 });
       }
 
       if (url.endsWith("/segment")) {
         return jsonResponse({
-          requestId: "request-optional",
-          jobId: "job-optional",
+          requestId: "request-boxes",
+          jobId: "job-boxes",
           numInstances: 1,
-          outputPrefix: "outputs/job-optional/",
+          outputPrefix: "outputs/job-boxes/",
           masks: [],
         });
       }
@@ -802,6 +851,7 @@ describe("SegmentationClient", () => {
     });
 
     await client.uploadAndSegment({
+      boxes: [[10, 20, 30, 40]],
       data: new Uint8Array([7, 8, 9]),
       contentType: "image/png",
     });
@@ -809,8 +859,29 @@ describe("SegmentationClient", () => {
     const segmentBody = JSON.parse(
       String((fetchMock.mock.calls[2]?.[1] as RequestInit)?.body),
     ) as Record<string, unknown>;
-    expect(segmentBody.inputS3Key).toBe("inputs/flow-optional.png");
+    expect(segmentBody.inputS3Key).toBe("inputs/flow-boxes.png");
     expect(segmentBody.prompts).toBeUndefined();
+    expect(segmentBody.boxes).toEqual([[10, 20, 30, 40]]);
+  });
+
+  it("rejects uploadAndSegment with neither prompts nor boxes", async () => {
+    const fetchMock = asFetchMock(async () => new Response(null, { status: 200 }));
+    const client = new SegmentationClient({
+      apiKey: "test_key",
+      fetch: fetchMock,
+    });
+
+    await expect(
+      client.uploadAndSegment({
+        data: new Uint8Array([7, 8, 9]),
+        contentType: "image/png",
+      }),
+    ).rejects.toMatchObject({
+      direction: "input",
+      operation: "uploadAndSegment",
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("creates batch segment job and maps request fields", async () => {
@@ -856,16 +927,16 @@ describe("SegmentationClient", () => {
     expect(result.pollPath).toBe("/v1/jobs/batch-job-1");
   });
 
-  it("omits prompts in createBatchSegmentJob when not provided", async () => {
+  it("sends boxes without prompts in createBatchSegmentJob", async () => {
     const fetchMock = asFetchMock(async () =>
       jsonResponse(
         {
-          requestId: "batch-request-optional",
-          jobId: "batch-job-optional",
+          requestId: "batch-request-boxes",
+          jobId: "batch-job-boxes",
           type: "image_batch",
           status: "queued",
           totalItems: 1,
-          pollPath: "/v1/jobs/batch-job-optional",
+          pollPath: "/v1/jobs/batch-job-boxes",
         },
         202,
       ),
@@ -877,7 +948,7 @@ describe("SegmentationClient", () => {
     });
 
     await client.createBatchSegmentJob({
-      prompts: [],
+      boxes: [[5, 10, 50, 100]],
       items: [{ inputS3Key: "inputs/a.png" }],
     });
 
@@ -886,7 +957,27 @@ describe("SegmentationClient", () => {
       unknown
     >;
     expect(body.prompts).toBeUndefined();
+    expect(body.boxes).toEqual([[5, 10, 50, 100]]);
     expect(body.items).toEqual([{ inputS3Key: "inputs/a.png" }]);
+  });
+
+  it("rejects createBatchSegmentJob with neither prompts nor boxes", async () => {
+    const fetchMock = asFetchMock(async () => jsonResponse({}));
+    const client = new SegmentationClient({
+      apiKey: "test_key",
+      fetch: fetchMock,
+    });
+
+    await expect(
+      client.createBatchSegmentJob({
+        items: [{ inputS3Key: "inputs/a.png" }],
+      }),
+    ).rejects.toMatchObject({
+      direction: "input",
+      operation: "createBatchSegmentJob",
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("gets segment job status and normalizes item URLs", async () => {

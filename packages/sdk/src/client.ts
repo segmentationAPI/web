@@ -309,17 +309,27 @@ export class SegmentationClient {
     const parsedInput = parseInputOrThrow(segmentRequestSchema, input, "segment");
     const prompts = normalizePrompts(parsedInput.prompts);
 
+    const payload: Record<string, unknown> = {
+      inputS3Key: parsedInput.inputS3Key,
+      threshold: parsedInput.threshold,
+      maskThreshold: parsedInput.maskThreshold,
+    };
+    if (prompts.length > 0) {
+      payload.prompts = prompts;
+    }
+    if (parsedInput.boxes !== undefined) {
+      payload.boxes = parsedInput.boxes;
+    }
+    if (parsedInput.boxLabels !== undefined) {
+      payload.boxLabels = parsedInput.boxLabels;
+    }
+
     const raw = await this.requestApi({
       path: "/segment",
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        prompts,
-        inputS3Key: parsedInput.inputS3Key,
-        threshold: parsedInput.threshold,
-        maskThreshold: parsedInput.maskThreshold,
-      }),
+      body: JSON.stringify(payload),
       signal: parsedInput.signal,
       responseSchema: segmentResponseRawSchema,
       operation: "segment",
@@ -409,6 +419,8 @@ export class SegmentationClient {
 
     return this.segment({
       prompts,
+      boxes: parsedInput.boxes,
+      boxLabels: parsedInput.boxLabels,
       inputS3Key: presignedUpload.inputS3Key,
       threshold: parsedInput.threshold,
       maskThreshold: parsedInput.maskThreshold,
@@ -426,17 +438,27 @@ export class SegmentationClient {
     );
     const prompts = normalizePrompts(parsedInput.prompts);
 
+    const payload: Record<string, unknown> = {
+      threshold: parsedInput.threshold,
+      maskThreshold: parsedInput.maskThreshold,
+      items: parsedInput.items,
+    };
+    if (prompts.length > 0) {
+      payload.prompts = prompts;
+    }
+    if (parsedInput.boxes !== undefined) {
+      payload.boxes = parsedInput.boxes;
+    }
+    if (parsedInput.boxLabels !== undefined) {
+      payload.boxLabels = parsedInput.boxLabels;
+    }
+
     const raw = await this.requestApi({
       path: "/segment/batch",
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        prompts,
-        threshold: parsedInput.threshold,
-        maskThreshold: parsedInput.maskThreshold,
-        items: parsedInput.items,
-      }),
+      body: JSON.stringify(payload),
       signal: parsedInput.signal,
       responseSchema: batchSegmentAcceptedRawSchema,
       operation: "createBatchSegmentJob",

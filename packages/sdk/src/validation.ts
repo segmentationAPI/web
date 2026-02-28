@@ -88,13 +88,34 @@ export const uploadImageRequestSchema: z.ZodMiniType<UploadImageRequest> =
 export const promptsSchema = z
   .array(nonEmptyString);
 
-export const segmentRequestSchema: z.ZodMiniType<SegmentRequest> = z.object({
-  prompts: z.optional(promptsSchema),
-  inputS3Key: nonEmptyString,
-  threshold: z.optional(finiteNumber),
-  maskThreshold: z.optional(finiteNumber),
-  signal: abortSignalSchema,
-});
+export const imageBoxSchema = z.array(finiteNumber).check(
+  z.refine((value) => value.length >= 4, "Each box must have at least 4 coordinates."),
+);
+
+export const imageBoxesSchema = z.array(imageBoxSchema);
+
+function hasPromptOrBoxes(value: { prompts?: string[]; boxes?: number[][] }): boolean {
+  const hasPrompts = Array.isArray(value.prompts) && value.prompts.length > 0;
+  const hasBoxes = Array.isArray(value.boxes) && value.boxes.length > 0;
+  return hasPrompts || hasBoxes;
+}
+
+export const segmentRequestSchema: z.ZodMiniType<SegmentRequest> = z
+  .object({
+    prompts: z.optional(promptsSchema),
+    boxes: z.optional(imageBoxesSchema),
+    boxLabels: z.optional(z.array(finiteNumber)),
+    inputS3Key: nonEmptyString,
+    threshold: z.optional(finiteNumber),
+    maskThreshold: z.optional(finiteNumber),
+    signal: abortSignalSchema,
+  })
+  .check(
+    z.refine(
+      hasPromptOrBoxes,
+      "Provide at least one prompt: `prompts` or `boxes`.",
+    ),
+  );
 
 const segmentVideoPointSchema = z.tuple([finiteNumber, finiteNumber]);
 
@@ -224,30 +245,48 @@ export const segmentVideoRequestSchema: z.ZodMiniType<SegmentVideoRequest> = z
   );
 
 export const uploadAndSegmentRequestSchema: z.ZodMiniType<UploadAndSegmentRequest> =
-  z.object({
-    prompts: z.optional(promptsSchema),
-    data: binaryDataSchema,
-    contentType: nonEmptyString,
-    threshold: z.optional(finiteNumber),
-    maskThreshold: z.optional(finiteNumber),
-    signal: abortSignalSchema,
-  });
+  z
+    .object({
+      prompts: z.optional(promptsSchema),
+      boxes: z.optional(imageBoxesSchema),
+      boxLabels: z.optional(z.array(finiteNumber)),
+      data: binaryDataSchema,
+      contentType: nonEmptyString,
+      threshold: z.optional(finiteNumber),
+      maskThreshold: z.optional(finiteNumber),
+      signal: abortSignalSchema,
+    })
+    .check(
+      z.refine(
+        hasPromptOrBoxes,
+        "Provide at least one prompt: `prompts` or `boxes`.",
+      ),
+    );
 
 export const batchSegmentItemInputSchema = z.object({
   inputS3Key: nonEmptyString,
 });
 
 export const createBatchSegmentJobRequestSchema: z.ZodMiniType<CreateBatchSegmentJobRequest> =
-  z.object({
-    prompts: z.optional(promptsSchema),
-    threshold: z.optional(finiteNumber),
-    maskThreshold: z.optional(finiteNumber),
-    items: z.array(batchSegmentItemInputSchema).check(
-      z.refine((value) => value.length >= 1, "Expected at least 1 item."),
-      z.refine((value) => value.length <= 100, "Expected at most 100 items."),
-    ),
-    signal: abortSignalSchema,
-  });
+  z
+    .object({
+      prompts: z.optional(promptsSchema),
+      boxes: z.optional(imageBoxesSchema),
+      boxLabels: z.optional(z.array(finiteNumber)),
+      threshold: z.optional(finiteNumber),
+      maskThreshold: z.optional(finiteNumber),
+      items: z.array(batchSegmentItemInputSchema).check(
+        z.refine((value) => value.length >= 1, "Expected at least 1 item."),
+        z.refine((value) => value.length <= 100, "Expected at most 100 items."),
+      ),
+      signal: abortSignalSchema,
+    })
+    .check(
+      z.refine(
+        hasPromptOrBoxes,
+        "Provide at least one prompt: `prompts` or `boxes`.",
+      ),
+    );
 
 export const getSegmentJobRequestSchema: z.ZodMiniType<GetSegmentJobRequest> =
   z.object({
