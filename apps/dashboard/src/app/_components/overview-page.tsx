@@ -12,36 +12,35 @@ export function OverviewPageContent({
   userName: string;
 }) {
   return (
-    <>
-      <Card className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 py-6">
-        <CardHeader>
-          <CardDescription className="font-mono uppercase tracking-[0.14em] text-muted-foreground">
-            Account Overview
-          </CardDescription>
-          <CardTitle className="font-display text-2xl tracking-[0.03em] text-foreground">
-            {userName}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-border/70 bg-muted/55 p-4">
-            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-              Tokens Remaining
-            </div>
-            <div className="mt-2 font-display text-3xl text-secondary">
-              {formatNumber(balance.tokensRemaining)}
-            </div>
-          </div>
-          <div className="rounded-xl border border-border/70 bg-muted/55 p-4">
-            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-              Last 24h Usage
-            </div>
-            <div className="mt-2 font-display text-3xl text-primary">
-              {formatNumber(balance.tokenUsageLast24h)}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </>
+    <Card className="glass-panel rounded-[1.25rem] border-border/70 bg-card/80 py-3">
+      <CardHeader className="pb-2">
+        <CardDescription className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+          Account Overview
+        </CardDescription>
+        <CardTitle className="font-display text-lg tracking-[0.03em] text-foreground sm:text-xl">
+          {userName}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3 border-t border-border/50 pt-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            Tokens Remaining
+          </p>
+          <p className="font-display text-2xl leading-none text-secondary sm:text-[2rem]">
+            {formatNumber(balance.tokensRemaining)}
+          </p>
+        </div>
+
+        <div className="space-y-1 sm:border-l sm:border-border/50 sm:pl-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            Last 24h Usage
+          </p>
+          <p className="font-display text-2xl leading-none text-primary sm:text-[2rem]">
+            {formatNumber(balance.tokenUsageLast24h)}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

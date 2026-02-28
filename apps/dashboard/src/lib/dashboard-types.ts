@@ -11,8 +11,10 @@ export type JobListItem = {
   errorMessage: string | null;
   id: string;
   modality: "image" | "video";
+  processingMode: "single" | "batch" | "video";
   prompts: string[];
   status: "queued" | "processing" | "success" | "failed";
+  totalTasks: number;
   updatedAt: Date;
   userId: string;
 };
@@ -26,6 +28,18 @@ export type JobDetail = JobListItem & {
     url: string | null;
     score: number | null;
     box: [number, number, number, number] | null;
+  }>;
+  imageGroups: Array<{
+    id: string;
+    status: "queued" | "processing" | "success" | "failed";
+    createdAt: Date;
+    inputImageUrl: string | null;
+    outputs: Array<{
+      maskIndex: number;
+      url: string | null;
+      score: number | null;
+      box: [number, number, number, number] | null;
+    }>;
   }>;
   videoOutput: {
     manifestUrl: string;

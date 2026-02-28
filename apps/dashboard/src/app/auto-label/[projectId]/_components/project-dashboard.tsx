@@ -2,9 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Check,
-  ChevronDown,
-  DownloadCloud,
   FileImage,
   ImageIcon,
   Loader2,
@@ -20,10 +17,14 @@ import { toast } from "sonner";
 import { SegmentationClient } from "@segmentationapi/sdk";
 
 import { authClient } from "@/lib/auth-client";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Progress } from "@/components/ui/progress";
 import {
   deleteImagesAction,
   getProject,
@@ -82,11 +83,6 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
   // Action state
   const [isTriggering, setIsTriggering] = useState(false);
 
-  // Export dropdown state
-  const [showExportMenu, setShowExportMenu] = useState(false);
-  const [exportFormats, setExportFormats] = useState<Set<string>>(new Set(["png"]));
-  const exportMenuRef = useRef<HTMLDivElement>(null);
-
   // Initial load & Polling
   const fetchData = async () => {
     const res = await getProject(projectId);
@@ -118,35 +114,6 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
     }
   }, [activeJob, projectId]);
 
-  // Close export dropdown on outside click
-  useEffect(() => {
-    if (!showExportMenu) return;
-    function handleClick(e: MouseEvent) {
-      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
-        setShowExportMenu(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [showExportMenu]);
-
-  function toggleExportFormat(fmt: string) {
-    setExportFormats((prev) => {
-      const next = new Set(prev);
-      if (next.has(fmt)) {
-        // keep at least one selected
-        if (next.size > 1) next.delete(fmt);
-      } else {
-        next.add(fmt);
-      }
-      return next;
-    });
-  }
-
-  function buildExportUrl() {
-    return `/api/auto-label/projects/${projectId}/export?formats=${Array.from(exportFormats).join(",")}`;
-  }
-
   // ── Config ──────────────────────────────────────────────────────────────
 
   const handleSaveConfig = async () => {
@@ -168,12 +135,6 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
   // ── Auto Label ──────────────────────────────────────────────────────────
 
   const handleAutoLabel = async () => {
-    if (!prompts.some((p) => p.trim())) {
-      toast.error("Please configure at least one prompt before running Auto Label.");
-      setShowConfig(true);
-      return;
-    }
-
     setIsTriggering(true);
     try {
       const res = await triggerAutoLabelAction(projectId);
@@ -363,114 +324,24 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             Config
           </Button>
 
-          {isSuccess ? (
-            <div ref={exportMenuRef} className="relative">
-              {/* Trigger button */}
-              <button
-                type="button"
-                onClick={() => setShowExportMenu((v) => !v)}
-                className={cn(
-                  buttonVariants({ size: "sm" }),
-                  "h-8 gap-2 rounded-lg border border-primary/50 bg-primary/20 px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-primary hover:bg-primary/30 cursor-pointer",
-                )}
-              >
-                <DownloadCloud className="size-3" />
-                Export
-                <ChevronDown
-                  className={`size-3 transition-transform duration-200 ${showExportMenu ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              {/* Dropdown panel */}
-              {showExportMenu && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[230px] rounded-xl border border-border/70 bg-card shadow-xl shadow-black/20 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-4 pt-3 pb-2">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                      Export Formats
-                    </p>
-                  </div>
-
-                  {/* Format options */}
-                  {(
-                    [
-                      {
-                        id: "png",
-                        label: "PNG Masks",
-                        desc: "Binary mask images",
-                      },
-                      {
-                        id: "yolo",
-                        label: "YOLO (bbox)",
-                        desc: "Normalized bounding boxes",
-                      },
-                      {
-                        id: "labelstudio",
-                        label: "Label Studio",
-                        desc: "Import-ready JSON tasks",
-                      },
-                    ] as const
-                  ).map(({ id, label, desc }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => toggleExportFormat(id)}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/40"
-                    >
-                      <div
-                        className={`flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${
-                          exportFormats.has(id)
-                            ? "border-primary bg-primary"
-                            : "border-border/60 bg-background/60"
-                        }`}
-                      >
-                        {exportFormats.has(id) && (
-                          <Check className="size-2.5 text-primary-foreground" strokeWidth={3} />
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-sans text-xs font-medium text-foreground">
-                          {label}
-                        </span>
-                        <span className="font-mono text-[10px] text-muted-foreground">{desc}</span>
-                      </div>
-                    </button>
-                  ))}
-
-                  <div className="border-t border-border/50 p-3">
-                    <a
-                      href={buildExportUrl()}
-                      download
-                      onClick={() => setShowExportMenu(false)}
-                      className={cn(
-                        buttonVariants({ size: "sm" }),
-                        "w-full h-8 gap-2 rounded-lg border border-primary/50 bg-primary/20 font-mono text-[11px] uppercase tracking-[0.14em] text-primary hover:bg-primary/30 justify-center",
-                      )}
-                    >
-                      <DownloadCloud className="size-3" />
-                      Download ({exportFormats.size} format
-                      {exportFormats.size !== 1 ? "s" : ""})
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Button
-              size="sm"
-              disabled={isRunning || isTriggering || images.length === 0}
-              onClick={() => void handleAutoLabel()}
-              className="h-8 gap-2 rounded-lg border border-primary/50 bg-primary/20 px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-primary hover:bg-primary/30 disabled:opacity-50 transition-transform active:scale-95"
-            >
-              {isRunning || isTriggering ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <Play className="size-3" fill="currentColor" />
-              )}
-              {isRunning ? "Running..." : "Auto Label All"}
-            </Button>
-          )}
+          <Button
+            size="sm"
+            disabled={isRunning || isTriggering || images.length === 0}
+            onClick={() => void handleAutoLabel()}
+            className="h-8 gap-2 rounded-lg border border-primary/50 bg-primary/20 px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-primary hover:bg-primary/30 disabled:opacity-50 transition-transform active:scale-95"
+          >
+            {isRunning || isTriggering ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <Play className="size-3" fill="currentColor" />
+            )}
+            {isRunning ? "Running..." : "Auto Label All"}
+          </Button>
         </div>
       </div>
+      <p className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+        Download generated outputs directly from your S3/CloudFront artifacts.
+      </p>
 
       {/* ── Config Panel ────────────────────────────────────────────────── */}
       {showConfig && (
@@ -512,6 +383,9 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
               <Label className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                 Detection Prompts
               </Label>
+              <p className="font-mono text-[10px] uppercase tracking-[0.11em] text-muted-foreground">
+                Optional. Leave blank for auto mode.
+              </p>
               <div className="flex flex-col gap-2">
                 {prompts.map((p, i) => (
                   <div key={i} className="flex items-center gap-2">
@@ -606,7 +480,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
 
       {/* ── Meta stats ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-card/40 p-4 relative overflow-hidden">
+        <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-card/40 p-4">
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground z-10">
             Status
           </span>
@@ -622,16 +496,13 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
               : "Ready to label"}
           </span>
 
-          {/* Active Job Progress background */}
           {activeJob && activeJob.totalTasks > 0 && (
-            <div className="absolute inset-0 z-0 bg-primary/10 w-full opacity-50">
-              <div
-                className="h-full bg-primary/20 transition-all duration-500 ease-in-out"
-                style={{
-                  width: `${Math.round(((activeJob.successTasks + activeJob.failedTasks) / activeJob.totalTasks) * 100)}%`,
-                }}
-              />
-            </div>
+            <Progress
+              value={Math.round(
+                ((activeJob.successTasks + activeJob.failedTasks) / activeJob.totalTasks) * 100,
+              )}
+              className="mt-2 gap-0"
+            />
           )}
         </div>
         <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-card/40 p-4">
@@ -674,8 +545,9 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
         </div>
 
         {/* ── Upload Zone ─────────────────────────────────────────────────── */}
-        <button
+        <Button
           type="button"
+          variant="ghost"
           disabled={uploading}
           onDragOver={(e) => {
             e.preventDefault();
@@ -701,7 +573,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
               JPEG, PNG, WebP, BMP, TIFF, GIF · Multiple files supported
             </p>
           </div>
-        </button>
+        </Button>
         <input
           ref={uploadInputRef}
           type="file"
@@ -723,14 +595,10 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
                 {uploadedCount} / {uploadTotal}
               </span>
             </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-primary/20">
-              <div
-                className="h-full bg-primary transition-all duration-300 ease-in-out"
-                style={{
-                  width: `${Math.max(2, (uploadedCount / uploadTotal) * 100)}%`,
-                }}
-              />
-            </div>
+            <Progress
+              value={uploadTotal > 0 ? Math.max(2, (uploadedCount / uploadTotal) * 100) : 0}
+              className="gap-0"
+            />
           </div>
         )}
 
@@ -773,12 +641,11 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             {/* Table Header */}
             <div className="grid grid-cols-[40px_1fr_120px_100px_40px] items-center gap-4 border-b border-border/50 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
               <label className="grid place-items-center cursor-pointer">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={allSelected}
-                  onChange={toggleSelectAll}
+                  onCheckedChange={toggleSelectAll}
                   disabled={images.length === 0}
-                  className="size-3.5 rounded border-border/60 accent-primary cursor-pointer"
+                  className="size-3.5 cursor-pointer border-border/60"
                 />
               </label>
               <span>Name</span>
@@ -790,11 +657,14 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             {/* Table Body */}
             <div className="flex max-h-[500px] flex-col overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border/50 hover:[&::-webkit-scrollbar-thumb]:bg-border/80 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-button]:hidden">
               {images.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-8 text-muted-foreground">
-                  <p className="font-mono text-xs">
-                    No images yet. Upload images above to get started.
-                  </p>
-                </div>
+                <Empty className="border-0 py-8">
+                  <EmptyHeader>
+                    <EmptyTitle className="font-mono text-xs">No images yet</EmptyTitle>
+                    <EmptyDescription className="font-mono text-xs">
+                      Upload images above to get started.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
               ) : (
                 images.map((img) => {
                   const isChecked = selectedIds.has(img.id);
@@ -807,11 +677,10 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
                       )}
                     >
                       <label className="grid place-items-center cursor-pointer">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={isChecked}
-                          onChange={() => toggleSelect(img.id)}
-                          className="size-3.5 rounded border-border/60 accent-primary cursor-pointer"
+                          onCheckedChange={() => toggleSelect(img.id)}
+                          className="size-3.5 cursor-pointer border-border/60"
                         />
                       </label>
 
@@ -826,19 +695,25 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
                         {img.width && img.height ? `${img.width}×${img.height}` : "—"}
                       </span>
 
-                      <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
+                      <Badge
+                        variant="outline"
+                        className="h-6 gap-1.5 rounded-full font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
+                      >
                         <div
                           className={`size-1.5 rounded-full ${isSuccess ? "bg-primary" : "bg-border/80"}`}
                         />
                         {isSuccess ? "Labeled" : "Unlabeled"}
-                      </span>
+                      </Badge>
 
-                      <button
+                      <Button
                         type="button"
-                        className="grid place-items-center rounded-md p-1.5 text-muted-foreground opacity-0 transition-all hover:bg-background/80 hover:text-foreground group-hover:opacity-100"
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 rounded-md p-1.5 text-muted-foreground opacity-0 transition-all hover:bg-background/80 hover:text-foreground group-hover:opacity-100"
+                        aria-label="More actions"
                       >
                         <MoreHorizontal className="size-4" />
-                      </button>
+                      </Button>
                     </div>
                   );
                 })

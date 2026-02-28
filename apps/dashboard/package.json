@@ -18,7 +18,6 @@
     "@segmentation/env": "workspace:*",
     "@segmentationapi/sdk": "workspace:*",
     "@tanstack/react-form": "^1.28.0",
-    "archiver": "^7.0.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "catalog:",
     "class-variance-authority": "^0.7.1",
@@ -41,7 +40,6 @@
   "devDependencies": {
     "@segmentation/config": "workspace:*",
     "@tailwindcss/postcss": "^4.1.10",
-    "@types/archiver": "^7.0.0",
     "@types/node": "^20",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",

@@ -30,6 +30,15 @@ function toUiModality(requestType: "image_sync" | "image_batch" | "video"): "ima
   return requestType === "video" ? "video" : "image";
 }
 
+function toUiProcessingMode(
+  requestType: "image_sync" | "image_batch" | "video",
+): "single" | "batch" | "video" {
+  if (requestType === "video") {
+    return "video";
+  }
+  return requestType === "image_batch" ? "batch" : "single";
+}
+
 export async function getBalanceForUser(userId: string): Promise<BalanceData> {
   const [balance, jobs] = await Promise.all([
     getDynamoTokenBalance(userId),
@@ -64,7 +73,9 @@ export async function listJobsForUser(params: {
   const jobs = await listDynamoJobsForAccount(params.userId);
   const page = jobs.slice(offset, offset + limit);
 
-  const apiKeyIds = Array.from(new Set(page.map((job) => job.apiKeyId).filter(Boolean))) as string[];
+  const apiKeyIds = Array.from(
+    new Set(page.map((job) => job.apiKeyId).filter(Boolean)),
+  ) as string[];
   const prefixes = apiKeyIds.length
     ? await db
         .select({
@@ -83,8 +94,10 @@ export async function listJobsForUser(params: {
     apiKeyId: job.apiKeyId,
     apiKeyPrefix: job.apiKeyId ? (prefixById.get(job.apiKeyId) ?? null) : null,
     modality: toUiModality(job.requestType),
+    processingMode: toUiProcessingMode(job.requestType),
     prompts: job.prompts,
     status: toUiStatus(job.status),
+    totalTasks: Math.max(job.totalTasks, 0),
     errorCode: job.errorCode,
     errorMessage: job.errorMessage,
     createdAt: job.createdAt,
@@ -122,16 +135,24 @@ export async function getJobDetailForUser(params: {
   const firstImageTask = tasks.find((task) => task.taskType === "image");
   const firstVideoTask = tasks.find((task) => task.taskType === "video");
   const videoOutput = firstVideoTask?.videoOutput ?? null;
-
-  const outputs = tasks
-    .flatMap((task) => task.masks)
-    .sort((a, b) => a.maskIndex - b.maskIndex)
-    .map((mask, index) => ({
-      maskIndex: index,
-      url: buildAssetUrl(mask.s3Path),
-      score: mask.score,
-      box: mask.box,
+  const imageGroups = tasks
+    .filter((task) => task.taskType === "image")
+    .map((task) => ({
+      id: task.id,
+      status: task.status,
+      createdAt: task.createdAt,
+      inputImageUrl: task.inputS3Key ? buildAssetUrl(task.inputS3Key) : null,
+      outputs: task.masks
+        .sort((a, b) => a.maskIndex - b.maskIndex)
+        .map((mask, index) => ({
+          maskIndex: index,
+          url: buildAssetUrl(mask.s3Path),
+          score: mask.score,
+          box: mask.box,
+        })),
     }));
+
+  const outputs = imageGroups.flatMap((group) => group.outputs);
 
   return {
     id: job.jobId,
@@ -141,6 +162,8 @@ export async function getJobDetailForUser(params: {
     prompts: job.prompts,
     status: toUiStatus(job.status),
     modality: toUiModality(job.requestType),
+    processingMode: toUiProcessingMode(job.requestType),
+    totalTasks: Math.max(job.totalTasks, 0),
     errorCode: job.errorCode,
     errorMessage: job.errorMessage,
     createdAt: job.createdAt,
@@ -148,6 +171,7 @@ export async function getJobDetailForUser(params: {
     inputImageUrl: firstImageTask?.inputS3Key ? buildAssetUrl(firstImageTask.inputS3Key) : null,
     inputVideoUrl: firstVideoTask?.inputS3Key ? buildAssetUrl(firstVideoTask.inputS3Key) : null,
     outputs,
+    imageGroups,
     videoOutput: videoOutput
       ? {
           manifestUrl: videoOutput.framesUrl,

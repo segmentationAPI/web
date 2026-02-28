@@ -19,15 +19,16 @@ import { Suspense } from 'react';
 
 const dashboardLinks = [
 	{ href: '/', label: 'Overview' },
-	{ href: '/auto-label', label: 'Auto Label' },
-	{ href: '/playground', label: 'Playground' },
-	{ href: '/requests', label: 'Requests' },
+	{ href: '/studio', label: 'Studio' },
+	{ href: '/history', label: 'History' },
 ] as const;
 
 function HeaderContent() {
 	const pathname = usePathname();
 	const router = useRouter();
 	const onDashboard = pathname !== '/login';
+	const isActive = (href: string) =>
+		pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 
 	return (
 		<header className="sticky top-0 z-40 border-b border-border/35 bg-background/70 backdrop-blur-xl">
@@ -70,7 +71,7 @@ function HeaderContent() {
 											key={link.href}
 											onClick={() => router.push(link.href)}
 											className={
-												pathname === link.href
+												isActive(link.href)
 													? 'bg-primary/15 font-mono uppercase tracking-[0.12em] text-foreground'
 													: 'font-mono uppercase tracking-[0.12em] text-muted-foreground'
 											}
@@ -87,7 +88,7 @@ function HeaderContent() {
 										key={link.href}
 										href={link.href}
 										className={
-											pathname === link.href
+											isActive(link.href)
 												? 'rounded-full border border-primary/60 bg-primary/20 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-foreground transition-colors'
 												: 'rounded-full border border-border/70 bg-background/65 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground'
 										}

@@ -30,6 +30,13 @@ function fail(error: string) {
   return { error, ok: false as const };
 }
 
+function revalidateStudioProjectPaths(projectId?: string) {
+  revalidatePath("/studio");
+  if (projectId) {
+    revalidatePath(`/studio/projects/${projectId}`);
+  }
+}
+
 async function findUserProject(userId: string, projectId: string) {
   const [project] = await db
     .select()
@@ -168,6 +175,7 @@ export async function createProjectAction(input: z.input<typeof createProjectSch
     });
 
     revalidatePath("/auto-label");
+    revalidateStudioProjectPaths();
     return { projectId, ok: true as const };
   } catch (error) {
     console.error("Failed to create project", error);
@@ -193,6 +201,7 @@ export async function updateProjectAction(
       .where(and(eq(autoLabelProject.userId, session.user.id), eq(autoLabelProject.id, projectId)));
 
     revalidatePath(`/auto-label/${projectId}`);
+    revalidateStudioProjectPaths(projectId);
     return { ok: true as const };
   } catch (error) {
     console.error("Failed to update project", error);
@@ -209,6 +218,7 @@ export async function deleteProjectAction(projectId: string) {
       .where(and(eq(autoLabelProject.userId, session.user.id), eq(autoLabelProject.id, projectId)));
 
     revalidatePath("/auto-label");
+    revalidateStudioProjectPaths();
     return { ok: true as const };
   } catch (error) {
     console.error("Failed to delete project", error);
@@ -268,6 +278,7 @@ export async function registerImagesAction(
       .onConflictDoNothing();
 
     revalidatePath(`/auto-label/${projectId}`);
+    revalidateStudioProjectPaths(projectId);
     return { ok: true as const };
   } catch (error) {
     console.error("Failed to register images", error);
@@ -298,6 +309,7 @@ export async function deleteImagesAction(projectId: string, imageIds: string[]) 
       );
 
     revalidatePath(`/auto-label/${projectId}`);
+    revalidateStudioProjectPaths(projectId);
     return { ok: true as const };
   } catch (error) {
     console.error("Failed to delete images", error);
@@ -314,10 +326,6 @@ export async function triggerAutoLabelAction(projectId: string) {
     const project = await findUserProject(session.user.id, projectId);
     if (!project) {
       return fail("Project not found");
-    }
-
-    if (!project.prompts?.some((p) => p.trim())) {
-      return fail("Please configure at least one prompt before running Auto Label.");
     }
 
     const [projectImages, tokenResponse] = await Promise.all([
@@ -340,15 +348,12 @@ export async function triggerAutoLabelAction(projectId: string) {
     }
 
     const prompts = project.prompts.map((prompt) => prompt.trim()).filter(Boolean);
-    if (prompts.length === 0) {
-      return fail("Please configure at least one prompt before running Auto Label.");
-    }
 
     const request: CreateBatchSegmentJobRequest = {
-      prompts,
       threshold: project.threshold,
       maskThreshold: project.maskThreshold,
       items: projectImages.map((row) => ({ inputS3Key: row.s3Path })),
+      ...(prompts.length > 0 ? { prompts } : {}),
     };
 
     const client = new SegmentationClient({ jwt: tokenResponse.token });
@@ -360,6 +365,7 @@ export async function triggerAutoLabelAction(projectId: string) {
       .where(and(eq(autoLabelProject.userId, session.user.id), eq(autoLabelProject.id, projectId)));
 
     revalidatePath(`/auto-label/${projectId}`);
+    revalidateStudioProjectPaths(projectId);
     return { ok: true as const, jobId: result.jobId };
   } catch (error) {
     console.error("Failed to trigger auto label", error);

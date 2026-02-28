@@ -89,6 +89,15 @@ function inferContentType(data: BinaryData): string | undefined {
   return undefined;
 }
 
+function normalizePrompts(prompts: string[] | undefined): string[] | undefined {
+  if (!prompts) {
+    return undefined;
+  }
+
+  const trimmed = prompts.map((prompt) => prompt.trim()).filter((prompt) => prompt.length > 0);
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 async function readResponseBody(response: Response): Promise<ResponseBody> {
   const text = await response.text();
   if (!text) {
@@ -300,6 +309,7 @@ export class SegmentationClient {
 
   async segment(input: SegmentRequest): Promise<SegmentResult> {
     const parsedInput = parseInputOrThrow(segmentRequestSchema, input, "segment");
+    const prompts = normalizePrompts(parsedInput.prompts);
 
     const raw = await this.requestApi({
       path: "/segment",
@@ -307,7 +317,7 @@ export class SegmentationClient {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        prompts: parsedInput.prompts,
+        ...(prompts ? { prompts } : {}),
         inputS3Key: parsedInput.inputS3Key,
         threshold: parsedInput.threshold,
         maskThreshold: parsedInput.maskThreshold,
@@ -385,6 +395,7 @@ export class SegmentationClient {
 
   async uploadAndSegment(input: UploadAndSegmentRequest): Promise<SegmentResult> {
     const parsedInput = parseInputOrThrow(uploadAndSegmentRequestSchema, input, "uploadAndSegment");
+    const prompts = normalizePrompts(parsedInput.prompts);
 
     const presignedUpload = await this.createPresignedUpload({
       contentType: parsedInput.contentType,
@@ -399,7 +410,7 @@ export class SegmentationClient {
     });
 
     return this.segment({
-      prompts: parsedInput.prompts,
+      ...(prompts ? { prompts } : {}),
       inputS3Key: presignedUpload.inputS3Key,
       threshold: parsedInput.threshold,
       maskThreshold: parsedInput.maskThreshold,
@@ -415,6 +426,7 @@ export class SegmentationClient {
       input,
       "createBatchSegmentJob",
     );
+    const prompts = normalizePrompts(parsedInput.prompts);
 
     const raw = await this.requestApi({
       path: "/segment/batch",
@@ -422,7 +434,7 @@ export class SegmentationClient {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        prompts: parsedInput.prompts,
+        ...(prompts ? { prompts } : {}),
         threshold: parsedInput.threshold,
         maskThreshold: parsedInput.maskThreshold,
         items: parsedInput.items,

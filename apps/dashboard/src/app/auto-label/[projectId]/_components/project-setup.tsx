@@ -11,7 +11,11 @@ import { Label } from '@/components/ui/label';
 
 import { createProjectAction } from '../../actions';
 
-export function ProjectSetup() {
+export function ProjectSetup({
+	basePath = '/studio/projects',
+}: {
+	basePath?: string;
+}) {
 	const router = useRouter();
 	const [name, setName] = useState('');
 	const [error, setError] = useState<string | null>(null);
@@ -33,7 +37,7 @@ export function ProjectSetup() {
 				setIsSubmitting(false);
 				return;
 			}
-			router.push(`/auto-label/${res.projectId}`);
+			router.push(`${basePath}/${res.projectId}` as Route);
 		} catch {
 			setError('An unexpected error occurred.');
 			setIsSubmitting(false);

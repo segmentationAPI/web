@@ -3,19 +3,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function OverviewPageLoading() {
   return (
-    <Card className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 py-6">
-      <CardHeader className="space-y-2">
+    <Card className="glass-panel rounded-[1.25rem] border-border/70 bg-card/80 py-3">
+      <CardHeader className="space-y-2 pb-3">
         <Skeleton className="h-3 w-28" />
-        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-6 w-36" />
       </CardHeader>
-      <CardContent className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-3 rounded-xl border border-border/70 bg-muted/55 p-4">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-9 w-32" />
+      <CardContent className="grid gap-3 border-t border-border/50 pt-3 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-22" />
+          <Skeleton className="h-7 w-26" />
         </div>
-        <div className="space-y-3 rounded-xl border border-border/70 bg-muted/55 p-4">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-9 w-32" />
+        <div className="space-y-2 sm:border-l sm:border-border/50 sm:pl-4">
+          <Skeleton className="h-3 w-22" />
+          <Skeleton className="h-7 w-26" />
         </div>
       </CardContent>
     </Card>

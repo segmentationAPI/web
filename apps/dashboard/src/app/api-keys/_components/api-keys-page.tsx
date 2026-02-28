@@ -10,6 +10,14 @@ import { formatDate } from "@/components/dashboard-format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { ApiKey } from "@segmentation/db/schema/app";
 
 export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
@@ -195,29 +203,34 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
           </div>
 
           <div className="hidden overflow-x-auto rounded-xl border border-border/70 bg-card/55 md:block">
-            <table className="min-w-full text-left text-xs">
-              <thead className="bg-muted/65 font-mono uppercase tracking-[0.12em] text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2">Label</th>
-                  <th className="px-3 py-2">Prefix</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Created</th>
-                  <th className="px-3 py-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-full text-left text-xs">
+              <TableHeader className="bg-muted/65 font-mono uppercase tracking-[0.12em] text-muted-foreground">
+                <TableRow>
+                  <TableHead className="px-3 py-2">Label</TableHead>
+                  <TableHead className="px-3 py-2">Prefix</TableHead>
+                  <TableHead className="px-3 py-2">Status</TableHead>
+                  <TableHead className="px-3 py-2">Created</TableHead>
+                  <TableHead className="px-3 py-2 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {keys.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-6 text-center font-mono text-xs text-muted-foreground">
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="px-3 py-6 text-center font-mono text-xs text-muted-foreground"
+                    >
                       No API keys yet.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   keys.map((key) => (
-                    <tr key={key.id} className="border-t border-border/60">
-                      <td className="px-3 py-2 text-foreground">{key.label}</td>
-                      <td className="px-3 py-2 font-mono text-muted-foreground">{key.keyPrefix}</td>
-                      <td className="px-3 py-2">
+                    <TableRow key={key.id} className="border-t border-border/60">
+                      <TableCell className="px-3 py-2 text-foreground">{key.label}</TableCell>
+                      <TableCell className="px-3 py-2 font-mono text-muted-foreground">
+                        {key.keyPrefix}
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
                         {key.revoked ? (
                           <span className="font-mono uppercase tracking-[0.12em] text-destructive">
                             revoked
@@ -227,9 +240,11 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
                             active
                           </span>
                         )}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">{formatDate(key.createdAt)}</td>
-                      <td className="px-3 py-2 text-right">
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-muted-foreground">
+                        {formatDate(key.createdAt)}
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right">
                         <Button
                           disabled={key.revoked || revokingKeyId === key.id}
                           onClick={() => void handleRevokeApiKey(key.id)}
@@ -238,12 +253,12 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
                         >
                           {revokingKeyId === key.id ? "Revoking" : "Revoke"}
                         </Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>

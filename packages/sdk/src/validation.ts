@@ -86,11 +86,10 @@ export const uploadImageRequestSchema: z.ZodMiniType<UploadImageRequest> =
   });
 
 export const promptsSchema = z
-  .array(nonEmptyString)
-  .check(z.refine((value) => value.length >= 1, "Expected at least 1 prompt."));
+  .array(nonEmptyString);
 
 export const segmentRequestSchema: z.ZodMiniType<SegmentRequest> = z.object({
-  prompts: promptsSchema,
+  prompts: z.optional(promptsSchema),
   inputS3Key: nonEmptyString,
   threshold: z.optional(finiteNumber),
   maskThreshold: z.optional(finiteNumber),
@@ -226,7 +225,7 @@ export const segmentVideoRequestSchema: z.ZodMiniType<SegmentVideoRequest> = z
 
 export const uploadAndSegmentRequestSchema: z.ZodMiniType<UploadAndSegmentRequest> =
   z.object({
-    prompts: promptsSchema,
+    prompts: z.optional(promptsSchema),
     data: binaryDataSchema,
     contentType: nonEmptyString,
     threshold: z.optional(finiteNumber),
@@ -240,7 +239,7 @@ export const batchSegmentItemInputSchema = z.object({
 
 export const createBatchSegmentJobRequestSchema: z.ZodMiniType<CreateBatchSegmentJobRequest> =
   z.object({
-    prompts: promptsSchema,
+    prompts: z.optional(promptsSchema),
     threshold: z.optional(finiteNumber),
     maskThreshold: z.optional(finiteNumber),
     items: z.array(batchSegmentItemInputSchema).check(

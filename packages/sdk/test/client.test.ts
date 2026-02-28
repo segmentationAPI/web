@@ -762,7 +762,55 @@ describe("SegmentationClient", () => {
       String((fetchMock.mock.calls[2]?.[1] as RequestInit)?.body),
     ) as Record<string, unknown>;
     expect(segmentBody.inputS3Key).toBe("inputs/flow.png");
+    expect(segmentBody.prompts).toEqual(["painting"]);
     expect(result.jobId).toBe("job-3");
+  });
+
+  it("omits prompts in uploadAndSegment when prompt list is empty", async () => {
+    const fetchMock = asFetchMock(async (input) => {
+      const url = String(input);
+
+      if (url.endsWith("/uploads/presign")) {
+        return jsonResponse({
+          uploadUrl: "https://upload.example.com/put-optional",
+          inputS3Key: "inputs/flow-optional.png",
+          bucket: "segmentation-assets-prod",
+          expiresIn: 300,
+        });
+      }
+
+      if (url === "https://upload.example.com/put-optional") {
+        return new Response(null, { status: 200 });
+      }
+
+      if (url.endsWith("/segment")) {
+        return jsonResponse({
+          requestId: "request-optional",
+          jobId: "job-optional",
+          numInstances: 1,
+          outputPrefix: "outputs/job-optional/",
+          masks: [],
+        });
+      }
+
+      return new Response("unexpected call", { status: 500 });
+    });
+
+    const client = new SegmentationClient({
+      apiKey: "test_key",
+      fetch: fetchMock,
+    });
+
+    await client.uploadAndSegment({
+      data: new Uint8Array([7, 8, 9]),
+      contentType: "image/png",
+    });
+
+    const segmentBody = JSON.parse(
+      String((fetchMock.mock.calls[2]?.[1] as RequestInit)?.body),
+    ) as Record<string, unknown>;
+    expect(segmentBody.inputS3Key).toBe("inputs/flow-optional.png");
+    expect(segmentBody.prompts).toBeUndefined();
   });
 
   it("creates batch segment job and maps request fields", async () => {
@@ -806,6 +854,39 @@ describe("SegmentationClient", () => {
     expect(result.jobId).toBe("batch-job-1");
     expect(result.totalItems).toBe(2);
     expect(result.pollPath).toBe("/v1/jobs/batch-job-1");
+  });
+
+  it("omits prompts in createBatchSegmentJob when not provided", async () => {
+    const fetchMock = asFetchMock(async () =>
+      jsonResponse(
+        {
+          requestId: "batch-request-optional",
+          jobId: "batch-job-optional",
+          type: "image_batch",
+          status: "queued",
+          totalItems: 1,
+          pollPath: "/v1/jobs/batch-job-optional",
+        },
+        202,
+      ),
+    );
+
+    const client = new SegmentationClient({
+      apiKey: "test_key",
+      fetch: fetchMock,
+    });
+
+    await client.createBatchSegmentJob({
+      prompts: [],
+      items: [{ inputS3Key: "inputs/a.png" }],
+    });
+
+    const body = JSON.parse(String((fetchMock.mock.calls[0]?.[1] as RequestInit)?.body)) as Record<
+      string,
+      unknown
+    >;
+    expect(body.prompts).toBeUndefined();
+    expect(body.items).toEqual([{ inputS3Key: "inputs/a.png" }]);
   });
 
   it("gets segment job status and normalizes item URLs", async () => {
