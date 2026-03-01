@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import {
   SegmentationClient,
@@ -16,7 +16,11 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 
+import { AnnotationCanvas } from "./annotation-canvas";
+import { useVideoFrame } from "./use-video-frame";
+
 type FileKind = "image" | "video" | "none";
+type AnnotationMode = "box" | "point";
 
 type RunState = {
   jobId?: string;
@@ -51,33 +55,6 @@ async function getAuthedClient() {
   return new SegmentationClient({ jwt: tokenData.token });
 }
 
-async function getVideoCenterPoint(file: File): Promise<[number, number]> {
-  const objectUrl = URL.createObjectURL(file);
-
-  try {
-    const point = await new Promise<[number, number]>((resolve) => {
-      const video = document.createElement("video");
-      video.preload = "metadata";
-      video.src = objectUrl;
-
-      video.onloadedmetadata = () => {
-        resolve([
-          Math.max(0, Math.floor(video.videoWidth / 2)),
-          Math.max(0, Math.floor(video.videoHeight / 2)),
-        ]);
-      };
-
-      video.onerror = () => {
-        resolve([320, 180]);
-      };
-    });
-
-    return point;
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-}
-
 export function UnifiedStudio() {
   const [prompts, setPrompts] = useState<string[]>([]);
   const [files, setFiles] = useState<File[]>([]);
@@ -90,12 +67,9 @@ export function UnifiedStudio() {
   const [statusRefreshing, setStatusRefreshing] = useState(false);
   const [batchCarouselIndex, setBatchCarouselIndex] = useState(0);
 
-  // Bounding box state
-  const imageRef = useRef<HTMLImageElement>(null);
-  const [imageDims, setImageDims] = useState<{ w: number; h: number } | null>(null);
   const [boxes, setBoxes] = useState<number[][]>([]);
-  const [currentBox, setCurrentBox] = useState<number[] | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const [points, setPoints] = useState<number[][]>([]);
+  const [annotationMode, setAnnotationMode] = useState<AnnotationMode>("point");
 
   const fileKind = useMemo(() => classifyFiles(files), [files]);
 
@@ -107,6 +81,7 @@ export function UnifiedStudio() {
     () => files.find((file) => file.type.startsWith("video/")) ?? null,
     [files],
   );
+  const videoFrameUrl = useVideoFrame(firstVideoFile);
 
   const imagePreviewUrls = useMemo(
     () => imageFiles.map((file) => URL.createObjectURL(file)),
@@ -132,7 +107,11 @@ export function UnifiedStudio() {
     };
   }, [videoPreviewUrl]);
 
-  const canRun = runState.mode !== "running" && fileKind !== "none";
+  const hasAnnotations = boxes.length > 0 || points.length > 0;
+  const canRun =
+    runState.mode !== "running" &&
+    fileKind !== "none" &&
+    (fileKind === "image" || hasAnnotations);
   const modeLabel =
     fileKind === "image" ? "Image Batch" : fileKind === "video" ? "Video" : "Select Files";
   const modeBadgeClass =
@@ -161,28 +140,31 @@ export function UnifiedStudio() {
     setPrompts(next);
   }
 
-  function resetBoxState() {
+  function resetAnnotations() {
     setBoxes([]);
-    setCurrentBox(null);
-    setIsDrawing(false);
-    setImageDims(null);
+    setPoints([]);
+    setAnnotationMode("point");
   }
 
   function onFilesSelected(next: FileList | null) {
     const accepted = Array.from(next ?? []).filter(
       (f) => f.type.startsWith("image/") || f.type.startsWith("video/"),
     );
-    const selected =
-      accepted.length === 0
-        ? []
-        : accepted[0]!.type.startsWith("video/")
-          ? accepted.filter((f) => f.type.startsWith("video/"))
-          : accepted.filter((f) => f.type.startsWith("image/"));
+    let selected: File[];
+    if (accepted.length === 0) {
+      selected = [];
+    } else if (accepted[0]!.type.startsWith("video/")) {
+      const first = accepted.find((f) => f.type.startsWith("video/"));
+      selected = first ? [first] : [];
+    } else {
+      selected = accepted.filter((f) => f.type.startsWith("image/"));
+    }
     setFiles(selected);
+    setPrompts(accepted[0]?.type.startsWith("video/") ? [] : prompts);
     setRunState({ mode: "idle" });
     setJobStatus(null);
     setBatchCarouselIndex(0);
-    resetBoxState();
+    resetAnnotations();
   }
 
   function removeFile(index: number) {
@@ -190,7 +172,7 @@ export function UnifiedStudio() {
     setRunState({ mode: "idle" });
     setJobStatus(null);
     setBatchCarouselIndex(0);
-    resetBoxState();
+    resetAnnotations();
   }
 
   function resetStudio() {
@@ -200,7 +182,7 @@ export function UnifiedStudio() {
     setUploadProgress({ done: 0, total: 0 });
     setJobStatus(null);
     setBatchCarouselIndex(0);
-    resetBoxState();
+    resetAnnotations();
   }
 
   async function refreshJobStatus(jobIdOverride?: string, silent = false) {
@@ -273,21 +255,28 @@ export function UnifiedStudio() {
       const client = await getAuthedClient();
 
       if (fileKind === "video") {
-        const videoFiles = files.filter((f) => f.type.startsWith("video/"));
-        if (videoFiles.length !== 1) {
-          throw new Error("Video job requires exactly one video file.");
-        }
+        const videoFile = files[0]!;
 
-        const [x, y] = await getVideoCenterPoint(videoFiles[0]!);
-        const accepted = await client.segmentVideo({
-          file: videoFiles[0]!,
+        const baseOpts = {
+          file: videoFile,
           frameIdx: 0,
           fps: 2,
           maxFrames: 120,
-          points: [[x, y]],
-          pointLabels: [1],
-          pointObjectIds: [1],
-        });
+        } as const;
+
+        const accepted =
+          boxes.length > 0
+            ? await client.segmentVideo({
+                ...baseOpts,
+                boxes: boxes as [number, number, number, number][],
+                boxObjectIds: boxes.map((_, i) => i + 1),
+              })
+            : await client.segmentVideo({
+                ...baseOpts,
+                points: points as [number, number][],
+                pointLabels: points.map(() => 1),
+                pointObjectIds: points.map((_, i) => i + 1),
+              });
 
         setRunState({
           mode: "ready",
@@ -309,8 +298,13 @@ export function UnifiedStudio() {
         {
           type: "image_batch",
           prompts: cleanPrompts.length > 0 ? cleanPrompts : undefined,
-          boxes: boxes.length > 0 ? boxes : undefined,
-          boxLabels: boxes.length > 0 ? boxes.map((_) => 1) : undefined,
+          boxes:
+            boxes.length > 0
+              ? boxes.map((coordinates) => ({
+                  coordinates: [coordinates[0], coordinates[1], coordinates[2], coordinates[3]],
+                  isPositive: true,
+                }))
+              : undefined,
           threshold: 0.5,
           maskThreshold: 0.5,
           files: imageFiles.map((file) => ({
@@ -339,79 +333,6 @@ export function UnifiedStudio() {
     }
   }
 
-  function handleImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
-    const { naturalWidth, naturalHeight } = e.currentTarget;
-    setImageDims({ w: naturalWidth, h: naturalHeight });
-  }
-
-  function getMouseCoords(e: React.MouseEvent<HTMLDivElement>): [number, number] | null {
-    if (!imageRef.current || !imageDims) return null;
-    const rect = imageRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const scaleX = imageDims.w / rect.width;
-    const scaleY = imageDims.h / rect.height;
-    const imageX = Math.round(x * scaleX);
-    const imageY = Math.round(y * scaleY);
-    return [
-      Math.max(0, Math.min(imageX, imageDims.w)),
-      Math.max(0, Math.min(imageY, imageDims.h)),
-    ];
-  }
-
-  function handleMouseDown(e: React.MouseEvent<HTMLDivElement>) {
-    const coords = getMouseCoords(e);
-    if (!coords) return;
-    setIsDrawing(true);
-    setCurrentBox([coords[0], coords[1], coords[0], coords[1]]);
-  }
-
-  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-    if (!isDrawing || !currentBox) return;
-    const coords = getMouseCoords(e);
-    if (!coords) return;
-    setCurrentBox([currentBox[0], currentBox[1], coords[0], coords[1]]);
-  }
-
-  function handleMouseUp() {
-    if (!isDrawing || !currentBox) return;
-    setIsDrawing(false);
-    const x1 = Math.min(currentBox[0], currentBox[2]);
-    const y1 = Math.min(currentBox[1], currentBox[3]);
-    const x2 = Math.max(currentBox[0], currentBox[2]);
-    const y2 = Math.max(currentBox[1], currentBox[3]);
-
-    if (x2 - x1 > 5 && y2 - y1 > 5) {
-      setBoxes((current) => [...current, [x1, y1, x2, y2]]);
-    }
-    setCurrentBox(null);
-  }
-
-  function renderBox(box: number[], key: string, isDrawingBox = false) {
-    if (!imageDims) return null;
-    const x1 = Math.min(box[0], box[2]);
-    const y1 = Math.min(box[1], box[3]);
-    const x2 = Math.max(box[0], box[2]);
-    const y2 = Math.max(box[1], box[3]);
-    
-    const left = (x1 / imageDims.w) * 100;
-    const top = (y1 / imageDims.h) * 100;
-    const width = ((x2 - x1) / imageDims.w) * 100;
-    const height = ((y2 - y1) / imageDims.h) * 100;
-    return (
-      <div
-        key={key}
-        className={`absolute border-2 pointer-events-none ${isDrawingBox ? "border-primary border-dashed bg-primary/10" : "border-emerald-500 bg-emerald-500/20"}`}
-        style={{
-          left: `${left}%`,
-          top: `${top}%`,
-          width: `${width}%`,
-          height: `${height}%`,
-        }}
-      />
-    );
-  }
-
   // Get masks for single-image view from the first job status item
   const singleImageMasks = runState.mode === "ready" &&
     runState.selectedType === "image_batch" &&
@@ -432,7 +353,7 @@ export function UnifiedStudio() {
         </p>
         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <p className="text-sm text-muted-foreground">
-            Add prompts and files, then run.
+            {fileKind === "video" ? "Select objects on the first frame, then run." : "Add prompts and files, then run."}
           </p>
           <Badge
             variant="outline"
@@ -445,38 +366,40 @@ export function UnifiedStudio() {
 
       <div className="grid gap-4 pt-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)]">
         <div className="space-y-4">
-          <div className="space-y-2">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              Prompts (Optional)
-            </p>
-            {prompts.map((prompt, index) => (
-              <div key={`prompt-${index}`} className="flex items-center gap-2">
-                <Input
-                  value={prompt}
-                  onChange={(event) => replacePrompt(index, event.target.value)}
-                  placeholder="object to segment (optional)"
-                  className="h-9 w-full rounded-lg border-input bg-background/65 text-xs"
-                />
-                <Button
-                  type="button"
-                  onClick={() => setPrompts((current) => current.filter((_, i) => i !== index))}
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 shrink-0 text-muted-foreground transition-colors hover:text-destructive"
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setPrompts((current) => [...current, ""])}
-              className="h-8 w-fit rounded-lg border-border/70 px-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
-            >
-              Add Prompt
-            </Button>
-          </div>
+          {fileKind !== "video" ? (
+            <div className="space-y-2">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                Prompts (Optional)
+              </p>
+              {prompts.map((prompt, index) => (
+                <div key={`prompt-${index}`} className="flex items-center gap-2">
+                  <Input
+                    value={prompt}
+                    onChange={(event) => replacePrompt(index, event.target.value)}
+                    placeholder="object to segment (optional)"
+                    className="h-9 w-full rounded-lg border-input bg-background/65 text-xs"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => setPrompts((current) => current.filter((_, i) => i !== index))}
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 shrink-0 text-muted-foreground transition-colors hover:text-destructive"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPrompts((current) => [...current, ""])}
+                className="h-8 w-fit rounded-lg border-border/70 px-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
+              >
+                Add Prompt
+              </Button>
+            </div>
+          ) : null}
 
           <div className="space-y-2">
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Assets</p>
@@ -610,7 +533,7 @@ export function UnifiedStudio() {
             </Empty>
           ) : null}
 
-          {/* Input images: always use locally uploaded file preview (object URLs). Never load from S3. */}
+          {/* Single-image view with annotation canvas */}
           {isImagePreviewMode && isSingleImageView ? (
             <div className="mt-3 space-y-3">
               <div className="flex items-center justify-between">
@@ -629,35 +552,16 @@ export function UnifiedStudio() {
                   </Button>
                 ) : null}
               </div>
-              <div
-                className={`relative overflow-hidden rounded-lg border border-border/60 select-none ${!hasOutputs ? "cursor-crosshair" : ""}`}
-                onMouseDown={!hasOutputs ? handleMouseDown : undefined}
-                onMouseMove={!hasOutputs ? handleMouseMove : undefined}
-                onMouseUp={!hasOutputs ? handleMouseUp : undefined}
-                onMouseLeave={!hasOutputs ? handleMouseUp : undefined}
-              >
-                <img 
-                  ref={imageRef}
-                  src={firstImagePreviewUrl!} 
-                  alt="Selected" 
-                  className="h-auto w-full pointer-events-none" 
-                  draggable={false}
-                  onLoad={handleImageLoad}
-                />
-                
-                {singleImageMasks?.map((mask, index) => (
-                  <img
-                    key={`${mask.key}-${index}`}
-                    src={mask.url}
-                    alt={`Mask ${index + 1}`}
-                    className="pointer-events-none absolute inset-0 h-full w-full object-cover mix-blend-screen opacity-65"
-                  />
-                ))}
-
-                {!hasOutputs && boxes.map((box, index) => renderBox(box, `box-${index}`))}
-                {!hasOutputs && currentBox && renderBox(currentBox, "current-box", true)}
-              </div>
-
+              <AnnotationCanvas
+                src={firstImagePreviewUrl!}
+                alt="Selected"
+                readOnly={hasOutputs}
+                mode="box"
+                boxes={hasOutputs ? [] : boxes}
+                points={[]}
+                onBoxAdded={(box) => setBoxes((prev) => [...prev, box])}
+                masks={singleImageMasks ?? undefined}
+              />
               {runState.mode === "ready" && runState.jobId && jobStatus ? (
                 <div className="rounded-lg border border-border/60 bg-background/30 p-3">
                   <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
@@ -765,17 +669,65 @@ export function UnifiedStudio() {
             </div>
           ) : null}
 
-          {/* Video preview before run */}
-          {isVideoPreviewMode && !hasOutputs && videoPreviewUrl ? (
-            <div className="mt-3 space-y-2">
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                Video selected · Run job to process
-              </p>
-              <video
-                src={videoPreviewUrl}
-                controls
-                className="w-full overflow-hidden rounded-xl border border-border/70 bg-background/80"
-              />
+          {/* Video annotation on first frame */}
+          {isVideoPreviewMode && !hasOutputs ? (
+            <div className="mt-3 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  {annotationMode === "box"
+                    ? boxes.length > 0 ? `${boxes.length} boxes drawn` : "Draw boxes on first frame"
+                    : points.length > 0 ? `${points.length} points placed` : "Click to place points"}
+                </p>
+                <div className="flex items-center gap-1">
+                  {hasAnnotations ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetAnnotations}
+                      className="h-6 px-2 text-[10px] uppercase font-mono tracking-[0.11em] text-muted-foreground hover:text-destructive"
+                    >
+                      Clear
+                    </Button>
+                  ) : null}
+                  <div className="flex overflow-hidden rounded-lg border border-border/60">
+                    <Button
+                      type="button"
+                      variant={annotationMode === "point" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => { setAnnotationMode("point"); setBoxes([]); }}
+                      className="h-6 rounded-none px-2 text-[10px] uppercase font-mono tracking-[0.11em]"
+                    >
+                      Points
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={annotationMode === "box" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => { setAnnotationMode("box"); setPoints([]); }}
+                      className="h-6 rounded-none px-2 text-[10px] uppercase font-mono tracking-[0.11em]"
+                    >
+                      Boxes
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              {videoFrameUrl ? (
+                <AnnotationCanvas
+                  src={videoFrameUrl}
+                  alt="Video first frame"
+                  mode={annotationMode}
+                  boxes={boxes}
+                  points={points}
+                  onBoxAdded={(box) => setBoxes((prev) => [...prev, box])}
+                  onPointAdded={(pt) => setPoints((prev) => [...prev, pt])}
+                />
+              ) : (
+                <div className="flex h-52 items-center justify-center rounded-lg border border-border/60 text-xs text-muted-foreground">
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Loading first frame…
+                </div>
+              )}
             </div>
           ) : null}
 

@@ -333,9 +333,6 @@ export class SegmentationClient {
     if (parsedInput.boxes !== undefined) {
       payload.boxes = parsedInput.boxes;
     }
-    if (parsedInput.boxLabels !== undefined) {
-      payload.boxLabels = parsedInput.boxLabels;
-    }
     if (parsedInput.points !== undefined) {
       payload.points = parsedInput.points;
     }
@@ -385,7 +382,6 @@ export class SegmentationClient {
       type: parsedInput.type,
       prompts: parsedInput.prompts,
       boxes: parsedInput.boxes,
-      boxLabels: parsedInput.boxLabels,
       points: parsedInput.points,
       threshold: parsedInput.threshold,
       maskThreshold: parsedInput.maskThreshold,

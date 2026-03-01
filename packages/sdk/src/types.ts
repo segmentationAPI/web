@@ -68,16 +68,21 @@ export interface BatchSegmentItemInput {
   inputS3Key: string;
 }
 
+export interface ImageBoxPrompt {
+  coordinates: [number, number, number, number];
+  isPositive: boolean;
+  objectId?: string;
+}
+
 export type JobType = "image_batch" | "video";
 
 export interface CreateJobRequest {
   type: JobType;
   prompts?: string[];
-  boxes?: number[][];
-  boxLabels?: number[];
+  boxes?: ImageBoxPrompt[];
   points?: Array<{
     coordinates: [number, number];
-    isPositive?: boolean;
+    isPositive: boolean;
     objectId?: string;
   }>;
   threshold?: number;
@@ -101,11 +106,10 @@ export interface UploadImageRequest {
 export interface UploadAndCreateJobRequest {
   type: JobType;
   prompts?: string[];
-  boxes?: number[][];
-  boxLabels?: number[];
+  boxes?: ImageBoxPrompt[];
   points?: Array<{
     coordinates: [number, number];
-    isPositive?: boolean;
+    isPositive: boolean;
     objectId?: string;
   }>;
   files: Array<{

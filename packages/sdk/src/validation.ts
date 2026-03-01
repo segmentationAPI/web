@@ -84,15 +84,17 @@ export const uploadImageRequestSchema: z.ZodMiniType<UploadImageRequest> =
 export const promptsSchema = z
   .array(nonEmptyString);
 
-export const imageBoxSchema = z.array(finiteNumber).check(
-  z.refine((value) => value.length >= 4, "Each box must have at least 4 coordinates."),
-);
+export const imageBoxSchema = z.object({
+  coordinates: z.tuple([finiteNumber, finiteNumber, finiteNumber, finiteNumber]),
+  isPositive: z.boolean(),
+  objectId: z.optional(nonEmptyString),
+});
 
 export const imageBoxesSchema = z.array(imageBoxSchema);
 
 const pointSchema = z.object({
   coordinates: z.tuple([finiteNumber, finiteNumber]),
-  isPositive: z.optional(z.boolean()),
+  isPositive: z.boolean(),
   objectId: z.optional(z.string()),
 });
 
@@ -113,7 +115,6 @@ export const createJobRequestSchema: z.ZodMiniType<CreateJobRequest> =
     type: z.enum(["image_batch", "video"]),
     prompts: z.optional(promptsSchema),
     boxes: z.optional(imageBoxesSchema),
-    boxLabels: z.optional(z.array(finiteNumber)),
     points: z.optional(z.array(pointSchema)),
     threshold: z.optional(finiteNumber),
     maskThreshold: z.optional(finiteNumber),
@@ -134,7 +135,6 @@ export const uploadAndCreateJobRequestSchema: z.ZodMiniType<UploadAndCreateJobRe
     type: z.enum(["image_batch", "video"]),
     prompts: z.optional(promptsSchema),
     boxes: z.optional(imageBoxesSchema),
-    boxLabels: z.optional(z.array(finiteNumber)),
     points: z.optional(z.array(pointSchema)),
     files: z.array(uploadFileSchema).check(
       z.refine((value) => value.length >= 1, "Expected at least 1 file."),

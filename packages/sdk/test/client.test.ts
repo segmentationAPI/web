@@ -375,7 +375,7 @@ describe("SegmentationClient", () => {
 
     await client.uploadAndCreateJob({
       type: "image_batch",
-      boxes: [[10, 20, 30, 40]],
+      boxes: [{ coordinates: [10, 20, 30, 40], isPositive: true }],
       files: [{ data: new Uint8Array([7, 8, 9]), contentType: "image/png" }],
     });
 
@@ -383,7 +383,7 @@ describe("SegmentationClient", () => {
       String((fetchMock.mock.calls[2]?.[1] as RequestInit)?.body),
     ) as Record<string, unknown>;
     expect(jobBody.prompts).toBeUndefined();
-    expect(jobBody.boxes).toEqual([[10, 20, 30, 40]]);
+    expect(jobBody.boxes).toEqual([{ coordinates: [10, 20, 30, 40], isPositive: true }]);
   });
 
   it("fails fast on invalid createPresignedUpload input", async () => {
@@ -465,7 +465,7 @@ describe("SegmentationClient", () => {
 
     await client.createJob({
       type: "image_batch",
-      boxes: [[5, 10, 50, 100]],
+      boxes: [{ coordinates: [5, 10, 50, 100], isPositive: true }],
       items: [{ inputS3Key: "inputs/a.png" }],
     });
 
@@ -474,7 +474,7 @@ describe("SegmentationClient", () => {
       unknown
     >;
     expect(body.prompts).toBeUndefined();
-    expect(body.boxes).toEqual([[5, 10, 50, 100]]);
+    expect(body.boxes).toEqual([{ coordinates: [5, 10, 50, 100], isPositive: true }]);
     expect(body.items).toEqual([{ inputS3Key: "inputs/a.png" }]);
   });
 
