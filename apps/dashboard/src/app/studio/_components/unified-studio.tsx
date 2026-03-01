@@ -515,9 +515,20 @@ export function UnifiedStudio() {
                 {files.map((file, index) => (
                   <div
                     key={`${file.name}-${index}`}
-                    className="flex items-center justify-between rounded-lg border border-border/55 bg-muted/20 px-2.5 py-2"
+                    className="flex items-center gap-2.5 rounded-lg border border-border/55 bg-muted/20 px-2.5 py-2"
                   >
-                    <div className="min-w-0">
+                    {file.type.startsWith("image/") ? (
+                      <img
+                        src={imagePreviewUrls[index]}
+                        alt=""
+                        className="size-12 shrink-0 rounded-md border border-border/50 object-cover"
+                      />
+                    ) : file.type.startsWith("video/") ? (
+                      <div className="flex size-12 shrink-0 items-center justify-center rounded-md border border-border/50 bg-muted/40 text-muted-foreground">
+                        <span className="font-mono text-[9px]">VID</span>
+                      </div>
+                    ) : null}
+                    <div className="min-w-0 flex-1">
                       <p className="truncate text-xs text-foreground">{file.name}</p>
                       <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
                         {file.type.startsWith("image/") ? "image" : "video"} · {(file.size / 1024).toFixed(1)} KB
@@ -626,7 +637,7 @@ export function UnifiedStudio() {
             </Empty>
           ) : null}
 
-          {/* Single image preview with bounding boxes + mask overlay */}
+          {/* Input images: always use locally uploaded file preview (object URLs). Never load from S3. */}
           {isImagePreviewMode && isSingleImageView ? (
             <div className="mt-3 space-y-3">
               <div className="flex items-center justify-between">
@@ -708,9 +719,9 @@ export function UnifiedStudio() {
               {activeBatchItem ? (
                 <div className="space-y-2">
                   <div className="relative overflow-hidden rounded-lg border border-border/60">
-                    {imagePreviewUrls[batchCarouselIndex] ? (
+                    {(imagePreviewUrls[batchCarouselIndex] ?? imagePreviewUrls[0]) ? (
                       <img
-                        src={imagePreviewUrls[batchCarouselIndex]}
+                        src={imagePreviewUrls[batchCarouselIndex] ?? imagePreviewUrls[0]}
                         alt={`Batch input ${batchCarouselIndex + 1}`}
                         className="h-auto w-full"
                       />
