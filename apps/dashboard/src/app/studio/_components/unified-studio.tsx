@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import {
   SegmentationClient,
+  normalizeMaskArtifacts,
   type JobStatusResult,
   type JobType,
 } from "@segmentationapi/sdk";
@@ -30,6 +31,17 @@ type RunState = {
   selectedType?: JobType;
 };
 
+type ManifestMask = {
+  key: string;
+  url: string;
+  score?: number;
+  box?: [number, number, number, number];
+};
+
+type UnifiedStudioProps = {
+  userId: string;
+};
+
 function classifyFiles(files: File[]): FileKind {
   if (files.length === 0) return "none";
   const firstIsVideo = files[0]!.type.startsWith("video/");
@@ -46,6 +58,18 @@ function isJobComplete(status: JobStatusResult["status"] | undefined) {
 
 function formatStatus(status: string) {
   return status.replaceAll("_", " ");
+}
+
+function normalizeManifestMasks(
+  result: unknown,
+  context: { userId: string; jobId: string; taskId: string },
+): ManifestMask[] {
+  return normalizeMaskArtifacts(result, context).map((mask) => ({
+    key: `${mask.key}#${mask.maskIndex}`,
+    url: mask.url,
+    score: mask.score ?? undefined,
+    box: mask.box ?? undefined,
+  }));
 }
 
 function toBoxCoordinates(value: number[]): BoxCoordinates | null {
@@ -75,7 +99,45 @@ async function getAuthedClient() {
   return new SegmentationClient({ jwt: tokenData.token });
 }
 
-export function UnifiedStudio() {
+function buildOutputManifestUrl(userId: string, jobId: string, outputFolder?: string): string {
+  const account = userId.trim();
+  const job = jobId.trim();
+  const explicitOutputFolder = outputFolder?.trim().replace(/^\/+|\/+$/g, "");
+  const baseKey = explicitOutputFolder && explicitOutputFolder.length > 0
+    ? explicitOutputFolder
+    : `outputs/${account}/${job}`;
+  const key = `${baseKey}/output_manifest.json`;
+  return `https://assets.segmentationapi.com/${key}`;
+}
+
+function resolveOutputFolder(status: JobStatusResult): string | undefined {
+  const outputFolder = (status.raw as { outputFolder?: unknown }).outputFolder;
+  return typeof outputFolder === "string" && outputFolder.trim().length > 0
+    ? outputFolder
+    : undefined;
+}
+
+function resolveManifestResultForTask(manifest: unknown, taskId: string): unknown {
+  if (!manifest || typeof manifest !== "object") {
+    return undefined;
+  }
+
+  const root = manifest as {
+    result?: unknown;
+    items?: Record<string, { result?: unknown } | undefined>;
+  };
+
+  if (root.items && typeof root.items === "object") {
+    const entry = root.items[taskId];
+    if (entry && typeof entry === "object" && "result" in entry) {
+      return entry.result;
+    }
+  }
+
+  return root.result;
+}
+
+export function UnifiedStudio({ userId }: UnifiedStudioProps) {
   const [prompts, setPrompts] = useState<string[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [runState, setRunState] = useState<RunState>({ mode: "idle" });
@@ -84,6 +146,7 @@ export function UnifiedStudio() {
     total: 0,
   });
   const [jobStatus, setJobStatus] = useState<JobStatusResult | null>(null);
+  const [taskMasksByTaskId, setTaskMasksByTaskId] = useState<Record<string, ManifestMask[]>>({});
   const [statusRefreshing, setStatusRefreshing] = useState(false);
   const [batchCarouselIndex, setBatchCarouselIndex] = useState(0);
 
@@ -187,6 +250,7 @@ export function UnifiedStudio() {
     setPrompts(accepted[0]?.type.startsWith("video/") ? [] : prompts);
     setRunState({ mode: "idle" });
     setJobStatus(null);
+    setTaskMasksByTaskId({});
     setBatchCarouselIndex(0);
     resetAnnotations();
   }
@@ -195,6 +259,7 @@ export function UnifiedStudio() {
     setFiles((current) => current.filter((_, idx) => idx !== index));
     setRunState({ mode: "idle" });
     setJobStatus(null);
+    setTaskMasksByTaskId({});
     setBatchCarouselIndex(0);
     resetAnnotations();
   }
@@ -205,6 +270,7 @@ export function UnifiedStudio() {
     setRunState({ mode: "idle" });
     setUploadProgress({ done: 0, total: 0 });
     setJobStatus(null);
+    setTaskMasksByTaskId({});
     setBatchCarouselIndex(0);
     resetAnnotations();
   }
@@ -221,6 +287,48 @@ export function UnifiedStudio() {
       const client = await getAuthedClient();
       const status = await client.getSegmentJob({ jobId: targetJobId });
       setJobStatus(status);
+
+      if (status.items?.length) {
+        const fetchableItems = status.items.filter((item) => item.status === "success");
+
+        if (fetchableItems.length > 0) {
+          const manifestUrl = buildOutputManifestUrl(userId, status.jobId, resolveOutputFolder(status));
+          let loadedMasks: Array<{ taskId: string; masks: ManifestMask[] }>;
+
+          try {
+            const response = await fetch(manifestUrl, { cache: "no-store" });
+            if (!response.ok) {
+              loadedMasks = fetchableItems.map((item) => ({
+                taskId: item.taskId,
+                masks: [],
+              }));
+            } else {
+              const manifest = (await response.json()) as unknown;
+              loadedMasks = fetchableItems.map((item) => ({
+                taskId: item.taskId,
+                masks: normalizeManifestMasks(resolveManifestResultForTask(manifest, item.taskId), {
+                  userId,
+                  jobId: status.jobId,
+                  taskId: item.taskId,
+                }),
+              }));
+            }
+          } catch {
+            loadedMasks = fetchableItems.map((item) => ({
+              taskId: item.taskId,
+              masks: [],
+            }));
+          }
+
+          setTaskMasksByTaskId((current) => {
+            const next = { ...current };
+            for (const entry of loadedMasks) {
+              next[entry.taskId] = entry.masks;
+            }
+            return next;
+          });
+        }
+      }
 
       if (!silent && isJobComplete(status.status)) {
         toast.success(`Job ${formatStatus(status.status)}.`);
@@ -277,6 +385,7 @@ export function UnifiedStudio() {
 
     setRunState({ mode: "running", selectedType: fileKind === "video" ? "video" : "image_batch" });
     setJobStatus(null);
+    setTaskMasksByTaskId({});
     setBatchCarouselIndex(0);
 
     try {
@@ -375,8 +484,8 @@ export function UnifiedStudio() {
     imageFiles.length === 1 &&
     jobStatus &&
     isJobComplete(jobStatus.status) &&
-    jobStatus.items?.[0]?.masks
-    ? jobStatus.items[0].masks
+    jobStatus.items?.[0]?.taskId
+    ? taskMasksByTaskId[jobStatus.items[0].taskId]
     : null;
 
   const isSingleImageView = imageFiles.length === 1;
@@ -673,7 +782,7 @@ export function UnifiedStudio() {
                         Preview unavailable
                       </div>
                     )}
-                    {activeBatchItem.masks?.map((mask, index) => (
+                    {(taskMasksByTaskId[activeBatchItem.taskId] ?? []).map((mask, index) => (
                       <img
                         key={`${mask.key}-${index}`}
                         src={mask.url}

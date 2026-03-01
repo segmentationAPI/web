@@ -44,7 +44,6 @@ export type JobDetail = JobListItem & {
   videoOutput: {
     manifestUrl: string;
     framesUrl: string;
-    outputS3Prefix: string;
     maskEncoding: string;
     framesProcessed: number;
     framesWithMasks: number;

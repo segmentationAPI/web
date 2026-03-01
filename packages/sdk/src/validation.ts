@@ -8,7 +8,6 @@ import type {
   JobAcceptedRaw,
   JobStatusItemRaw,
   JobStatusRaw,
-  MaskResultRaw,
   PresignedUploadRaw,
   SegmentVideoRequest,
   UploadAndCreateJobRequest,
@@ -107,7 +106,7 @@ const boxInputSchema = z.object({
 });
 
 const batchSegmentItemInputSchema = z.object({
-  inputS3Key: nonEmptyString,
+  taskId: nonEmptyString,
 });
 
 export const createJobRequestSchema: z.ZodMiniType<CreateJobRequest> =
@@ -280,7 +279,7 @@ export const apiErrorBodySchema = z.object({
 export const presignedUploadRawSchema: z.ZodMiniType<PresignedUploadRaw> =
   z.object({
     uploadUrl: urlString,
-    inputS3Key: nonEmptyString,
+    taskId: nonEmptyString,
     bucket: nonEmptyString,
     expiresIn: finiteNumber,
   });
@@ -294,18 +293,9 @@ export const jobAcceptedRawSchema: z.ZodMiniType<JobAcceptedRaw> =
     totalItems: finiteNumber,
   });
 
-export const maskResultRawSchema: z.ZodMiniType<MaskResultRaw> =
-  z.object({
-    key: nonEmptyString,
-    score: z.optional(z.nullable(finiteNumber)),
-    box: z.optional(z.nullable(z.array(finiteNumber))),
-  });
-
 export const jobStatusItemRawSchema: z.ZodMiniType<JobStatusItemRaw> = z.object({
-  workId: nonEmptyString,
-  inputS3Key: z.optional(nonEmptyString),
+  taskId: nonEmptyString,
   status: z.enum(["queued", "running", "success", "failed"]),
-  masks: z.optional(z.nullable(z.array(maskResultRawSchema))),
   error: z.optional(z.nullable(nonEmptyString)),
 });
 

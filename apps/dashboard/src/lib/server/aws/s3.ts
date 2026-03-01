@@ -9,3 +9,25 @@ export function buildAssetUrl(s3Path: string | null) {
   const normalizedPath = s3Path.replace(/^\/+/, "");
   return `${baseUrl}/${normalizedPath}`;
 }
+
+export async function fetchAssetJson<T>(s3Path: string | null): Promise<T | null> {
+  const url = buildAssetUrl(s3Path);
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}

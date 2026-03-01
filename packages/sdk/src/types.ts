@@ -71,7 +71,7 @@ export type SegmentVideoRequest = (SegmentVideoPointsPrompt | SegmentVideoBoxesP
   };
 
 export interface BatchSegmentItemInput {
-  inputS3Key: string;
+  taskId: string;
 }
 
 export interface ImageBoxPrompt {
@@ -129,7 +129,7 @@ export interface UploadAndCreateJobRequest {
 
 export interface PresignedUploadRaw {
   uploadUrl: string;
-  inputS3Key: string;
+  taskId: string;
   bucket: string;
   expiresIn: number;
 }
@@ -157,6 +157,20 @@ export interface MaskResultRaw {
   box?: number[] | null;
 }
 
+export interface MaskArtifactContext {
+  userId: string;
+  jobId: string;
+  taskId: string;
+}
+
+export interface MaskArtifactResult {
+  maskIndex: number;
+  key: string;
+  url: string;
+  score: number | null;
+  box: [number, number, number, number] | null;
+}
+
 export interface VideoOutputRaw {
   requestId: string;
   status: string;
@@ -176,11 +190,8 @@ export interface VideoOutputRaw {
 }
 
 export interface JobStatusItemRaw {
-  workId: string;
-  inputS3Key?: string;
+  taskId: string;
   status: JobTaskStatus;
-  masks?: MaskResultRaw[] | null;
-  videoOutput?: VideoOutputRaw | null;
   error?: string | null;
 }
 
@@ -200,7 +211,7 @@ export interface JobStatusRaw {
 
 export interface PresignedUploadResult {
   uploadUrl: string;
-  inputS3Key: string;
+  taskId: string;
   bucket: string;
   expiresIn: number;
   raw: PresignedUploadRaw;
@@ -223,11 +234,8 @@ export interface JobAcceptedResult {
 }
 
 export interface JobStatusItem {
-  workId: string;
-  inputS3Key?: string;
+  taskId: string;
   status: JobTaskStatus;
-  masks?: MaskResult[];
-  videoOutput?: VideoOutputRaw;
   error?: string;
 }
 

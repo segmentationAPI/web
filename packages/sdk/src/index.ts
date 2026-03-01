@@ -1,5 +1,10 @@
 export { SegmentationClient } from "./client";
 export {
+  buildMaskArtifactKey,
+  buildMaskArtifactUrl,
+  normalizeMaskArtifacts,
+} from "./masks";
+export {
   NetworkError,
   SegmentationApiError,
   SegmentationError,
@@ -17,6 +22,8 @@ export type {
   JobAcceptedRaw,
   JobAcceptedResult,
   JobAcceptedType,
+  MaskArtifactContext,
+  MaskArtifactResult,
   JobRequestStatus,
   JobStatusItem,
   JobStatusItemRaw,

@@ -520,14 +520,6 @@ export function RequestsPageContent({
                               Frames URL
                             </a>
                           </div>
-                          <div>
-                            <p className="font-mono uppercase tracking-[0.12em] text-muted-foreground">
-                              Output Prefix
-                            </p>
-                            <p className="mt-1 break-all">
-                              {selectedJob.videoOutput.outputS3Prefix}
-                            </p>
-                          </div>
                         </div>
                       ) : (
                         <div className="rounded-lg border border-border/70 bg-muted/55 p-3 text-xs text-muted-foreground">

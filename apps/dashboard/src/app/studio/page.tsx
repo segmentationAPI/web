@@ -9,9 +9,9 @@ export const metadata = {
 };
 
 async function StudioProtectedContent() {
-  await requirePageSession();
+  const session = await requirePageSession();
 
-  return <StudioPageContent />;
+  return <StudioPageContent userId={session.user.id} />;
 }
 
 function StudioLoading() {

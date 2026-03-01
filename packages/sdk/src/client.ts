@@ -36,7 +36,6 @@ import type {
 
 const DEFAULT_BASE_URL = "https://api.segmentationapi.com/v1";
 const DEFAULT_BASE_URL_JWT = "https://api.segmentationapi.com/v1/jwt";
-const DEFAULT_ASSETS_BASE_URL = "https://assets.segmentationapi.com";
 
 type ClientAuth = { kind: "apiKey"; value: string } | { kind: "jwt"; value: string };
 
@@ -54,12 +53,6 @@ function buildApiUrl(baseUrl: string, path: string): string {
   const normalizedBase = baseUrl.replace(/\/+$/g, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${normalizedBase}${normalizedPath}`;
-}
-
-function joinUrl(baseUrl: string, path: string): string {
-  const normalizedBase = baseUrl.replace(/\/+$/g, "");
-  const normalizedPath = path.replace(/^\/+/g, "");
-  return `${normalizedBase}/${normalizedPath}`;
 }
 
 function toUploadBody(data: BinaryData): Blob | ArrayBuffer {
@@ -124,7 +117,7 @@ function extractRequestId(response: Response, body: ResponseBody): string | unde
 function buildPresignedUploadResult(raw: PresignedUploadResult["raw"]): PresignedUploadResult {
   return {
     uploadUrl: raw.uploadUrl,
-    inputS3Key: raw.inputS3Key,
+    taskId: raw.taskId,
     bucket: raw.bucket,
     expiresIn: raw.expiresIn,
     raw,
@@ -144,7 +137,6 @@ function buildJobAcceptedResult(raw: JobAcceptedRaw): JobAcceptedResult {
 
 function buildJobStatusResult(
   raw: JobStatusRaw,
-  assetsBaseUrl: string,
 ): JobStatusResult {
   return {
     requestId: raw.requestId ?? "",
@@ -157,16 +149,8 @@ function buildJobStatusResult(
     successItems: raw.successItems,
     failedItems: raw.failedItems,
     items: raw.items?.map((item) => ({
-      workId: item.workId,
-      inputS3Key: item.inputS3Key,
+      taskId: item.taskId,
       status: item.status,
-      masks: item.masks?.map((mask) => ({
-        key: mask.key,
-        score: mask.score ?? undefined,
-        box: mask.box ?? undefined,
-        url: joinUrl(assetsBaseUrl, mask.key),
-      })),
-      videoOutput: item.videoOutput ?? undefined,
       error: item.error ?? undefined,
     })),
     error: raw.error,
@@ -177,7 +161,6 @@ function buildJobStatusResult(
 export class SegmentationClient {
   private readonly auth: ClientAuth;
   private readonly baseUrl: string;
-  private readonly assetsBaseUrl: string;
   private readonly fetchImpl: FetchFunction;
 
   constructor(options: SegmentationClientOptions) {
@@ -193,7 +176,6 @@ export class SegmentationClient {
       this.auth = { kind: "jwt", value: parsedOptions.jwt! };
     }
     this.baseUrl = this.auth.kind === "jwt" ? DEFAULT_BASE_URL_JWT : DEFAULT_BASE_URL;
-    this.assetsBaseUrl = DEFAULT_ASSETS_BASE_URL;
     this.fetchImpl = getFetchImplementation(parsedOptions.fetch);
   }
 
@@ -271,7 +253,7 @@ export class SegmentationClient {
 
     const requestBody: Record<string, unknown> = {
       type: "video",
-      items: [{ inputS3Key: presignedUpload.inputS3Key }],
+      items: [{ taskId: presignedUpload.taskId }],
       frameIdx: parsedInput.frameIdx ?? 0,
     };
 
@@ -361,7 +343,7 @@ export class SegmentationClient {
       "uploadAndCreateJob",
     );
 
-    const uploadedKeys: string[] = [];
+    const uploadedTaskIds: string[] = [];
     for (let i = 0; i < parsedInput.files.length; i++) {
       const file = parsedInput.files[i]!;
       const presigned = await this.createPresignedUpload({
@@ -374,7 +356,7 @@ export class SegmentationClient {
         contentType: file.contentType,
         signal: parsedInput.signal,
       });
-      uploadedKeys.push(presigned.inputS3Key);
+      uploadedTaskIds.push(presigned.taskId);
       onProgress?.(i + 1, parsedInput.files.length);
     }
 
@@ -385,7 +367,7 @@ export class SegmentationClient {
       points: parsedInput.points,
       threshold: parsedInput.threshold,
       maskThreshold: parsedInput.maskThreshold,
-      items: uploadedKeys.map((inputS3Key) => ({ inputS3Key })),
+      items: uploadedTaskIds.map((taskId) => ({ taskId })),
       signal: parsedInput.signal,
     });
   }
@@ -401,7 +383,7 @@ export class SegmentationClient {
       operation: "getSegmentJob",
     });
 
-    return buildJobStatusResult(raw, this.assetsBaseUrl);
+    return buildJobStatusResult(raw);
   }
 
   private async requestApi<TPayload>(input: {

@@ -1,5 +1,6 @@
 import { db } from "@segmentation/db";
 import { apiKey } from "@segmentation/db/schema/app";
+import { normalizeMaskArtifacts } from "@segmentationapi/sdk";
 import { and, desc, eq, inArray } from "drizzle-orm";
 
 import type { BalanceData, JobDetail, JobListItem } from "@/lib/dashboard-types";
@@ -9,7 +10,7 @@ import {
   listDynamoJobsForAccount,
   listDynamoTasksForJob,
 } from "@/lib/server/aws/dynamo";
-import { buildAssetUrl } from "@/lib/server/aws/s3";
+import { buildAssetUrl, fetchAssetJson } from "@/lib/server/aws/s3";
 import { DEFAULT_PAGE_SIZE } from "@/lib/server/constants";
 
 const LAST_24_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -24,6 +25,98 @@ function toUiStatus(
     return "success";
   }
   return "failed";
+}
+
+function toUiTaskStatus(
+  status: "queued" | "running" | "processing" | "success" | "failed",
+): "queued" | "processing" | "success" | "failed" {
+  if (status === "queued") {
+    return "queued";
+  }
+
+  if (status === "success") {
+    return "success";
+  }
+
+  if (status === "running" || status === "processing") {
+    return "processing";
+  }
+
+  return "failed";
+}
+
+type InputManifestDocument = {
+  payload?: {
+    prompts?: unknown;
+    boxes?: unknown;
+    points?: unknown;
+    inputS3Key?: unknown;
+  };
+};
+
+type OutputManifestDocument = {
+  result?: unknown;
+  items?: Record<string, { result?: unknown } | unknown>;
+};
+
+function normalizeImageOutputs(
+  result: unknown,
+  context: { userId: string; jobId: string; taskId: string },
+): JobDetail["outputs"] {
+  return normalizeMaskArtifacts(result, context).map((mask) => ({
+    maskIndex: mask.maskIndex,
+    url: mask.url,
+    score: mask.score,
+    box: mask.box,
+  }));
+}
+
+function normalizeVideoOutput(
+  result: unknown,
+  manifestUrl: string | null,
+): JobDetail["videoOutput"] {
+  if (!result || typeof result !== "object") {
+    return null;
+  }
+
+  const typedResult = result as Record<string, unknown>;
+  const output = typedResult.output && typeof typedResult.output === "object"
+    ? (typedResult.output as Record<string, unknown>)
+    : {};
+  const counts = typedResult.counts && typeof typedResult.counts === "object"
+    ? (typedResult.counts as Record<string, unknown>)
+    : {};
+
+  const framesPath =
+    typeof output.suggestedS3Keys === "object" && output.suggestedS3Keys
+      ? (output.suggestedS3Keys as Record<string, unknown>).frames_ndjson_gz
+      : null;
+
+  const resolvedFramesUrl =
+    typeof output.framesUrl === "string"
+      ? output.framesUrl
+      : typeof output.frames_url === "string"
+        ? output.frames_url
+        : typeof framesPath === "string"
+          ? buildAssetUrl(framesPath)
+          : null;
+
+  if (!resolvedFramesUrl || !manifestUrl) {
+    return null;
+  }
+
+  return {
+    manifestUrl,
+    framesUrl: resolvedFramesUrl,
+    maskEncoding: typeof output.maskEncoding === "string"
+      ? output.maskEncoding
+      : typeof output.mask_encoding === "string"
+        ? output.mask_encoding
+        : "coco_rle",
+    framesProcessed: Number(counts.frames_processed ?? counts.framesProcessed ?? 0),
+    framesWithMasks: Number(counts.frames_with_masks ?? counts.framesWithMasks ?? 0),
+    totalMasks: Number(counts.total_masks ?? counts.totalMasks ?? 0),
+  };
 }
 
 function toUiModality(requestType: "image_sync" | "image_batch" | "video"): "image" | "video" {
@@ -123,6 +216,44 @@ export async function getJobDetailForUser(params: {
     return null;
   }
 
+  const outputFolder = job.outputFolder;
+  const sharedInputManifestKey = outputFolder ? `${outputFolder}/input_manifest.json` : null;
+  const sharedOutputManifestKey = outputFolder ? `${outputFolder}/output_manifest.json` : null;
+
+  const [sharedInputManifest, sharedOutputManifest] = await Promise.all([
+    fetchAssetJson<InputManifestDocument>(sharedInputManifestKey),
+    fetchAssetJson<OutputManifestDocument>(sharedOutputManifestKey),
+  ]);
+
+  const sharedOutputManifestItems =
+    sharedOutputManifest?.items && typeof sharedOutputManifest.items === "object"
+      ? sharedOutputManifest.items
+      : null;
+  const sharedOutputManifestUrl = buildAssetUrl(sharedOutputManifestKey);
+
+  const taskManifests = await Promise.all(
+    tasks.map(async (task) => {
+      const inputManifest = sharedInputManifest;
+
+      const sharedOutputItemRaw = sharedOutputManifestItems?.[task.taskId];
+      const sharedOutputItem =
+        sharedOutputItemRaw && typeof sharedOutputItemRaw === "object"
+          ? (sharedOutputItemRaw as Record<string, unknown>)
+          : null;
+
+      const outputManifest = sharedOutputItem
+        ? ({ result: sharedOutputItem.result } as OutputManifestDocument)
+        : null;
+
+      return {
+        task,
+        inputManifest,
+        outputManifest,
+        outputManifestUrl: sharedOutputManifestUrl,
+      };
+    }),
+  );
+
   const apiKeyPrefix = job.apiKeyId
     ? await db
         .select({ keyPrefix: apiKey.keyPrefix })
@@ -132,34 +263,56 @@ export async function getJobDetailForUser(params: {
         .then((rows) => rows[0]?.keyPrefix ?? null)
     : null;
 
-  const firstImageTask = tasks.find((task) => task.taskType === "image");
-  const firstVideoTask = tasks.find((task) => task.taskType === "video");
-  const videoOutput = firstVideoTask?.videoOutput ?? null;
-  const imageGroups = tasks
-    .filter((task) => task.taskType === "image")
-    .map((task) => ({
-      id: task.id,
-      status: task.status,
-      createdAt: task.createdAt,
-      inputImageUrl: task.inputS3Key ? buildAssetUrl(task.inputS3Key) : null,
-      outputs: task.masks
-        .sort((a, b) => a.maskIndex - b.maskIndex)
-        .map((mask, index) => ({
-          maskIndex: index,
-          url: buildAssetUrl(mask.s3Path),
-          score: mask.score,
-          box: mask.box,
-        })),
-    }));
+  const firstTaskManifest = taskManifests[0]?.inputManifest?.payload ?? {};
+  const promptsFromManifest = Array.isArray(firstTaskManifest.prompts)
+    ? firstTaskManifest.prompts.map((value) => String(value).trim()).filter((value) => value.length > 0)
+    : [];
+
+  const imageGroups = taskManifests
+    .filter(() => job.requestType !== "video")
+    .map(({ task, inputManifest, outputManifest }) => {
+      const payload = inputManifest?.payload;
+      const inputImageUrl =
+        typeof payload?.inputS3Key === "string"
+          ? buildAssetUrl(payload.inputS3Key)
+          : task.inputS3Key
+            ? buildAssetUrl(task.inputS3Key)
+            : null;
+
+      return {
+        id: task.taskId,
+        status: toUiTaskStatus(task.status),
+        createdAt: task.createdAt,
+        inputImageUrl,
+        outputs: normalizeImageOutputs(outputManifest?.result, {
+          userId: params.userId,
+          jobId: params.jobId,
+          taskId: task.taskId,
+        }),
+      };
+    });
 
   const outputs = imageGroups.flatMap((group) => group.outputs);
+
+  const firstVideoManifest = taskManifests[0];
+  const videoOutput = job.requestType === "video"
+    ? normalizeVideoOutput(firstVideoManifest?.outputManifest?.result, firstVideoManifest?.outputManifestUrl ?? null)
+    : null;
+
+  const inputImageUrl = imageGroups[0]?.inputImageUrl ?? null;
+  const inputVideoUrl =
+    typeof firstVideoManifest?.inputManifest?.payload?.inputS3Key === "string"
+      ? buildAssetUrl(firstVideoManifest.inputManifest.payload.inputS3Key)
+      : firstVideoManifest?.task.inputS3Key
+        ? buildAssetUrl(firstVideoManifest.task.inputS3Key)
+        : null;
 
   return {
     id: job.jobId,
     userId: job.accountId,
     apiKeyId: job.apiKeyId,
     apiKeyPrefix,
-    prompts: job.prompts,
+    prompts: promptsFromManifest.length > 0 ? promptsFromManifest : job.prompts,
     status: toUiStatus(job.status),
     modality: toUiModality(job.requestType),
     processingMode: toUiProcessingMode(job.requestType),
@@ -168,20 +321,10 @@ export async function getJobDetailForUser(params: {
     errorMessage: job.errorMessage,
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
-    inputImageUrl: firstImageTask?.inputS3Key ? buildAssetUrl(firstImageTask.inputS3Key) : null,
-    inputVideoUrl: firstVideoTask?.inputS3Key ? buildAssetUrl(firstVideoTask.inputS3Key) : null,
+    inputImageUrl,
+    inputVideoUrl,
     outputs,
     imageGroups,
-    videoOutput: videoOutput
-      ? {
-          manifestUrl: videoOutput.framesUrl,
-          framesUrl: videoOutput.framesUrl,
-          outputS3Prefix: videoOutput.outputS3Prefix,
-          maskEncoding: videoOutput.maskEncoding,
-          framesProcessed: videoOutput.framesProcessed,
-          framesWithMasks: videoOutput.framesWithMasks,
-          totalMasks: videoOutput.totalMasks,
-        }
-      : null,
+    videoOutput,
   };
 }

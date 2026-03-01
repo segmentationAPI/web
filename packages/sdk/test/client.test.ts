@@ -66,7 +66,7 @@ describe("SegmentationClient", () => {
     const fetchMock = asFetchMock(async () =>
       jsonResponse({
         uploadUrl: "https://upload.example.com/a",
-        inputS3Key: "inputs/demo.png",
+        taskId: "task-demo",
         bucket: "segmentation-assets-prod",
         expiresIn: 300,
       }),
@@ -88,14 +88,14 @@ describe("SegmentationClient", () => {
     expect(getHeaders(init).get("x-api-key")).toBe("test_key");
     expect(getHeaders(init).get("content-type")).toBe("image/png");
     expect(init.body).toBeUndefined();
-    expect(result.inputS3Key).toBe("inputs/demo.png");
+    expect(result.taskId).toBe("task-demo");
   });
 
   it("sends bearer authorization header when jwt is provided", async () => {
     const fetchMock = asFetchMock(async () =>
       jsonResponse({
         uploadUrl: "https://upload.example.com/a",
-        inputS3Key: "inputs/demo.png",
+        taskId: "task-demo",
         bucket: "segmentation-assets-prod",
         expiresIn: 300,
       }),
@@ -121,7 +121,7 @@ describe("SegmentationClient", () => {
       if (url.endsWith("/uploads/presign")) {
         return jsonResponse({
           uploadUrl: "https://upload.example.com/video-put",
-          inputS3Key: "inputs/acct/video.mp4",
+          taskId: "video-task-1",
           bucket: "segmentation-assets-prod",
           expiresIn: 300,
         });
@@ -178,7 +178,7 @@ describe("SegmentationClient", () => {
     expect(getHeaders(segmentInit).get("content-type")).toBe("application/json");
     const body = JSON.parse(String(segmentInit.body)) as Record<string, unknown>;
     expect(body.type).toBe("video");
-    expect((body.items as Array<{ inputS3Key: string }>)[0].inputS3Key).toBe("inputs/acct/video.mp4");
+    expect((body.items as Array<{ taskId: string }>)[0].taskId).toBe("video-task-1");
     expect(body.fps).toBe(2.5);
     expect(body.maxFrames).toBe(80);
     expect(body.frameIdx).toBe(5);
@@ -196,7 +196,7 @@ describe("SegmentationClient", () => {
       if (url.endsWith("/uploads/presign")) {
         return jsonResponse({
           uploadUrl: "https://upload.example.com/video-put-jwt",
-          inputS3Key: "inputs/acct/video-jwt.mp4",
+          taskId: "video-task-jwt",
           bucket: "segmentation-assets-prod",
           expiresIn: 300,
         });
@@ -264,7 +264,7 @@ describe("SegmentationClient", () => {
     await client.createJob({
       type: "image_batch",
       prompts: ["cat"],
-      items: [{ inputS3Key: "inputs/a.png" }],
+      items: [{ taskId: "task-a" }],
     });
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -281,7 +281,7 @@ describe("SegmentationClient", () => {
       if (url.endsWith("/uploads/presign")) {
         return jsonResponse({
           uploadUrl: "https://upload.example.com/put",
-          inputS3Key: "inputs/flow.png",
+          taskId: "task-flow",
           bucket: "segmentation-assets-prod",
           expiresIn: 300,
         });
@@ -328,7 +328,7 @@ describe("SegmentationClient", () => {
     ) as Record<string, unknown>;
     expect(jobBody.type).toBe("image_batch");
     expect(jobBody.prompts).toEqual(["painting"]);
-    expect((jobBody.items as Array<{ inputS3Key: string }>)[0].inputS3Key).toBe("inputs/flow.png");
+    expect((jobBody.items as Array<{ taskId: string }>)[0].taskId).toBe("task-flow");
     expect(result.jobId).toBe("job-3");
   });
 
@@ -339,7 +339,7 @@ describe("SegmentationClient", () => {
       if (url.endsWith("/uploads/presign")) {
         return jsonResponse({
           uploadUrl: "https://upload.example.com/put-boxes",
-          inputS3Key: "inputs/flow-boxes.png",
+          taskId: "task-flow-boxes",
           bucket: "segmentation-assets-prod",
           expiresIn: 300,
         });
@@ -422,7 +422,7 @@ describe("SegmentationClient", () => {
       prompts: ["cat"],
       threshold: 0.5,
       maskThreshold: 0.6,
-      items: [{ inputS3Key: "inputs/a.png" }, { inputS3Key: "inputs/b.png" }],
+      items: [{ taskId: "task-a" }, { taskId: "task-b" }],
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -434,7 +434,7 @@ describe("SegmentationClient", () => {
     expect(body.prompts).toEqual(["cat"]);
     expect(body.threshold).toBe(0.5);
     expect(body.maskThreshold).toBe(0.6);
-    expect(body.items).toEqual([{ inputS3Key: "inputs/a.png" }, { inputS3Key: "inputs/b.png" }]);
+    expect(body.items).toEqual([{ taskId: "task-a" }, { taskId: "task-b" }]);
 
     expect(result.requestId).toBe("batch-request-1");
     expect(result.jobId).toBe("batch-job-1");
@@ -463,7 +463,7 @@ describe("SegmentationClient", () => {
     await client.createJob({
       type: "image_batch",
       boxes: [{ coordinates: [5, 10, 50, 100], isPositive: true }],
-      items: [{ inputS3Key: "inputs/a.png" }],
+      items: [{ taskId: "task-a" }],
     });
 
     const body = JSON.parse(String((fetchMock.mock.calls[0]?.[1] as RequestInit)?.body)) as Record<
@@ -472,7 +472,7 @@ describe("SegmentationClient", () => {
     >;
     expect(body.prompts).toBeUndefined();
     expect(body.boxes).toEqual([{ coordinates: [5, 10, 50, 100], isPositive: true }]);
-    expect(body.items).toEqual([{ inputS3Key: "inputs/a.png" }]);
+    expect(body.items).toEqual([{ taskId: "task-a" }]);
   });
 
   it("throws SegmentationApiError on API failure", async () => {
@@ -492,11 +492,11 @@ describe("SegmentationClient", () => {
     });
 
     await expect(
-      client.createJob({ type: "image_batch", items: [{ inputS3Key: "inputs/demo.png" }] }),
+      client.createJob({ type: "image_batch", items: [{ taskId: "task-demo" }] }),
     ).rejects.toBeInstanceOf(SegmentationApiError);
 
     await expect(
-      client.createJob({ type: "image_batch", items: [{ inputS3Key: "inputs/demo.png" }] }),
+      client.createJob({ type: "image_batch", items: [{ taskId: "task-demo" }] }),
     ).rejects.toMatchObject({
       status: 401,
       requestId: "r-123",
@@ -520,7 +520,7 @@ describe("SegmentationClient", () => {
     });
 
     await expect(
-      client.createJob({ type: "image_batch", items: [{ inputS3Key: "inputs/demo.png" }] }),
+      client.createJob({ type: "image_batch", items: [{ taskId: "task-demo" }] }),
     ).rejects.toMatchObject({
       status: 401,
       requestId: "r-124",
@@ -659,7 +659,7 @@ describe("SegmentationClient", () => {
   it("throws ValidationError on malformed createPresignedUpload response", async () => {
     const fetchMock = asFetchMock(async () =>
       jsonResponse({
-        inputS3Key: "inputs/demo.png",
+        taskId: "task-demo",
         bucket: "segmentation-assets-prod",
         expiresIn: 300,
       }),
@@ -690,20 +690,11 @@ describe("SegmentationClient", () => {
         failedItems: 0,
         items: [
           {
-            workId: "0000_abc12345",
-            inputS3Key: "inputs/a.png",
+            taskId: "task-abc12345",
             status: "success",
-            masks: [
-              {
-                key: "outputs/batch-job-2/item-0/mask_0.png",
-                score: 0.9,
-                box: [1, 2, 3, 4],
-              },
-            ],
           },
           {
-            workId: "0001_def67890",
-            inputS3Key: "inputs/b.png",
+            taskId: "task-def67890",
             status: "running",
           },
         ],
@@ -724,11 +715,9 @@ describe("SegmentationClient", () => {
     expect(result.status).toBe("processing");
     expect(result.successItems).toBe(1);
     expect(result.type).toBe("image_batch");
-    expect(result.items?.[0]?.workId).toBe("0000_abc12345");
-    expect(result.items?.[0]?.masks?.[0]?.url).toBe(
-      "https://assets.segmentationapi.com/outputs/batch-job-2/item-0/mask_0.png",
-    );
-    expect(result.items?.[1]?.masks).toBeUndefined();
+    expect(result.items?.[0]?.taskId).toBe("task-abc12345");
+    expect(result.items?.[0]?.error).toBeUndefined();
+    expect(result.items?.[1]?.error).toBeUndefined();
   });
 
   it("sends bearer authorization header for getSegmentJob requests", async () => {
@@ -798,7 +787,7 @@ describe("SegmentationClient", () => {
       if (url.endsWith("/uploads/presign")) {
         return jsonResponse({
           uploadUrl: "https://upload.example.com/put",
-          inputS3Key: "inputs/img.png",
+          taskId: `task-${Math.random()}`,
           bucket: "segmentation-assets-prod",
           expiresIn: 300,
         });

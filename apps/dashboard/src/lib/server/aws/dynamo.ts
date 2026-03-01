@@ -23,6 +23,8 @@ export type DynamoJob = {
   failedTasks: number;
   errorCode: string | null;
   errorMessage: string | null;
+  inputs: string[];
+  outputFolder: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -30,9 +32,10 @@ export type DynamoJob = {
 export type DynamoTask = {
   accountId: string;
   id: string;
+  taskId: string;
   requestId: string;
   taskType: "image" | "video";
-  status: "queued" | "processing" | "success" | "failed";
+  status: "queued" | "running" | "processing" | "success" | "failed";
   inputS3Key: string | null;
   errorCode: string | null;
   errorMessage: string | null;
@@ -44,7 +47,6 @@ export type DynamoTask = {
   }>;
   videoOutput: {
     framesUrl: string;
-    outputS3Prefix: string;
     maskEncoding: string;
     framesProcessed: number;
     framesWithMasks: number;
@@ -71,10 +73,34 @@ function toNullableString(value: unknown) {
   return normalized.length > 0 ? normalized : null;
 }
 
+function parsePrefixedKey(value: unknown, prefix: string) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  return value.startsWith(prefix) ? value.slice(prefix.length) : null;
+}
+
 function parseJob(item: Record<string, unknown>): DynamoJob {
+  const parsedInputs = Array.isArray(item.inputs)
+    ? item.inputs.map((value) => String(value).trim()).filter((value) => value.length > 0)
+    : [];
+
+  const accountId =
+    toNullableString(item.accountId) ??
+    parsePrefixedKey(item.PK, "USER#") ??
+    "";
+
+  const jobId =
+    toNullableString(item.jobId) ??
+    toNullableString(item.id) ??
+    parsePrefixedKey(item.SK, "JOB#") ??
+    parsePrefixedKey(item.GSI1PK, "JOB#") ??
+    "";
+
   return {
-    accountId: String(item.accountId ?? ""),
-    jobId: String(item.jobId ?? item.id ?? ""),
+    accountId,
+    jobId,
     requestType: String(item.type ?? "image_batch") as DynamoJob["requestType"],
     status: String(item.status ?? "queued") as DynamoJob["status"],
     prompts: Array.isArray(item.prompts)
@@ -88,12 +114,16 @@ function parseJob(item: Record<string, unknown>): DynamoJob {
     failedTasks: Number(item.failedItems ?? 0),
     errorCode: toNullableString(item.errorCode),
     errorMessage: toNullableString(item.errorMessage),
+    inputs: parsedInputs,
+    outputFolder: toNullableString(item.outputFolder),
     createdAt: toDate(item.createdAt),
-    updatedAt: toDate(item.updatedAt),
+    updatedAt: toDate(item.updatedAt ?? item.createdAt),
   };
 }
 
 function parseTask(item: Record<string, unknown>): DynamoTask {
+  const parsedTaskId = toNullableString(item.taskId) ?? toNullableString(item.id) ?? "";
+
   let masksData: unknown[] = [];
   if (typeof item.masks === "string") {
     try {
@@ -133,11 +163,9 @@ function parseTask(item: Record<string, unknown>): DynamoTask {
 
   const videoOutput =
     videoOutputRaw &&
-    typeof videoOutputRaw.frames_url === "string" &&
-    typeof videoOutputRaw.output_s3_prefix === "string"
+    typeof videoOutputRaw.frames_url === "string"
       ? {
           framesUrl: videoOutputRaw.frames_url,
-          outputS3Prefix: videoOutputRaw.output_s3_prefix,
           maskEncoding: typeof videoOutputRaw.mask_encoding === "string"
             ? videoOutputRaw.mask_encoding
             : "coco_rle",
@@ -159,9 +187,10 @@ function parseTask(item: Record<string, unknown>): DynamoTask {
 
   return {
     accountId: String(item.accountId ?? ""),
-    id: String(item.workId ?? item.id ?? ""),
+    id: parsedTaskId,
+    taskId: parsedTaskId,
     requestId: String(item.jobId ?? ""),
-    taskType: String(item.workId ?? "").startsWith("video_") ? "video" : "image",
+    taskType: String(item.type ?? item.requestType ?? "image_batch") === "video" ? "video" : "image",
     status: String(item.status ?? "queued") as DynamoTask["status"],
     inputS3Key: toNullableString(payload.inputS3Key),
     errorCode: toNullableString(item.errorCode),
@@ -297,6 +326,8 @@ export async function listDynamoJobsForAccount(accountId: string) {
 }
 
 export async function listDynamoTasksForJob(accountId: string, jobId: string) {
+  void accountId;
+
   const response = await dynamoClient.send(
     new QueryCommand({
       TableName: env.AWS_DYNAMO_TASKS_TABLE,
@@ -304,7 +335,7 @@ export async function listDynamoTasksForJob(accountId: string, jobId: string) {
       KeyConditionExpression: "GSI1PK = :pk AND begins_with(GSI1SK, :prefix)",
       ExpressionAttributeValues: marshall({
         ":pk": `JOB#${jobId}`,
-        ":prefix": "WORK#",
+        ":prefix": "TASK#",
       }),
     }),
   );
