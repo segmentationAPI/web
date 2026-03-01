@@ -25,20 +25,26 @@ export type SegmentVideoPoint = [number, number];
 export type SegmentVideoBox = [number, number, number, number];
 export type SegmentVideoObjectId = number | string;
 
+export interface SegmentVideoPointPrompt {
+  coordinates: SegmentVideoPoint;
+  isPositive: boolean;
+  objectId?: SegmentVideoObjectId;
+}
+
+export interface SegmentVideoBoxPrompt {
+  coordinates: SegmentVideoBox;
+  isPositive: boolean;
+  objectId?: SegmentVideoObjectId;
+}
+
 export type SegmentVideoPointsPrompt = {
-  points: SegmentVideoPoint[];
-  pointLabels?: number[];
-  pointObjectIds?: SegmentVideoObjectId[];
+  points: SegmentVideoPointPrompt[];
   boxes?: never;
-  boxObjectIds?: never;
 };
 
 export type SegmentVideoBoxesPrompt = {
-  boxes: SegmentVideoBox[];
-  boxObjectIds?: SegmentVideoObjectId[];
+  boxes: SegmentVideoBoxPrompt[];
   points?: never;
-  pointLabels?: never;
-  pointObjectIds?: never;
 };
 
 export type SegmentVideoSamplingByFps = {

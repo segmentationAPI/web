@@ -21,6 +21,8 @@ import { useVideoFrame } from "./use-video-frame";
 
 type FileKind = "image" | "video" | "none";
 type AnnotationMode = "box" | "point";
+type BoxCoordinates = [number, number, number, number];
+type PointCoordinates = [number, number];
 
 type RunState = {
   jobId?: string;
@@ -46,6 +48,24 @@ function formatStatus(status: string) {
   return status.replaceAll("_", " ");
 }
 
+function toBoxCoordinates(value: number[]): BoxCoordinates | null {
+  if (value.length !== 4) {
+    return null;
+  }
+
+  const [x1, y1, x2, y2] = value;
+  return [x1, y1, x2, y2];
+}
+
+function toPointCoordinates(value: number[]): PointCoordinates | null {
+  if (value.length !== 2) {
+    return null;
+  }
+
+  const [x, y] = value;
+  return [x, y];
+}
+
 async function getAuthedClient() {
   const { data: tokenData, error: tokenError } = await authClient.token();
   if (tokenError || !tokenData) {
@@ -67,8 +87,8 @@ export function UnifiedStudio() {
   const [statusRefreshing, setStatusRefreshing] = useState(false);
   const [batchCarouselIndex, setBatchCarouselIndex] = useState(0);
 
-  const [boxes, setBoxes] = useState<number[][]>([]);
-  const [points, setPoints] = useState<number[][]>([]);
+  const [boxes, setBoxes] = useState<BoxCoordinates[]>([]);
+  const [points, setPoints] = useState<PointCoordinates[]>([]);
   const [annotationMode, setAnnotationMode] = useState<AnnotationMode>("point");
 
   const fileKind = useMemo(() => classifyFiles(files), [files]);
@@ -263,7 +283,10 @@ export function UnifiedStudio() {
       const client = await getAuthedClient();
 
       if (fileKind === "video") {
-        const videoFile = files[0]!;
+        const videoFile = files[0];
+        if (!videoFile) {
+          throw new Error("Please select a video.");
+        }
 
         const baseOpts = {
           file: videoFile,
@@ -276,14 +299,19 @@ export function UnifiedStudio() {
           boxes.length > 0
             ? await client.segmentVideo({
                 ...baseOpts,
-                boxes: boxes as [number, number, number, number][],
-                boxObjectIds: boxes.map((_, i) => i + 1),
+                boxes: boxes.map((coordinates, i) => ({
+                  coordinates,
+                  isPositive: true,
+                  objectId: i + 1,
+                })),
               })
             : await client.segmentVideo({
                 ...baseOpts,
-                points: points as [number, number][],
-                pointLabels: points.map(() => 1),
-                pointObjectIds: points.map((_, i) => i + 1),
+                points: points.map((coordinates, i) => ({
+                  coordinates,
+                  isPositive: true,
+                  objectId: i + 1,
+                })),
               });
 
         setRunState({
@@ -574,7 +602,14 @@ export function UnifiedStudio() {
                 mode="box"
                 boxes={hasOutputs ? [] : boxes}
                 points={[]}
-                onBoxAdded={(box) => setBoxes((prev) => [...prev, box])}
+                onBoxAdded={(box) => {
+                  const nextBox = toBoxCoordinates(box);
+                  if (!nextBox) {
+                    return;
+                  }
+
+                  setBoxes((prev) => [...prev, nextBox]);
+                }}
                 masks={singleImageMasks ?? undefined}
               />
               {runState.mode === "ready" && runState.jobId && jobStatus ? (
@@ -734,8 +769,22 @@ export function UnifiedStudio() {
                   mode={annotationMode}
                   boxes={boxes}
                   points={points}
-                  onBoxAdded={(box) => setBoxes((prev) => [...prev, box])}
-                  onPointAdded={(pt) => setPoints((prev) => [...prev, pt])}
+                  onBoxAdded={(box) => {
+                    const nextBox = toBoxCoordinates(box);
+                    if (!nextBox) {
+                      return;
+                    }
+
+                    setBoxes((prev) => [...prev, nextBox]);
+                  }}
+                  onPointAdded={(pt) => {
+                    const nextPoint = toPointCoordinates(pt);
+                    if (!nextPoint) {
+                      return;
+                    }
+
+                    setPoints((prev) => [...prev, nextPoint]);
+                  }}
                 />
               ) : (
                 <div className="flex h-52 items-center justify-center rounded-lg border border-border/60 text-xs text-muted-foreground">

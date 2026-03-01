@@ -144,18 +144,24 @@ export const uploadAndCreateJobRequestSchema: z.ZodMiniType<UploadAndCreateJobRe
     signal: abortSignalSchema,
   });
 
-// --- Video request schemas (reused from before) ---
+// --- Video request schemas ---
 
-const segmentVideoPointSchema = z.tuple([finiteNumber, finiteNumber]);
+const segmentVideoPointSchema = z.object({
+  coordinates: z.tuple([finiteNumber, finiteNumber]),
+  isPositive: z.boolean(),
+  objectId: z.optional(z.union([finiteNumber, nonEmptyString])),
+});
 
-const segmentVideoBoxSchema = z.tuple([
-  finiteNumber,
-  finiteNumber,
-  finiteNumber,
-  finiteNumber,
-]);
-
-const segmentVideoObjectIdSchema = z.union([finiteNumber, nonEmptyString]);
+const segmentVideoBoxSchema = z.object({
+  coordinates: z.tuple([
+    finiteNumber,
+    finiteNumber,
+    finiteNumber,
+    finiteNumber,
+  ]),
+  isPositive: z.boolean(),
+  objectId: z.optional(z.union([finiteNumber, nonEmptyString])),
+});
 
 const segmentVideoPointsPromptSchema = z
   .object({
@@ -164,29 +170,19 @@ const segmentVideoPointsPromptSchema = z
       .check(
         z.refine((value) => value.length >= 1, "Expected at least 1 point prompt."),
       ),
-    pointLabels: z.optional(z.array(finiteNumber)),
-    pointObjectIds: z.optional(z.array(segmentVideoObjectIdSchema)),
     boxes: z.optional(
       z.never("Provide exactly one visual prompt mode: `points` or `boxes`."),
+    ),
+    pointLabels: z.optional(
+      z.never("Use inline point objects with `isPositive` and optional `objectId`."),
+    ),
+    pointObjectIds: z.optional(
+      z.never("Use inline point objects with `isPositive` and optional `objectId`."),
     ),
     boxObjectIds: z.optional(
       z.never("Provide exactly one visual prompt mode: `points` or `boxes`."),
     ),
-  })
-  .check(
-    z.refine(
-      (value) =>
-        value.pointLabels === undefined ||
-        value.pointLabels.length === value.points.length,
-      "`pointLabels` length must match `points` length.",
-    ),
-    z.refine(
-      (value) =>
-        value.pointObjectIds === undefined ||
-        value.pointObjectIds.length === value.points.length,
-      "`pointObjectIds` length must match `points` length.",
-    ),
-  );
+  });
 
 const segmentVideoBoxesPromptSchema = z
   .object({
@@ -195,7 +191,9 @@ const segmentVideoBoxesPromptSchema = z
       .check(
         z.refine((value) => value.length >= 1, "Expected at least 1 box prompt."),
       ),
-    boxObjectIds: z.optional(z.array(segmentVideoObjectIdSchema)),
+    boxObjectIds: z.optional(
+      z.never("Use inline box objects with `isPositive` and optional `objectId`."),
+    ),
     points: z.optional(
       z.never("Provide exactly one visual prompt mode: `points` or `boxes`."),
     ),
@@ -205,15 +203,7 @@ const segmentVideoBoxesPromptSchema = z
     pointObjectIds: z.optional(
       z.never("Provide exactly one visual prompt mode: `points` or `boxes`."),
     ),
-  })
-  .check(
-    z.refine(
-      (value) =>
-        value.boxObjectIds === undefined ||
-        value.boxObjectIds.length === value.boxes.length,
-      "`boxObjectIds` length must match `boxes` length.",
-    ),
-  );
+  });
 
 const segmentVideoSamplingByFpsSchema = z.object({
   fps: finiteNumber.check(

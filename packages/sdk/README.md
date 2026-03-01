@@ -77,11 +77,9 @@ const accepted = await client.segmentVideo({
   fps: 2, // or numFrames
   maxFrames: 120,
   points: [
-    [320, 180],
-    [410, 260],
+    { coordinates: [320, 180], isPositive: true, objectId: 1 },
+    { coordinates: [410, 260], isPositive: false, objectId: 1 },
   ],
-  pointLabels: [1, 0],
-  pointObjectIds: [1, 1],
   frameIdx: 0,
 });
 
@@ -99,7 +97,7 @@ video segmentation request with the uploaded `inputS3Key`.
 Video segmentation supports visual prompts only:
 
 - Provide exactly one prompt mode: `points` or `boxes`
-- Use matching optional ID arrays (`pointObjectIds` or `boxObjectIds`)
+- Use inline prompt objects with `coordinates`, `isPositive`, and optional `objectId`
 - Do not send text prompts (`text` is unsupported)
 - Choose at most one sampling selector: `fps` or `numFrames`
 

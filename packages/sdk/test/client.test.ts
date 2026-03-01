@@ -154,11 +154,9 @@ describe("SegmentationClient", () => {
       fps: 2.5,
       maxFrames: 80,
       points: [
-        [10, 20],
-        [30, 40],
+        { coordinates: [10, 20], isPositive: true, objectId: 101 },
+        { coordinates: [30, 40], isPositive: false, objectId: 101 },
       ],
-      pointLabels: [1, 0],
-      pointObjectIds: [101, 101],
       frameIdx: 5,
     });
 
@@ -229,8 +227,7 @@ describe("SegmentationClient", () => {
     await client.segmentVideo({
       file: new Uint8Array([9, 8, 7]),
       numFrames: 16,
-      boxes: [[1, 2, 3, 4]],
-      boxObjectIds: [1],
+      boxes: [{ coordinates: [1, 2, 3, 4], isPositive: true, objectId: 1 }],
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -625,8 +622,8 @@ describe("SegmentationClient", () => {
     await expect(
       client.segmentVideo({
         file: new Uint8Array([1]),
-        points: [[1, 2]],
-        boxes: [[1, 2, 3, 4]],
+        points: [{ coordinates: [1, 2], isPositive: true }],
+        boxes: [{ coordinates: [1, 2, 3, 4], isPositive: true }],
       } as never),
     ).rejects.toMatchObject({
       direction: "input",
@@ -636,7 +633,7 @@ describe("SegmentationClient", () => {
     await expect(
       client.segmentVideo({
         file: new Uint8Array([1]),
-        points: [[1, 2]],
+        points: [{ coordinates: [1, 2], isPositive: true }],
         fps: 1,
         numFrames: 5,
       } as never),
@@ -648,10 +645,7 @@ describe("SegmentationClient", () => {
     await expect(
       client.segmentVideo({
         file: new Uint8Array([1]),
-        points: [
-          [1, 2],
-          [3, 4],
-        ],
+        points: [{ coordinates: [1, 2], isPositive: true }],
         pointLabels: [1],
       } as never),
     ).rejects.toMatchObject({

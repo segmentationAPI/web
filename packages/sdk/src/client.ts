@@ -286,16 +286,16 @@ export class SegmentationClient {
     }
 
     if (parsedInput.points !== undefined) {
-      requestBody.points = parsedInput.points.map((p, i) => ({
-        coordinates: p,
-        isPositive: parsedInput.pointLabels?.[i] === 1 || parsedInput.pointLabels?.[i] === undefined,
-        objectId: parsedInput.pointObjectIds?.[i] !== undefined ? String(parsedInput.pointObjectIds[i]) : undefined,
+      requestBody.points = parsedInput.points.map((p) => ({
+        coordinates: p.coordinates,
+        isPositive: p.isPositive,
+        objectId: p.objectId !== undefined ? String(p.objectId) : undefined,
       }));
     } else {
-      requestBody.boxes = parsedInput.boxes!.map((b, i) => ({
-        coordinates: b,
-        isPositive: true,
-        objectId: parsedInput.boxObjectIds?.[i] !== undefined ? String(parsedInput.boxObjectIds[i]) : undefined,
+      requestBody.boxes = parsedInput.boxes!.map((b) => ({
+        coordinates: b.coordinates,
+        isPositive: b.isPositive,
+        objectId: b.objectId !== undefined ? String(b.objectId) : undefined,
       }));
     }
 
