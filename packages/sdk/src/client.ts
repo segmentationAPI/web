@@ -166,6 +166,7 @@ function buildJobStatusResult(
         box: mask.box ?? undefined,
         url: joinUrl(assetsBaseUrl, mask.key),
       })),
+      videoOutput: item.videoOutput ?? undefined,
       error: item.error ?? undefined,
     })),
     error: raw.error,

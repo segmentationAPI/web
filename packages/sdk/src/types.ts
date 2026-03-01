@@ -147,11 +147,30 @@ export interface MaskResultRaw {
   box?: number[] | null;
 }
 
+export interface VideoOutputRaw {
+  requestId: string;
+  status: string;
+  submittedAt: string;
+  completedAt: string;
+  input: any;
+  counts: any;
+  output: {
+    framesPath: string;
+    framesUrl: string | null;
+    outputS3Prefix: string;
+    suggestedS3Keys: Record<string, string>;
+    maskEncoding: string;
+    artifactFormat: string;
+  };
+  summary: any;
+}
+
 export interface JobStatusItemRaw {
   workId: string;
   inputS3Key?: string;
   status: JobTaskStatus;
   masks?: MaskResultRaw[] | null;
+  videoOutput?: VideoOutputRaw | null;
   error?: string | null;
 }
 
@@ -198,6 +217,7 @@ export interface JobStatusItem {
   inputS3Key?: string;
   status: JobTaskStatus;
   masks?: MaskResult[];
+  videoOutput?: VideoOutputRaw;
   error?: string;
 }
 
