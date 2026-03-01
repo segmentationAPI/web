@@ -316,6 +316,9 @@ export const jobStatusRawSchema: z.ZodMiniType<JobStatusRaw> =
     processingItems: finiteNumber,
     successItems: finiteNumber,
     failedItems: finiteNumber,
+    accountId: z.optional(nonEmptyString),
+    outputFolder: z.optional(nonEmptyString),
+    inputs: z.optional(z.array(nonEmptyString)),
     items: z.optional(z.array(jobStatusItemRawSchema)),
     error: z.optional(nonEmptyString),
   });

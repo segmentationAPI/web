@@ -205,6 +205,9 @@ export interface JobStatusRaw {
   processingItems: number;
   successItems: number;
   failedItems: number;
+  accountId?: string;
+  outputFolder?: string;
+  inputs?: string[];
   items?: JobStatusItemRaw[];
   error?: string;
 }

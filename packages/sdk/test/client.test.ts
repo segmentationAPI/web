@@ -688,6 +688,9 @@ describe("SegmentationClient", () => {
         processingItems: 1,
         successItems: 1,
         failedItems: 0,
+        accountId: "user-1",
+        outputFolder: "batch-job-2",
+        inputs: ["task-abc12345", "task-def67890"],
         items: [
           {
             taskId: "task-abc12345",
@@ -718,6 +721,9 @@ describe("SegmentationClient", () => {
     expect(result.items?.[0]?.taskId).toBe("task-abc12345");
     expect(result.items?.[0]?.error).toBeUndefined();
     expect(result.items?.[1]?.error).toBeUndefined();
+    expect(result.raw.accountId).toBe("user-1");
+    expect(result.raw.outputFolder).toBe("batch-job-2");
+    expect(result.raw.inputs).toEqual(["task-abc12345", "task-def67890"]);
   });
 
   it("sends bearer authorization header for getSegmentJob requests", async () => {

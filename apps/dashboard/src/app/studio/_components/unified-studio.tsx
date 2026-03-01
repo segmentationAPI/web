@@ -104,7 +104,7 @@ function buildOutputManifestUrl(userId: string, jobId: string, outputFolder?: st
   const job = jobId.trim();
   const explicitOutputFolder = outputFolder?.trim().replace(/^\/+|\/+$/g, "");
   const baseKey = explicitOutputFolder && explicitOutputFolder.length > 0
-    ? explicitOutputFolder
+    ? `outputs/${account}/${explicitOutputFolder}`
     : `outputs/${account}/${job}`;
   const key = `${baseKey}/output_manifest.json`;
   return `https://assets.segmentationapi.com/${key}`;

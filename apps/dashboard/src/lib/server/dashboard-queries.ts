@@ -216,9 +216,12 @@ export async function getJobDetailForUser(params: {
     return null;
   }
 
-  const outputFolder = job.outputFolder;
-  const sharedInputManifestKey = outputFolder ? `${outputFolder}/input_manifest.json` : null;
-  const sharedOutputManifestKey = outputFolder ? `${outputFolder}/output_manifest.json` : null;
+  const outputFolder = job.outputFolder?.trim() ?? "";
+  const baseOutputKey = outputFolder.length > 0
+    ? `outputs/${job.accountId}/${outputFolder}`
+    : `outputs/${job.accountId}/${job.jobId}`;
+  const sharedInputManifestKey = `${baseOutputKey}/input_manifest.json`;
+  const sharedOutputManifestKey = `${baseOutputKey}/output_manifest.json`;
 
   const [sharedInputManifest, sharedOutputManifest] = await Promise.all([
     fetchAssetJson<InputManifestDocument>(sharedInputManifestKey),
