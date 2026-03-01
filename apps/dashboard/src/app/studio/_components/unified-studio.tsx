@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Sparkles, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import {
   SegmentationClient,
   type JobStatusResult,
@@ -25,13 +25,9 @@ type RunState = {
 };
 
 function classifyFiles(files: File[]): FileKind {
-  const hasImages = files.some((f) => f.type.startsWith("image/"));
-  const hasVideos = files.some((f) => f.type.startsWith("video/"));
-
-  if (hasImages && hasVideos) return "none"; // mixed not supported
-  if (hasVideos) return "video";
-  if (hasImages) return "image";
-  return "none";
+  if (files.length === 0) return "none";
+  const firstIsVideo = files[0]!.type.startsWith("video/");
+  return firstIsVideo ? "video" : "image";
 }
 
 function trimPrompts(prompts: string[]) {
@@ -40,6 +36,10 @@ function trimPrompts(prompts: string[]) {
 
 function isJobComplete(status: JobStatusResult["status"] | undefined) {
   return status === "completed" || status === "completed_with_errors" || status === "failed";
+}
+
+function formatStatus(status: string) {
+  return status.replaceAll("_", " ");
 }
 
 async function getAuthedClient() {
@@ -98,11 +98,6 @@ export function UnifiedStudio() {
   const [isDrawing, setIsDrawing] = useState(false);
 
   const fileKind = useMemo(() => classifyFiles(files), [files]);
-  const isMixed = useMemo(() => {
-    const hasImages = files.some((f) => f.type.startsWith("image/"));
-    const hasVideos = files.some((f) => f.type.startsWith("video/"));
-    return hasImages && hasVideos;
-  }, [files]);
 
   const imageFiles = useMemo(
     () => files.filter((file) => file.type.startsWith("image/")),
@@ -112,18 +107,6 @@ export function UnifiedStudio() {
     () => files.find((file) => file.type.startsWith("video/")) ?? null,
     [files],
   );
-
-  const firstImagePreviewUrl = useMemo(() => {
-    if (imageFiles.length === 0) return null;
-    return URL.createObjectURL(imageFiles[0]!);
-  }, [imageFiles]);
-
-  useEffect(() => {
-    if (!firstImagePreviewUrl) return;
-    return () => {
-      URL.revokeObjectURL(firstImagePreviewUrl);
-    };
-  }, [firstImagePreviewUrl]);
 
   const imagePreviewUrls = useMemo(
     () => imageFiles.map((file) => URL.createObjectURL(file)),
@@ -151,30 +134,26 @@ export function UnifiedStudio() {
 
   const canRun = runState.mode !== "running" && fileKind !== "none";
   const modeLabel =
-    fileKind === "image"
-      ? "Image Batch"
-      : fileKind === "video"
-        ? "Video"
-        : isMixed
-          ? "Mixed Unsupported"
-          : "Select Files";
+    fileKind === "image" ? "Image Batch" : fileKind === "video" ? "Video" : "Select Files";
   const modeBadgeClass =
     fileKind === "image"
       ? "border-sky-500/40 bg-sky-500/15 text-sky-200"
       : fileKind === "video"
         ? "border-amber-500/40 bg-amber-500/15 text-amber-200"
-        : isMixed
-          ? "border-destructive/45 bg-destructive/15 text-destructive"
-          : "border-border/60 bg-background/50 text-muted-foreground";
+        : "border-border/60 bg-background/50 text-muted-foreground";
 
   const currentAsyncJobId = runState.jobId ?? null;
   const hasOutputs = runState.mode === "ready" && Boolean(currentAsyncJobId);
+  const firstImagePreviewUrl = imagePreviewUrls[0] ?? null;
   const isImagePreviewMode = fileKind === "image" && Boolean(firstImagePreviewUrl);
+  const isVideoPreviewMode = fileKind === "video" && Boolean(videoPreviewUrl);
 
   const progressText = jobStatus
     ? `${jobStatus.successItems + jobStatus.failedItems}/${jobStatus.totalItems}`
     : null;
   const activeBatchItem = jobStatus?.items?.[batchCarouselIndex] ?? null;
+  const batchImageUrl = imagePreviewUrls[batchCarouselIndex] ?? imagePreviewUrls[0] ?? null;
+  const batchItemCount = jobStatus?.items?.length ?? 0;
 
   function replacePrompt(index: number, value: string) {
     const next = [...prompts];
@@ -190,9 +169,15 @@ export function UnifiedStudio() {
   }
 
   function onFilesSelected(next: FileList | null) {
-    const selected = Array.from(next ?? []).filter((file) => {
-      return file.type.startsWith("image/") || file.type.startsWith("video/");
-    });
+    const accepted = Array.from(next ?? []).filter(
+      (f) => f.type.startsWith("image/") || f.type.startsWith("video/"),
+    );
+    const selected =
+      accepted.length === 0
+        ? []
+        : accepted[0]!.type.startsWith("video/")
+          ? accepted.filter((f) => f.type.startsWith("video/"))
+          : accepted.filter((f) => f.type.startsWith("image/"));
     setFiles(selected);
     setRunState({ mode: "idle" });
     setJobStatus(null);
@@ -232,7 +217,7 @@ export function UnifiedStudio() {
       setJobStatus(status);
 
       if (!silent && isJobComplete(status.status)) {
-        toast.success(`Job ${status.status.replaceAll("_", " ")}.`);
+        toast.success(`Job ${formatStatus(status.status)}.`);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to refresh job status.";
@@ -362,19 +347,15 @@ export function UnifiedStudio() {
   function getMouseCoords(e: React.MouseEvent<HTMLDivElement>): [number, number] | null {
     if (!imageRef.current || !imageDims) return null;
     const rect = imageRef.current.getBoundingClientRect();
-    
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
     const scaleX = imageDims.w / rect.width;
     const scaleY = imageDims.h / rect.height;
-    
     const imageX = Math.round(x * scaleX);
     const imageY = Math.round(y * scaleY);
-    
     return [
       Math.max(0, Math.min(imageX, imageDims.w)),
-      Math.max(0, Math.min(imageY, imageDims.h))
+      Math.max(0, Math.min(imageY, imageDims.h)),
     ];
   }
 
@@ -395,7 +376,6 @@ export function UnifiedStudio() {
   function handleMouseUp() {
     if (!isDrawing || !currentBox) return;
     setIsDrawing(false);
-    
     const x1 = Math.min(currentBox[0], currentBox[2]);
     const y1 = Math.min(currentBox[1], currentBox[3]);
     const x2 = Math.max(currentBox[0], currentBox[2]);
@@ -409,7 +389,6 @@ export function UnifiedStudio() {
 
   function renderBox(box: number[], key: string, isDrawingBox = false) {
     if (!imageDims) return null;
-    
     const x1 = Math.min(box[0], box[2]);
     const y1 = Math.min(box[1], box[3]);
     const x2 = Math.max(box[0], box[2]);
@@ -419,11 +398,10 @@ export function UnifiedStudio() {
     const top = (y1 / imageDims.h) * 100;
     const width = ((x2 - x1) / imageDims.w) * 100;
     const height = ((y2 - y1) / imageDims.h) * 100;
-
     return (
       <div
         key={key}
-        className={`absolute border-2 pointer-events-none ${isDrawingBox ? 'border-primary border-dashed bg-primary/10' : 'border-emerald-500 bg-emerald-500/20'}`}
+        className={`absolute border-2 pointer-events-none ${isDrawingBox ? "border-primary border-dashed bg-primary/10" : "border-emerald-500 bg-emerald-500/20"}`}
         style={{
           left: `${left}%`,
           top: `${top}%`,
@@ -444,7 +422,7 @@ export function UnifiedStudio() {
     ? jobStatus.items[0].masks
     : null;
 
-  const isSingleImageView = imageFiles.length === 1 && runState.selectedType === "image_batch";
+  const isSingleImageView = imageFiles.length === 1;
 
   return (
     <section className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 p-4 sm:p-5">
@@ -517,21 +495,21 @@ export function UnifiedStudio() {
                     key={`${file.name}-${index}`}
                     className="flex items-center gap-2.5 rounded-lg border border-border/55 bg-muted/20 px-2.5 py-2"
                   >
-                    {file.type.startsWith("image/") ? (
+                    {fileKind === "image" ? (
                       <img
                         src={imagePreviewUrls[index]}
                         alt=""
                         className="size-12 shrink-0 rounded-md border border-border/50 object-cover"
                       />
-                    ) : file.type.startsWith("video/") ? (
+                    ) : (
                       <div className="flex size-12 shrink-0 items-center justify-center rounded-md border border-border/50 bg-muted/40 text-muted-foreground">
                         <span className="font-mono text-[9px]">VID</span>
                       </div>
-                    ) : null}
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs text-foreground">{file.name}</p>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
-                        {file.type.startsWith("image/") ? "image" : "video"} · {(file.size / 1024).toFixed(1)} KB
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                        {fileKind === "image" ? "image" : "video"} · {(file.size / 1024).toFixed(1)} KB
                       </p>
                     </div>
                     <Button
@@ -557,11 +535,6 @@ export function UnifiedStudio() {
               </Empty>
             )}
 
-            {isMixed ? (
-              <p className="font-mono text-[10px] uppercase tracking-[0.11em] text-destructive">
-                Mixed image + video submission is not supported. Select one type per run.
-              </p>
-            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 border-t border-border/40 pt-3">
@@ -603,7 +576,7 @@ export function UnifiedStudio() {
             ) : null}
             {currentAsyncJobId && jobStatus ? (
               <p className="font-mono text-[10px] uppercase tracking-[0.11em] text-muted-foreground">
-                {jobStatus.status.replaceAll("_", " ")} · {progressText}
+                {formatStatus(jobStatus.status)} · {progressText}
               </p>
             ) : null}
           </div>
@@ -626,7 +599,7 @@ export function UnifiedStudio() {
             ) : null}
           </div>
 
-          {!hasOutputs && !isImagePreviewMode ? (
+          {!hasOutputs && !isImagePreviewMode && !isVideoPreviewMode ? (
             <Empty className="mt-2 border-0 bg-transparent p-0 text-left">
               <EmptyHeader className="items-start">
                 <EmptyTitle className="text-sm">No output yet</EmptyTitle>
@@ -642,7 +615,7 @@ export function UnifiedStudio() {
             <div className="mt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                  {singleImageMasks ? `${singleImageMasks.length} masks detected` : boxes.length > 0 ? `${boxes.length} objects selected` : 'Draw bounding boxes to select objects'}
+                  {singleImageMasks ? `${singleImageMasks.length} masks detected` : boxes.length > 0 ? `${boxes.length} objects selected` : "Draw bounding boxes to select objects"}
                 </p>
                 {boxes.length > 0 && !hasOutputs ? (
                   <Button
@@ -656,8 +629,8 @@ export function UnifiedStudio() {
                   </Button>
                 ) : null}
               </div>
-              <div 
-                className={`relative overflow-hidden rounded-lg border border-border/60 select-none ${!hasOutputs ? 'cursor-crosshair' : ''}`}
+              <div
+                className={`relative overflow-hidden rounded-lg border border-border/60 select-none ${!hasOutputs ? "cursor-crosshair" : ""}`}
                 onMouseDown={!hasOutputs ? handleMouseDown : undefined}
                 onMouseMove={!hasOutputs ? handleMouseMove : undefined}
                 onMouseUp={!hasOutputs ? handleMouseUp : undefined}
@@ -682,7 +655,7 @@ export function UnifiedStudio() {
                 ))}
 
                 {!hasOutputs && boxes.map((box, index) => renderBox(box, `box-${index}`))}
-                {!hasOutputs && currentBox && renderBox(currentBox, 'current-box', true)}
+                {!hasOutputs && currentBox && renderBox(currentBox, "current-box", true)}
               </div>
 
               {runState.mode === "ready" && runState.jobId && jobStatus ? (
@@ -691,10 +664,26 @@ export function UnifiedStudio() {
                     Job: {runState.jobId}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Status: {jobStatus.status.replaceAll("_", " ")}
+                    Status: {formatStatus(jobStatus.status)}
                   </p>
                 </div>
               ) : null}
+            </div>
+          ) : null}
+
+          {/* Multi-image preview before run (input images only, never from S3) */}
+          {isImagePreviewMode && !isSingleImageView && !hasOutputs && firstImagePreviewUrl ? (
+            <div className="mt-3 space-y-2">
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                {imageFiles.length} images selected · Run job to process
+              </p>
+              <div className="relative overflow-hidden rounded-lg border border-border/60">
+                <img
+                  src={firstImagePreviewUrl}
+                  alt="First of batch"
+                  className="h-auto w-full"
+                />
+              </div>
             </div>
           ) : null}
 
@@ -709,7 +698,7 @@ export function UnifiedStudio() {
                   Batch job: {runState.jobId}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Status: {jobStatus?.status.replaceAll("_", " ") ?? "queued"}
+                  Status: {jobStatus ? formatStatus(jobStatus.status) : "queued"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Progress: {progressText ?? "0/0"}
@@ -719,9 +708,9 @@ export function UnifiedStudio() {
               {activeBatchItem ? (
                 <div className="space-y-2">
                   <div className="relative overflow-hidden rounded-lg border border-border/60">
-                    {(imagePreviewUrls[batchCarouselIndex] ?? imagePreviewUrls[0]) ? (
+                    {batchImageUrl ? (
                       <img
-                        src={imagePreviewUrls[batchCarouselIndex] ?? imagePreviewUrls[0]}
+                        src={batchImageUrl}
                         alt={`Batch input ${batchCarouselIndex + 1}`}
                         className="h-auto w-full"
                       />
@@ -752,16 +741,16 @@ export function UnifiedStudio() {
                       <ChevronLeft className="size-3.5" />
                     </Button>
                     <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                      {batchCarouselIndex + 1}/{jobStatus?.items?.length ?? 1} · {activeBatchItem.status}
+                      {batchCarouselIndex + 1}/{batchItemCount} · {activeBatchItem.status}
                     </p>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      disabled={batchCarouselIndex >= (jobStatus?.items?.length ?? 1) - 1}
+                      disabled={batchCarouselIndex >= batchItemCount - 1}
                       onClick={() =>
                         setBatchCarouselIndex((current) =>
-                          Math.min((jobStatus?.items?.length ?? 1) - 1, current + 1),
+                          Math.min(batchItemCount - 1, current + 1),
                         )
                       }
                       className="h-8 px-2"
@@ -776,6 +765,20 @@ export function UnifiedStudio() {
             </div>
           ) : null}
 
+          {/* Video preview before run */}
+          {isVideoPreviewMode && !hasOutputs && videoPreviewUrl ? (
+            <div className="mt-3 space-y-2">
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                Video selected · Run job to process
+              </p>
+              <video
+                src={videoPreviewUrl}
+                controls
+                className="w-full overflow-hidden rounded-xl border border-border/70 bg-background/80"
+              />
+            </div>
+          ) : null}
+
           {/* Video results */}
           {runState.mode === "ready" &&
           runState.selectedType === "video" &&
@@ -786,7 +789,7 @@ export function UnifiedStudio() {
                   Video job: {runState.jobId}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Status: {jobStatus?.status.replaceAll("_", " ") ?? "queued"}
+                  Status: {jobStatus ? formatStatus(jobStatus.status) : "queued"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Progress: {progressText ?? "0/0"}
