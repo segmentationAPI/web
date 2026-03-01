@@ -75,27 +75,38 @@ function parseJob(item: Record<string, unknown>): DynamoJob {
   return {
     accountId: String(item.accountId ?? ""),
     jobId: String(item.jobId ?? item.id ?? ""),
-    requestType: String(item.request_type ?? "image_batch") as DynamoJob["requestType"],
+    requestType: String(item.type ?? "image_batch") as DynamoJob["requestType"],
     status: String(item.status ?? "queued") as DynamoJob["status"],
     prompts: Array.isArray(item.prompts)
       ? item.prompts.map((prompt) => String(prompt)).filter(Boolean)
       : [],
-    apiKeyId: toNullableString(item.api_key_id),
-    totalTasks: Number(item.total_tasks ?? 0),
-    queuedTasks: Number(item.queued_tasks ?? 0),
-    processingTasks: Number(item.processing_tasks ?? 0),
-    successTasks: Number(item.success_tasks ?? 0),
-    failedTasks: Number(item.failed_tasks ?? 0),
-    errorCode: toNullableString(item.error_code),
-    errorMessage: toNullableString(item.error_message),
-    createdAt: toDate(item.created_at),
-    updatedAt: toDate(item.updated_at),
+    apiKeyId: toNullableString(item.apiKeyId),
+    totalTasks: Number(item.totalItems ?? 0),
+    queuedTasks: Number(item.queuedItems ?? 0),
+    processingTasks: Number(item.processingItems ?? 0),
+    successTasks: Number(item.successItems ?? 0),
+    failedTasks: Number(item.failedItems ?? 0),
+    errorCode: toNullableString(item.errorCode),
+    errorMessage: toNullableString(item.errorMessage),
+    createdAt: toDate(item.createdAt),
+    updatedAt: toDate(item.updatedAt),
   };
 }
 
 function parseTask(item: Record<string, unknown>): DynamoTask {
-  const masksRaw = Array.isArray(item.masks) ? item.masks : [];
-  const masks = masksRaw
+  let masksData: unknown[] = [];
+  if (typeof item.masks === "string") {
+    try {
+      const parsed = JSON.parse(item.masks);
+      masksData = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      // ignore malformed JSON
+    }
+  } else if (Array.isArray(item.masks)) {
+    masksData = item.masks;
+  }
+
+  const masks = masksData
     .filter((mask): mask is Record<string, unknown> => Boolean(mask) && typeof mask === "object")
     .map((mask, index) => ({
       maskIndex: Number(mask.mask_index ?? index),
@@ -108,10 +119,17 @@ function parseTask(item: Record<string, unknown>): DynamoTask {
     .filter((mask) => mask.s3Path.length > 0)
     .sort((a, b) => a.maskIndex - b.maskIndex);
 
-  const videoOutputRaw =
-    item.video_output && typeof item.video_output === "object"
-      ? (item.video_output as Record<string, unknown>)
-      : null;
+  let videoOutputRaw: Record<string, unknown> | null = null;
+  if (typeof item.videoOutput === "string") {
+    try {
+      const parsed = JSON.parse(item.videoOutput);
+      videoOutputRaw = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+    } catch {
+      // ignore malformed JSON
+    }
+  } else if (item.videoOutput && typeof item.videoOutput === "object") {
+    videoOutputRaw = item.videoOutput as Record<string, unknown>;
+  }
 
   const videoOutput =
     videoOutputRaw &&
@@ -129,19 +147,29 @@ function parseTask(item: Record<string, unknown>): DynamoTask {
         }
       : null;
 
+  let payload: Record<string, unknown> = {};
+  if (typeof item.payload === "string") {
+    try {
+      const parsed = JSON.parse(item.payload);
+      payload = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+    } catch {
+      // ignore malformed JSON
+    }
+  }
+
   return {
     accountId: String(item.accountId ?? ""),
-    id: String(item.taskId ?? item.id ?? ""),
-    requestId: String(item.request_id ?? ""),
-    taskType: String(item.task_type ?? "image") as DynamoTask["taskType"],
+    id: String(item.workId ?? item.id ?? ""),
+    requestId: String(item.jobId ?? ""),
+    taskType: String(item.workId ?? "").startsWith("video_") ? "video" : "image",
     status: String(item.status ?? "queued") as DynamoTask["status"],
-    inputS3Key: toNullableString(item.input_s3_key),
-    errorCode: toNullableString(item.error_code),
-    errorMessage: toNullableString(item.error_message),
+    inputS3Key: toNullableString(payload.inputS3Key),
+    errorCode: toNullableString(item.errorCode),
+    errorMessage: toNullableString(item.errorMessage),
     masks,
     videoOutput,
-    createdAt: toDate(item.created_at),
-    updatedAt: toDate(item.updated_at),
+    createdAt: toDate(item.createdAt),
+    updatedAt: toDate(item.updatedAt),
   };
 }
 
@@ -229,7 +257,7 @@ export async function getDynamoJob(accountId: string, jobId: string) {
   const response = await dynamoClient.send(
     new GetItemCommand({
       TableName: env.AWS_DYNAMO_JOBS_TABLE,
-      Key: marshall({ accountId, jobId }),
+      Key: marshall({ PK: `USER#${accountId}`, SK: `JOB#${jobId}` }),
     }),
   );
 
@@ -248,12 +276,10 @@ export async function listDynamoJobsForAccount(accountId: string) {
     const response = await dynamoClient.send(
       new QueryCommand({
         TableName: env.AWS_DYNAMO_JOBS_TABLE,
-        KeyConditionExpression: "#accountId = :accountId",
-        ExpressionAttributeNames: {
-          "#accountId": "accountId",
-        },
+        KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
         ExpressionAttributeValues: marshall({
-          ":accountId": accountId,
+          ":pk": `USER#${accountId}`,
+          ":prefix": "JOB#",
         }),
         ExclusiveStartKey: lastEvaluatedKey ? marshall(lastEvaluatedKey) : undefined,
       }),
@@ -275,12 +301,10 @@ export async function listDynamoTasksForJob(accountId: string, jobId: string) {
     new QueryCommand({
       TableName: env.AWS_DYNAMO_TASKS_TABLE,
       IndexName: env.AWS_DYNAMO_TASKS_BY_REQUEST_INDEX,
-      KeyConditionExpression: "#requestKey = :requestKey",
-      ExpressionAttributeNames: {
-        "#requestKey": "requestKey",
-      },
+      KeyConditionExpression: "GSI1PK = :pk AND begins_with(GSI1SK, :prefix)",
       ExpressionAttributeValues: marshall({
-        ":requestKey": `${accountId}#${jobId}`,
+        ":pk": `JOB#${jobId}`,
+        ":prefix": "WORK#",
       }),
     }),
   );
