@@ -108,10 +108,14 @@ export function UnifiedStudio() {
   }, [videoPreviewUrl]);
 
   const hasAnnotations = boxes.length > 0 || points.length > 0;
+  const cleanPrompts = useMemo(() => trimPrompts(prompts), [prompts]);
+  const requiresPromptBoxParity = fileKind === "image" && boxes.length > 0;
+  const hasPromptBoxParity = !requiresPromptBoxParity || cleanPrompts.length === boxes.length;
   const canRun =
     runState.mode !== "running" &&
     fileKind !== "none" &&
-    (fileKind === "image" || hasAnnotations);
+    (fileKind === "image" || hasAnnotations) &&
+    hasPromptBoxParity;
   const modeLabel =
     fileKind === "image" ? "Image Batch" : fileKind === "video" ? "Video" : "Select Files";
   const modeBadgeClass =
@@ -246,7 +250,11 @@ export function UnifiedStudio() {
   async function runJob() {
     if (!canRun) return;
 
-    const cleanPrompts = trimPrompts(prompts);
+    if (fileKind === "image" && boxes.length > 0 && cleanPrompts.length !== boxes.length) {
+      toast.error(`Prompt count must match box count (${cleanPrompts.length}/${boxes.length}).`);
+      return;
+    }
+
     setRunState({ mode: "running", selectedType: fileKind === "video" ? "video" : "image_batch" });
     setJobStatus(null);
     setBatchCarouselIndex(0);
@@ -353,7 +361,9 @@ export function UnifiedStudio() {
         </p>
         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <p className="text-sm text-muted-foreground">
-            {fileKind === "video" ? "Select objects on the first frame, then run." : "Add prompts and files, then run."}
+            {fileKind === "video"
+              ? "Select objects on the first frame, then run."
+              : "Add prompts and files, then run. If boxes are used, provide one prompt per box."}
           </p>
           <Badge
             variant="outline"
@@ -369,7 +379,7 @@ export function UnifiedStudio() {
           {fileKind !== "video" ? (
             <div className="space-y-2">
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                Prompts (Optional)
+                Prompts {boxes.length > 0 ? "(Required: one per box)" : "(Optional)"}
               </p>
               {prompts.map((prompt, index) => (
                 <div key={`prompt-${index}`} className="flex items-center gap-2">
@@ -398,6 +408,11 @@ export function UnifiedStudio() {
               >
                 Add Prompt
               </Button>
+              {boxes.length > 0 && !hasPromptBoxParity ? (
+                <p className="text-xs text-destructive">
+                  Prompt count must match box count ({cleanPrompts.length}/{boxes.length}).
+                </p>
+              ) : null}
             </div>
           ) : null}
 
