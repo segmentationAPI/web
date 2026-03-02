@@ -286,21 +286,14 @@ async function decompressGzipText(content: ArrayBuffer): Promise<string> {
   return new Response(stream).text();
 }
 
-async function readNdjsonPayload(response: Response, sourceUrl: string): Promise<string> {
-  const contentEncoding = response.headers.get("content-encoding")?.toLowerCase() ?? "";
-  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
-  const looksGzip =
-    contentEncoding.includes("gzip") ||
-    contentType.includes("application/gzip") ||
-    contentType.includes("application/x-gzip") ||
-    sourceUrl.toLowerCase().endsWith(".gz");
-
-  if (looksGzip) {
-    const buffer = await response.arrayBuffer();
-    return decompressGzipText(buffer);
+async function readNdjsonPayload(response: Response): Promise<string> {
+  const binaryResponse = response.clone();
+  try {
+    const buffer = await binaryResponse.arrayBuffer();
+    return await decompressGzipText(buffer);
+  } catch {
+    return response.text();
   }
-
-  return response.text();
 }
 
 export async function loadVideoFrameMasks(
@@ -326,7 +319,7 @@ export async function loadVideoFrameMasks(
       return {};
     }
 
-    const ndjsonPayload = await readNdjsonPayload(response, framesUrl);
+    const ndjsonPayload = await readNdjsonPayload(response);
     return normalizeVideoFrameMasks(ndjsonPayload, context);
   } catch {
     return {};

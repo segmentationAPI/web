@@ -258,6 +258,42 @@ describe("mask artifact helpers", () => {
     ]);
   });
 
+  it("falls back to plain text when gzip decode fails", async () => {
+    const ndjson = JSON.stringify({
+      frameIdx: 0,
+      objects: [{ objectId: 3, score: 0.5 }],
+    });
+
+    const mockFetch = vi.fn(async () => {
+      return new Response(ndjson, {
+        status: 200,
+        headers: {
+          "content-type": "application/gzip",
+        },
+      });
+    });
+
+    const normalized = await loadVideoFrameMasks(
+      {},
+      {
+        userId: "user-a",
+        jobId: "job-1",
+        taskId: "task-9",
+      },
+      { fetch: mockFetch },
+    );
+
+    expect(normalized[0]).toEqual([
+      {
+        maskIndex: 3,
+        key: "outputs/user-a/job-1/task-9/mask_3.png",
+        url: "https://assets.segmentationapi.com/outputs/user-a/job-1/task-9/mask_3.png",
+        score: 0.5,
+        box: null,
+      },
+    ]);
+  });
+
   it("decodes COCO RLE masks into row-major binary data", () => {
     const decoded = decodeCocoRleMask({
       size: [2, 2],
