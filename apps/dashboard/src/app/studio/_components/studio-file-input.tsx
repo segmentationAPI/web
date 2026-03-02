@@ -7,11 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { FileKind, classifyFiles } from "../_store/studio-selectors";
-
-type StudioFileInputProps = {
-  files: File[];
-  onFilesChange: (nextFiles: File[]) => void;
-};
+import { useStudioStore } from "../_store/use-studio-store";
 
 function getAcceptedFiles(next: FileList | null): File[] {
   const accepted = Array.from(next ?? []).filter(
@@ -30,7 +26,10 @@ function getAcceptedFiles(next: FileList | null): File[] {
   return accepted.filter((file) => file.type.startsWith("image/"));
 }
 
-export function StudioFileInput({ files, onFilesChange }: StudioFileInputProps) {
+export function StudioFileInput() {
+  const files = useStudioStore((state) => state.files);
+  const setFiles = useStudioStore((state) => state.setFiles);
+
   const fileKind = useMemo(() => classifyFiles(files), [files]);
 
   const imagePreviewUrls = useMemo(
@@ -48,12 +47,12 @@ export function StudioFileInput({ files, onFilesChange }: StudioFileInputProps) 
 
   function handleSelection(next: FileList | null) {
     const selectedFiles = getAcceptedFiles(next);
-    onFilesChange(selectedFiles);
+    setFiles(selectedFiles);
   }
 
   function removeFile(index: number) {
     const nextFiles = files.filter((_, fileIndex) => fileIndex !== index);
-    onFilesChange(nextFiles);
+    setFiles(nextFiles);
   }
 
   return (

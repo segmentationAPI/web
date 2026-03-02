@@ -35,6 +35,7 @@ type LoadedMaskEntry = {
 
 type StudioState = StudioSelectorState & {
   userId: string;
+  apiKey: string;
   uploadProgress: UploadProgress;
   statusRefreshing: boolean;
   batchCarouselIndex: number;
@@ -42,6 +43,7 @@ type StudioState = StudioSelectorState & {
 
 type StudioActions = {
   setUserId: (userId: string) => void;
+  setApiKey: (apiKey: string) => void;
   setFiles: (files: File[]) => void;
   setPrompts: (prompts: string[]) => void;
   addBox: (box: BoxCoordinates) => void;
@@ -59,6 +61,7 @@ const INITIAL_UPLOAD_PROGRESS: UploadProgress = { done: 0, total: 0 };
 function createInitialState(userId = ""): StudioState {
   return {
     userId,
+    apiKey: "",
     files: [],
     prompts: [""],
     boxes: [],
@@ -90,7 +93,12 @@ function normalizeSelectedFiles(nextFiles: File[]) {
   return accepted.filter((file) => file.type.startsWith("image/"));
 }
 
-async function getAuthedClient() {
+async function getAuthedClient(apiKeyInput?: string) {
+  const apiKey = apiKeyInput?.trim() ?? "";
+  if (apiKey.length > 0) {
+    return new SegmentationClient({ apiKey });
+  }
+
   const { data: tokenData, error: tokenError } = await authClient.token();
   if (tokenError || !tokenData) {
     throw new Error(tokenError?.message ?? "Failed to authenticate.");
@@ -163,6 +171,10 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     });
   },
 
+  setApiKey: (apiKey) => {
+    set({ apiKey });
+  },
+
   setFiles: (files) => {
     const normalized = normalizeSelectedFiles(files);
     set({
@@ -196,7 +208,8 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
 
   resetStudio: () => {
     const userId = get().userId;
-    set(createInitialState(userId));
+    const apiKey = get().apiKey;
+    set({ ...createInitialState(userId), apiKey });
   },
 
   refreshJobStatus: async (jobIdOverride, silent = false) => {
@@ -211,7 +224,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     }
 
     try {
-      const client = await getAuthedClient();
+      const client = await getAuthedClient(get().apiKey);
       const status = await client.getSegmentJob({ jobId: targetJobId });
       set({ jobStatus: status });
 
@@ -266,7 +279,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     });
 
     try {
-      const client = await getAuthedClient();
+      const client = await getAuthedClient(state.apiKey);
       let accepted;
 
       if (fileKind === FileKind.Video) {

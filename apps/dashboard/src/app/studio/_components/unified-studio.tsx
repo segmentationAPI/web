@@ -33,6 +33,7 @@ import {
 import { useStudioStore } from "../_store/use-studio-store";
 import { ImageCanvas } from "./image-canvas";
 import { PromptInputList } from "./prompt-input-list";
+import { StudioApiKeyInput } from "./studio-api-key-input";
 import { StudioFileInput } from "./studio-file-input";
 import { VideoCanvas } from "./video-canvas";
 
@@ -43,7 +44,6 @@ type UnifiedStudioProps = {
 export function UnifiedStudio({ userId }: UnifiedStudioProps) {
   const setUserId = useStudioStore((state) => state.setUserId);
   const files = useStudioStore((state) => state.files);
-  const prompts = useStudioStore((state) => state.prompts);
   const boxes = useStudioStore((state) => state.boxes);
   const runState = useStudioStore((state) => state.runState);
   const uploadProgress = useStudioStore((state) => state.uploadProgress);
@@ -53,8 +53,6 @@ export function UnifiedStudio({ userId }: UnifiedStudioProps) {
   const statusRefreshing = useStudioStore((state) => state.statusRefreshing);
   const batchCarouselIndex = useStudioStore((state) => state.batchCarouselIndex);
 
-  const setFiles = useStudioStore((state) => state.setFiles);
-  const setPrompts = useStudioStore((state) => state.setPrompts);
   const addBox = useStudioStore((state) => state.addBox);
   const clearBoxes = useStudioStore((state) => state.clearBoxes);
   const setBatchCarouselIndex = useStudioStore((state) => state.setBatchCarouselIndex);
@@ -158,16 +156,11 @@ export function UnifiedStudio({ userId }: UnifiedStudioProps) {
 
       <div className="grid gap-4 pt-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)]">
         <div className="space-y-4">
-          <PromptInputList
-            mode={fileKind}
-            boxCount={boxes.length}
-            prompts={prompts}
-            onPromptsChange={setPrompts}
-            minPrompts={1}
-            disabled={runState.mode === StudioRunMode.Running}
-          />
+          <StudioApiKeyInput />
 
-          <StudioFileInput files={files} onFilesChange={setFiles} />
+          <PromptInputList />
+
+          <StudioFileInput />
 
           <div className="flex flex-wrap items-center gap-2 border-t border-border/40 pt-3">
             <Button

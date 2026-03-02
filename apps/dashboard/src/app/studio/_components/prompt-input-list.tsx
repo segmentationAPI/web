@@ -1,34 +1,33 @@
 "use client";
 
 import { useMemo } from "react";
-import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DeleteIconButton } from "@/components/ui/delete-icon-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileKind } from "../_store/studio-selectors";
-
-type PromptInputListProps = {
-  mode: FileKind;
-  boxCount: number;
-  prompts: string[];
-  onPromptsChange: (nextPrompts: string[]) => void;
-  minPrompts?: number;
-  disabled?: boolean;
-};
+import {
+  FileKind,
+  StudioRunMode,
+  selectFileKind,
+} from "../_store/studio-selectors";
+import { useStudioStore } from "../_store/use-studio-store";
 
 function trimPrompts(prompts: string[]) {
   return prompts.map((prompt) => prompt.trim()).filter(Boolean);
 }
 
-export function PromptInputList({
-  mode,
-  boxCount,
-  prompts,
-  onPromptsChange,
-  minPrompts = 1,
-  disabled = false,
-}: PromptInputListProps) {
+export function PromptInputList() {
+  const prompts = useStudioStore((state) => state.prompts);
+  const boxes = useStudioStore((state) => state.boxes);
+  const runState = useStudioStore((state) => state.runState);
+  const setPrompts = useStudioStore((state) => state.setPrompts);
+
+  const minPrompts = 1;
+  const disabled = runState.mode === StudioRunMode.Running;
+  const mode = selectFileKind({ files: useStudioStore((state) => state.files) });
+  const boxCount = boxes.length;
+
   const cleanPrompts = useMemo(
     () => trimPrompts(prompts),
     [prompts],
@@ -43,11 +42,11 @@ export function PromptInputList({
       : null;
 
   function replacePrompt(index: number, nextValue: string) {
-    onPromptsChange(prompts.map((prompt, promptIndex) => (promptIndex === index ? nextValue : prompt)));
+    setPrompts(prompts.map((prompt, promptIndex) => (promptIndex === index ? nextValue : prompt)));
   }
 
   function addPrompt() {
-    onPromptsChange([...prompts, ""]);
+    setPrompts([...prompts, ""]);
   }
 
   function removePrompt(index: number) {
@@ -55,7 +54,7 @@ export function PromptInputList({
       return;
     }
 
-    onPromptsChange(prompts.filter((_, promptIndex) => promptIndex !== index));
+    setPrompts(prompts.filter((_, promptIndex) => promptIndex !== index));
   }
 
   const promptPlaceholder = mode === FileKind.Video
@@ -76,16 +75,11 @@ export function PromptInputList({
             disabled={disabled}
             className="h-9 w-full rounded-lg border-input bg-background/65 text-xs"
           />
-          <Button
-            type="button"
+          <DeleteIconButton
             onClick={() => removePrompt(index)}
             disabled={disabled || prompts.length <= minPrompts}
-            variant="ghost"
-            size="icon"
-            className="size-8 shrink-0 text-muted-foreground transition-colors hover:text-destructive"
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
+            ariaLabel={`Delete prompt ${index + 1}`}
+          />
         </div>
       ))}
       <Button
