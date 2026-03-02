@@ -80,26 +80,26 @@ function normalizeVideoOutput(
   }
 
   const typedResult = result as Record<string, unknown>;
-  const output = typedResult.output && typeof typedResult.output === "object"
-    ? (typedResult.output as Record<string, unknown>)
+  const rawOutput = typedResult.output;
+  const output = rawOutput && typeof rawOutput === "object"
+    ? (rawOutput as Record<string, unknown>)
     : {};
   const counts = typedResult.counts && typeof typedResult.counts === "object"
     ? (typedResult.counts as Record<string, unknown>)
     : {};
 
-  const framesPath =
-    typeof output.suggestedS3Keys === "object" && output.suggestedS3Keys
-      ? (output.suggestedS3Keys as Record<string, unknown>).frames_ndjson_gz
-      : null;
-
   const resolvedFramesUrl =
-    typeof output.framesUrl === "string"
-      ? output.framesUrl
+    typeof rawOutput === "string"
+      ? rawOutput
+      : typeof output.framesNdjsonUrl === "string"
+      ? output.framesNdjsonUrl
+      : typeof output.frames_ndjson_url === "string"
+        ? output.frames_ndjson_url
+        : typeof output.framesUrl === "string"
+          ? output.framesUrl
       : typeof output.frames_url === "string"
         ? output.frames_url
-        : typeof framesPath === "string"
-          ? buildAssetUrl(framesPath)
-          : null;
+        : null;
 
   if (!resolvedFramesUrl || !manifestUrl) {
     return null;

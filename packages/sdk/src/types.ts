@@ -178,14 +178,7 @@ export interface VideoOutputRaw {
   completedAt: string;
   input: any;
   counts: any;
-  output: {
-    framesPath: string;
-    framesUrl: string | null;
-    outputS3Prefix: string;
-    suggestedS3Keys: Record<string, string>;
-    maskEncoding: string;
-    artifactFormat: string;
-  };
+  output: string;
   summary: any;
 }
 
