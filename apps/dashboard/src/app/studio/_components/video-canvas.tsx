@@ -1,101 +1,126 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { decodeCocoRleMask, type VideoFrameMaskMap } from "@segmentationapi/sdk";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { decodeCocoRleMask, type MaskArtifactResult, type VideoFrameMaskMap } from "@segmentationapi/sdk";
+
+type FrameSyncPolicy = "exact";
 
 type VideoCanvasProps = {
   src: string;
   frameMasks: VideoFrameMaskMap;
-  fps?: number;
+  samplingFps?: number;
+  frameSyncPolicy?: FrameSyncPolicy;
   onFrameChange?: (frame: number) => void;
 };
 
-function toPercent(value: number) {
-  return `${Math.max(0, Math.min(100, value * 100))}%`;
-}
+const DEFAULT_SAMPLING_FPS = 2;
+const MASK_ALPHA = 110;
+
+const MASK_COLORS: Array<[number, number, number]> = [
+  [56, 189, 248],
+  [34, 197, 94],
+  [244, 114, 182],
+  [250, 204, 21],
+  [251, 146, 60],
+];
 
 export function VideoCanvas({
   src,
   frameMasks,
-  fps,
+  samplingFps,
+  frameSyncPolicy = "exact",
   onFrameChange,
 }: VideoCanvasProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const decodedRleCacheRef = useRef<Map<string, ReturnType<typeof decodeCocoRleMask>>>(new Map());
+
   const [currentFrame, setCurrentFrame] = useState(0);
-  const [videoDuration, setVideoDuration] = useState(0);
+  const [overlaySize, setOverlaySize] = useState({ width: 1, height: 1 });
+
+  const resolvedSamplingFps = useMemo(() => {
+    if (typeof samplingFps === "number" && Number.isFinite(samplingFps) && samplingFps > 0) {
+      return samplingFps;
+    }
+
+    return DEFAULT_SAMPLING_FPS;
+  }, [samplingFps]);
 
   const frameKeys = useMemo(
-    () => Object.keys(frameMasks).map((key) => Number(key)).filter(Number.isFinite),
+    () =>
+      Object.keys(frameMasks)
+        .map((key) => Number(key))
+        .filter((key) => Number.isFinite(key) && key >= 0)
+        .sort((left, right) => left - right),
     [frameMasks],
   );
 
-  const maxFrameIndex = useMemo(() => {
-    if (frameKeys.length === 0) {
-      return 0;
-    }
-
-    return Math.max(...frameKeys);
-  }, [frameKeys]);
-
-  const resolvedFps = useMemo(() => {
-    if (typeof fps === "number" && Number.isFinite(fps) && fps > 0) {
-      return fps;
-    }
-
-    if (videoDuration > 0 && maxFrameIndex > 0) {
-      return maxFrameIndex / videoDuration;
-    }
-
-    return 30;
-  }, [fps, maxFrameIndex, videoDuration]);
-
   const activeMasks = useMemo(() => {
-    return frameMasks[currentFrame] ?? [];
-  }, [currentFrame, frameMasks]);
+    if (frameSyncPolicy !== "exact") {
+      return [];
+    }
 
-  const { rasterMasks, imageMasks, boxMasks } = useMemo(() => {
-    const raster = [];
-    const image = [];
-    const boxes = [];
+    return frameMasks[currentFrame] ?? [];
+  }, [currentFrame, frameMasks, frameSyncPolicy]);
+
+  const { rasterMasks, imageMasks } = useMemo(() => {
+    const raster: MaskArtifactResult[] = [];
+    const image: MaskArtifactResult[] = [];
 
     for (const mask of activeMasks) {
       if (mask.rle) {
         raster.push(mask);
-        continue;
-      }
-
-      image.push(mask);
-      if (Array.isArray(mask.box) && mask.box.length >= 4) {
-        boxes.push(mask);
+      } else if (mask.url) {
+        image.push(mask);
       }
     }
 
     return {
       rasterMasks: raster,
       imageMasks: image,
-      boxMasks: boxes,
     };
   }, [activeMasks]);
 
   useEffect(() => {
+    decodedRleCacheRef.current.clear();
+  }, [src, frameMasks]);
+
+  useEffect(() => {
     const video = videoRef.current;
+    if (!video) {
+      return;
+    }
+
+    const updateSize = () => {
+      setOverlaySize({
+        width: Math.max(1, Math.floor(video.clientWidth)),
+        height: Math.max(1, Math.floor(video.clientHeight)),
+      });
+    };
+
+    updateSize();
+
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(updateSize) : null;
+    observer?.observe(video);
+
+    return () => {
+      observer?.disconnect();
+    };
+  }, [src]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
-    if (!video || !canvas) {
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) {
       return;
     }
 
-    const context = canvas.getContext("2d");
-    if (!context) {
-      return;
-    }
+    const width = Math.max(1, overlaySize.width);
+    const height = Math.max(1, overlaySize.height);
 
-    const displayWidth = Math.max(1, video.clientWidth);
-    const displayHeight = Math.max(1, video.clientHeight);
-
-    if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-      canvas.width = displayWidth;
-      canvas.height = displayHeight;
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
     }
 
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -103,35 +128,33 @@ export function VideoCanvas({
       return;
     }
 
-    const imageData = context.createImageData(canvas.width, canvas.height);
+    const imageData = context.createImageData(width, height);
     const pixels = imageData.data;
-    const palette: Array<[number, number, number]> = [
-      [56, 189, 248],
-      [34, 197, 94],
-      [244, 114, 182],
-      [250, 204, 21],
-      [251, 146, 60],
-    ];
 
-    for (let maskIndex = 0; maskIndex < rasterMasks.length; maskIndex += 1) {
-      const mask = rasterMasks[maskIndex]!;
-      const rle = mask.rle;
-      if (!rle) {
+    for (const mask of rasterMasks) {
+      if (!mask.rle) {
         continue;
       }
 
-      const decoded = decodeCocoRleMask(rle);
-      const [red, green, blue] = palette[maskIndex % palette.length]!;
+      const cacheKey = `${currentFrame}:${mask.maskIndex}`;
+      let decodedMask = decodedRleCacheRef.current.get(cacheKey);
+      if (!decodedMask) {
+        decodedMask = decodeCocoRleMask(mask.rle);
+        decodedRleCacheRef.current.set(cacheKey, decodedMask);
+      }
 
-      for (let y = 0; y < canvas.height; y += 1) {
-        const sourceY = Math.min(decoded.height - 1, Math.floor((y * decoded.height) / canvas.height));
-        const sourceRowOffset = sourceY * decoded.width;
-        const targetRowOffset = y * canvas.width;
+      const paletteIndex = ((mask.maskIndex % MASK_COLORS.length) + MASK_COLORS.length) % MASK_COLORS.length;
+      const [red, green, blue] = MASK_COLORS[paletteIndex]!;
 
-        for (let x = 0; x < canvas.width; x += 1) {
-          const sourceX = Math.min(decoded.width - 1, Math.floor((x * decoded.width) / canvas.width));
+      for (let y = 0; y < height; y += 1) {
+        const sourceY = Math.min(decodedMask.height - 1, Math.floor((y * decodedMask.height) / height));
+        const sourceRowOffset = sourceY * decodedMask.width;
+        const targetRowOffset = y * width;
+
+        for (let x = 0; x < width; x += 1) {
+          const sourceX = Math.min(decodedMask.width - 1, Math.floor((x * decodedMask.width) / width));
           const sourceIndex = sourceRowOffset + sourceX;
-          if (decoded.data[sourceIndex] === 0) {
+          if (decodedMask.data[sourceIndex] === 0) {
             continue;
           }
 
@@ -139,19 +162,22 @@ export function VideoCanvas({
           pixels[pixelOffset] = red;
           pixels[pixelOffset + 1] = green;
           pixels[pixelOffset + 2] = blue;
-          pixels[pixelOffset + 3] = 110;
+          pixels[pixelOffset + 3] = MASK_ALPHA;
         }
       }
     }
 
     context.putImageData(imageData, 0, 0);
-  }, [rasterMasks]);
+  }, [currentFrame, overlaySize.height, overlaySize.width, rasterMasks]);
 
-  const updateCurrentFrame = (timeSeconds: number) => {
-    const nextFrame = Math.max(0, Math.floor(timeSeconds * resolvedFps));
-    setCurrentFrame(nextFrame);
-    onFrameChange?.(nextFrame);
-  };
+  const updateCurrentFrame = useCallback(
+    (timeSeconds: number) => {
+      const nextFrame = Math.max(0, Math.floor(timeSeconds * resolvedSamplingFps));
+      setCurrentFrame(nextFrame);
+      onFrameChange?.(nextFrame);
+    },
+    [onFrameChange, resolvedSamplingFps],
+  );
 
   return (
     <div className="space-y-2">
@@ -162,10 +188,7 @@ export function VideoCanvas({
           controls
           className="h-auto w-full"
           onLoadedMetadata={(event) => {
-            const duration = Number(event.currentTarget.duration);
-            if (Number.isFinite(duration) && duration > 0) {
-              setVideoDuration(duration);
-            }
+            updateCurrentFrame(event.currentTarget.currentTime);
           }}
           onTimeUpdate={(event) => {
             updateCurrentFrame(event.currentTarget.currentTime);
@@ -184,7 +207,7 @@ export function VideoCanvas({
           <div className="pointer-events-none absolute inset-0">
             {imageMasks.map((mask, index) => (
               <img
-                key={`${mask.key}-${index}`}
+                key={`${mask.key}-${currentFrame}-${index}`}
                 src={mask.url}
                 alt={`Frame ${currentFrame} mask ${index + 1}`}
                 className="absolute inset-0 h-full w-full object-cover mix-blend-screen opacity-65"
@@ -193,34 +216,10 @@ export function VideoCanvas({
           </div>
         ) : null}
 
-        {boxMasks.length > 0 ? (
-          <div className="pointer-events-none absolute inset-0">
-            {boxMasks.map((mask, index) => {
-              const box = mask.box;
-              if (!box) {
-                return null;
-              }
-
-              const [x1, y1, x2, y2] = box;
-              const left = toPercent(x1);
-              const top = toPercent(y1);
-              const width = toPercent(x2 - x1);
-              const height = toPercent(y2 - y1);
-
-              return (
-                <div
-                  key={`${mask.key}-box-${index}`}
-                  className="absolute border-2 border-sky-400/80 bg-sky-400/10"
-                  style={{ left, top, width, height }}
-                />
-              );
-            })}
-          </div>
-        ) : null}
       </div>
 
       <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-        Frame {currentFrame} · {activeMasks.length} masks
+        Frame {currentFrame} · Loaded frames {frameKeys.length} · Masks in frame {activeMasks.length}
       </p>
     </div>
   );

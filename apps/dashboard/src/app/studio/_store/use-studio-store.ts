@@ -57,6 +57,7 @@ type StudioActions = {
 type StudioStore = StudioState & StudioActions;
 
 const INITIAL_UPLOAD_PROGRESS: UploadProgress = { done: 0, total: 0 };
+const VIDEO_SAMPLING_FPS = 2;
 
 function createInitialState(userId = ""): StudioState {
   return {
@@ -270,6 +271,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       runState: {
         mode: StudioRunMode.Running,
         selectedType: fileKind === FileKind.Video ? "video" : "image_batch",
+        ...(fileKind === FileKind.Video ? { videoSamplingFps: VIDEO_SAMPLING_FPS } : {}),
       },
       uploadProgress: INITIAL_UPLOAD_PROGRESS,
       jobStatus: null,
@@ -291,7 +293,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
         accepted = await client.segmentVideo({
           file: videoFile,
           frameIdx: 0,
-          fps: 2,
+          fps: VIDEO_SAMPLING_FPS,
           maxFrames: 120,
           prompts: cleanPrompts,
         });
@@ -325,6 +327,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
           mode: StudioRunMode.Ready,
           selectedType: fileKind === FileKind.Video ? "video" : "image_batch",
           jobId: accepted.jobId,
+          ...(fileKind === FileKind.Video ? { videoSamplingFps: VIDEO_SAMPLING_FPS } : {}),
         },
         uploadProgress: INITIAL_UPLOAD_PROGRESS,
       });

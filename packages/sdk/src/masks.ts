@@ -351,7 +351,7 @@ function decodeCompressedCocoCounts(encodedCounts: string): number[] {
       value |= -1 << (5 * shift);
     }
 
-    if (counts.length > 1) {
+    if (counts.length > 2) {
       value += counts[counts.length - 2]!;
     }
 

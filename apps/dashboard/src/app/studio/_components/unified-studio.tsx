@@ -111,6 +111,10 @@ export function UnifiedStudio({ userId }: UnifiedStudioProps) {
   const firstImagePreviewUrl = selectFirstImagePreviewUrl(imagePreviewUrls);
   const isImagePreviewMode = selectIsImagePreviewMode(fileKind, firstImagePreviewUrl);
   const isVideoPreviewMode = selectIsVideoPreviewMode(fileKind, videoPreviewUrl);
+  const resolvedVideoSamplingFps =
+    typeof runState.videoSamplingFps === "number" && Number.isFinite(runState.videoSamplingFps)
+      ? runState.videoSamplingFps
+      : 2;
 
   const progressText = selectProgressText({ jobStatus });
   const batchItemCount = selectBatchItemCount({ jobStatus });
@@ -366,35 +370,33 @@ export function UnifiedStudio({ userId }: UnifiedStudioProps) {
             </div>
           ) : null}
 
-          {isVideoPreviewMode && !hasOutputs ? (
+          {isVideoPreviewMode ? (
             <div className="mt-3 space-y-3">
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                Prompt-driven video segmentation
-              </p>
-              <VideoCanvas src={videoPreviewUrl!} frameMasks={{}} />
-            </div>
-          ) : null}
-
-          {runState.mode === StudioRunMode.Ready &&
-          runState.selectedType === "video" &&
-          runState.jobId ? (
-            <div className="mt-3 space-y-3">
-              <div className="rounded-lg border border-border/60 bg-background/30 p-3">
+              {runState.mode === StudioRunMode.Ready &&
+              runState.selectedType === "video" &&
+              runState.jobId ? (
+                <div className="rounded-lg border border-border/60 bg-background/30 p-3">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                    Video job: {runState.jobId}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Status: {jobStatus ? formatStatus(jobStatus.status) : "queued"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Progress: {progressText ?? "0/0"}
+                  </p>
+                </div>
+              ) : (
                 <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                  Video job: {runState.jobId}
+                  Prompt-driven video segmentation
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Status: {jobStatus ? formatStatus(jobStatus.status) : "queued"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Progress: {progressText ?? "0/0"}
-                </p>
-              </div>
-
+              )}
               {videoPreviewUrl ? (
                 <VideoCanvas
                   src={videoPreviewUrl}
                   frameMasks={activeVideoFrameMasks}
+                  samplingFps={resolvedVideoSamplingFps}
+                  frameSyncPolicy="exact"
                 />
               ) : (
                 <p className="text-sm text-muted-foreground">Video preview unavailable.</p>

@@ -31,6 +31,7 @@ export type StudioSelectorState = {
     mode: StudioRunMode;
     selectedType?: JobType;
     jobId?: string;
+    videoSamplingFps?: number;
   };
   jobStatus: JobStatusResult | null;
   taskMasksByTaskId: Record<string, MaskArtifactResult[]>;
