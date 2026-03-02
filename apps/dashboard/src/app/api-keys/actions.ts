@@ -85,14 +85,12 @@ export async function createApiKeyAction(
     keyId,
   });
   const keyHash = hashApiKey(plainTextKey);
-  // Keep schema compatibility until keyPrefix is removed from storage schema.
-  const keyPrefix = keyId;
 
   try {
     await db.insert(apiKey).values({
       id: keyId,
       keyHash,
-      keyPrefix,
+      keyPrefix: keyId,
       label,
       revoked: false,
       userId: session.user.id,
@@ -103,7 +101,7 @@ export async function createApiKeyAction(
         accountId: session.user.id,
         keyHash,
         keyId,
-        keyPrefix,
+        keyPrefix: keyId,
         revoked: false,
       });
     } catch (dynamoError) {

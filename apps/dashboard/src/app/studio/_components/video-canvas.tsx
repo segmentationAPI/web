@@ -10,29 +10,73 @@ type VideoCanvasProps = {
   onFrameChange?: (frame: number) => void;
 };
 
+function toPercent(value: number) {
+  return `${Math.max(0, Math.min(100, value * 100))}%`;
+}
+
 export function VideoCanvas({
   src,
   frameMasks,
-  fps = 30,
+  fps,
   onFrameChange,
 }: VideoCanvasProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+
+  const frameKeys = useMemo(
+    () => Object.keys(frameMasks).map((key) => Number(key)).filter(Number.isFinite),
+    [frameMasks],
+  );
+
+  const maxFrameIndex = useMemo(() => {
+    if (frameKeys.length === 0) {
+      return 0;
+    }
+
+    return Math.max(...frameKeys);
+  }, [frameKeys]);
+
+  const resolvedFps = useMemo(() => {
+    if (typeof fps === "number" && Number.isFinite(fps) && fps > 0) {
+      return fps;
+    }
+
+    if (videoDuration > 0 && maxFrameIndex > 0) {
+      return maxFrameIndex / videoDuration;
+    }
+
+    return 30;
+  }, [fps, maxFrameIndex, videoDuration]);
 
   const activeMasks = useMemo(() => {
     return frameMasks[currentFrame] ?? [];
   }, [currentFrame, frameMasks]);
 
-  const rasterMasks = useMemo(
-    () => activeMasks.filter((mask) => Boolean(mask.rle)),
-    [activeMasks],
-  );
+  const { rasterMasks, imageMasks, boxMasks } = useMemo(() => {
+    const raster = [];
+    const image = [];
+    const boxes = [];
 
-  const imageMasks = useMemo(
-    () => activeMasks.filter((mask) => !mask.rle),
-    [activeMasks],
-  );
+    for (const mask of activeMasks) {
+      if (mask.rle) {
+        raster.push(mask);
+        continue;
+      }
+
+      image.push(mask);
+      if (Array.isArray(mask.box) && mask.box.length >= 4) {
+        boxes.push(mask);
+      }
+    }
+
+    return {
+      rasterMasks: raster,
+      imageMasks: image,
+      boxMasks: boxes,
+    };
+  }, [activeMasks]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -71,11 +115,12 @@ export function VideoCanvas({
 
     for (let maskIndex = 0; maskIndex < rasterMasks.length; maskIndex += 1) {
       const mask = rasterMasks[maskIndex]!;
-      if (!mask.rle) {
+      const rle = mask.rle;
+      if (!rle) {
         continue;
       }
 
-      const decoded = decodeCocoRleMask(mask.rle);
+      const decoded = decodeCocoRleMask(rle);
       const [red, green, blue] = palette[maskIndex % palette.length]!;
 
       for (let y = 0; y < canvas.height; y += 1) {
@@ -86,7 +131,7 @@ export function VideoCanvas({
         for (let x = 0; x < canvas.width; x += 1) {
           const sourceX = Math.min(decoded.width - 1, Math.floor((x * decoded.width) / canvas.width));
           const sourceIndex = sourceRowOffset + sourceX;
-          if (decoded.data[sourceIndex] !== 1) {
+          if (decoded.data[sourceIndex] === 0) {
             continue;
           }
 
@@ -100,7 +145,13 @@ export function VideoCanvas({
     }
 
     context.putImageData(imageData, 0, 0);
-  }, [rasterMasks, src]);
+  }, [rasterMasks]);
+
+  const updateCurrentFrame = (timeSeconds: number) => {
+    const nextFrame = Math.max(0, Math.floor(timeSeconds * resolvedFps));
+    setCurrentFrame(nextFrame);
+    onFrameChange?.(nextFrame);
+  };
 
   return (
     <div className="space-y-2">
@@ -110,15 +161,17 @@ export function VideoCanvas({
           src={src}
           controls
           className="h-auto w-full"
+          onLoadedMetadata={(event) => {
+            const duration = Number(event.currentTarget.duration);
+            if (Number.isFinite(duration) && duration > 0) {
+              setVideoDuration(duration);
+            }
+          }}
           onTimeUpdate={(event) => {
-            const nextFrame = Math.max(0, Math.floor(event.currentTarget.currentTime * fps));
-            setCurrentFrame(nextFrame);
-            onFrameChange?.(nextFrame);
+            updateCurrentFrame(event.currentTarget.currentTime);
           }}
           onSeeked={(event) => {
-            const nextFrame = Math.max(0, Math.floor(event.currentTarget.currentTime * fps));
-            setCurrentFrame(nextFrame);
-            onFrameChange?.(nextFrame);
+            updateCurrentFrame(event.currentTarget.currentTime);
           }}
         />
 
@@ -137,6 +190,31 @@ export function VideoCanvas({
                 className="absolute inset-0 h-full w-full object-cover mix-blend-screen opacity-65"
               />
             ))}
+          </div>
+        ) : null}
+
+        {boxMasks.length > 0 ? (
+          <div className="pointer-events-none absolute inset-0">
+            {boxMasks.map((mask, index) => {
+              const box = mask.box;
+              if (!box) {
+                return null;
+              }
+
+              const [x1, y1, x2, y2] = box;
+              const left = toPercent(x1);
+              const top = toPercent(y1);
+              const width = toPercent(x2 - x1);
+              const height = toPercent(y2 - y1);
+
+              return (
+                <div
+                  key={`${mask.key}-box-${index}`}
+                  className="absolute border-2 border-sky-400/80 bg-sky-400/10"
+                  style={{ left, top, width, height }}
+                />
+              );
+            })}
           </div>
         ) : null}
       </div>

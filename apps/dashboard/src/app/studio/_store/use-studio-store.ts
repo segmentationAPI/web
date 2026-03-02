@@ -77,11 +77,12 @@ function normalizeSelectedFiles(nextFiles: File[]) {
     (file) => file.type.startsWith("image/") || file.type.startsWith("video/"),
   );
 
-  if (accepted.length === 0) {
+  const firstAccepted = accepted[0];
+  if (!firstAccepted) {
     return [];
   }
 
-  if (accepted[0]!.type.startsWith("video/")) {
+  if (firstAccepted.type.startsWith("video/")) {
     const firstVideo = accepted.find((file) => file.type.startsWith("video/"));
     return firstVideo ? [firstVideo] : [];
   }
@@ -98,14 +99,6 @@ async function getAuthedClient() {
   return new SegmentationClient({ jwt: tokenData.token });
 }
 
-function createEmptyMaskEntries(taskIds: string[]): LoadedMaskEntry[] {
-  return taskIds.map((taskId) => ({
-    taskId,
-    masks: [],
-    frameMasks: {},
-  }));
-}
-
 async function loadMaskEntries(status: JobStatusResult, userId: string): Promise<LoadedMaskEntry[]> {
   const taskIds =
     status.items
@@ -116,7 +109,11 @@ async function loadMaskEntries(status: JobStatusResult, userId: string): Promise
     return [];
   }
 
-  const fallbackEntries = createEmptyMaskEntries(taskIds);
+  const fallbackEntries: LoadedMaskEntry[] = taskIds.map((taskId) => ({
+    taskId,
+    masks: [],
+    frameMasks: {},
+  }));
   if (!userId) {
     return fallbackEntries;
   }
@@ -270,44 +267,45 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
 
     try {
       const client = await getAuthedClient();
-      const accepted =
-        fileKind === FileKind.Video
-          ? await (async () => {
-              const videoFile = get().files[0];
-              if (!videoFile) {
-                throw new Error("Please select a video.");
-              }
+      let accepted;
 
-              return client.segmentVideo({
-                file: videoFile,
-                frameIdx: 0,
-                fps: 2,
-                maxFrames: 120,
-                prompts: cleanPrompts,
-              });
-            })()
-          : await client.uploadAndCreateJob(
-              {
-                type: "image_batch",
-                prompts: cleanPrompts.length > 0 ? cleanPrompts : undefined,
-                boxes:
-                  get().boxes.length > 0
-                    ? get().boxes.map((coordinates) => ({
-                        coordinates: [coordinates[0], coordinates[1], coordinates[2], coordinates[3]],
-                        isPositive: true,
-                      }))
-                    : undefined,
-                threshold: 0.5,
-                maskThreshold: 0.5,
-                files: selectImageFiles(get()).map((file) => ({
-                  data: file,
-                  contentType: file.type || "image/png",
-                })),
-              },
-              (done, total) => {
-                set({ uploadProgress: { done, total } });
-              },
-            );
+      if (fileKind === FileKind.Video) {
+        const videoFile = state.files[0];
+        if (!videoFile) {
+          throw new Error("Please select a video.");
+        }
+
+        accepted = await client.segmentVideo({
+          file: videoFile,
+          frameIdx: 0,
+          fps: 2,
+          maxFrames: 120,
+          prompts: cleanPrompts,
+        });
+      } else {
+        accepted = await client.uploadAndCreateJob(
+          {
+            type: "image_batch",
+            prompts: cleanPrompts,
+            boxes:
+              state.boxes.length > 0
+                ? state.boxes.map((coordinates) => ({
+                    coordinates: [coordinates[0], coordinates[1], coordinates[2], coordinates[3]],
+                    isPositive: true,
+                  }))
+                : undefined,
+            threshold: 0.5,
+            maskThreshold: 0.5,
+            files: selectImageFiles(state).map((file) => ({
+              data: file,
+              contentType: file.type || "image/png",
+            })),
+          },
+          (done, total) => {
+            set({ uploadProgress: { done, total } });
+          },
+        );
+      }
 
       set({
         runState: {

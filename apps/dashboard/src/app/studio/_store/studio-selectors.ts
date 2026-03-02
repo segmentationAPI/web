@@ -9,6 +9,8 @@ import {
 
 import type { BoxCoordinates } from "../_components/studio-canvas-types";
 
+const EMPTY_VIDEO_FRAME_MASKS: VideoFrameMaskMap = {};
+
 export enum FileKind {
   Image = "image",
   Video = "video",
@@ -164,10 +166,10 @@ export function selectActiveVideoFrameMasks(
 ) {
   const activeVideoItemTaskId = selectActiveVideoItemTaskId(state);
   if (!activeVideoItemTaskId) {
-    return {} as VideoFrameMaskMap;
+    return EMPTY_VIDEO_FRAME_MASKS;
   }
 
-  return state.videoFrameMasksByTaskId[activeVideoItemTaskId] ?? {};
+  return state.videoFrameMasksByTaskId[activeVideoItemTaskId] ?? EMPTY_VIDEO_FRAME_MASKS;
 }
 
 export function selectIsSingleImageView(imageFiles: readonly File[]) {
