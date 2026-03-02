@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import {
   SegmentationClient,
+  buildOutputManifestUrl,
   normalizeMaskArtifacts,
+  resolveManifestResultForTask,
+  resolveOutputFolder,
   type JobStatusResult,
   type JobType,
 } from "@segmentationapi/sdk";
@@ -97,44 +100,6 @@ async function getAuthedClient() {
   }
 
   return new SegmentationClient({ jwt: tokenData.token });
-}
-
-function buildOutputManifestUrl(userId: string, jobId: string, outputFolder?: string): string {
-  const account = userId.trim();
-  const job = jobId.trim();
-  const explicitOutputFolder = outputFolder?.trim().replace(/^\/+|\/+$/g, "");
-  const baseKey = explicitOutputFolder && explicitOutputFolder.length > 0
-    ? `outputs/${account}/${explicitOutputFolder}`
-    : `outputs/${account}/${job}`;
-  const key = `${baseKey}/output_manifest.json`;
-  return `https://assets.segmentationapi.com/${key}`;
-}
-
-function resolveOutputFolder(status: JobStatusResult): string | undefined {
-  const outputFolder = (status.raw as { outputFolder?: unknown }).outputFolder;
-  return typeof outputFolder === "string" && outputFolder.trim().length > 0
-    ? outputFolder
-    : undefined;
-}
-
-function resolveManifestResultForTask(manifest: unknown, taskId: string): unknown {
-  if (!manifest || typeof manifest !== "object") {
-    return undefined;
-  }
-
-  const root = manifest as {
-    result?: unknown;
-    items?: Record<string, { result?: unknown } | undefined>;
-  };
-
-  if (root.items && typeof root.items === "object") {
-    const entry = root.items[taskId];
-    if (entry && typeof entry === "object" && "result" in entry) {
-      return entry.result;
-    }
-  }
-
-  return root.result;
 }
 
 export function UnifiedStudio({ userId }: UnifiedStudioProps) {

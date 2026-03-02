@@ -5,6 +5,12 @@ export {
   normalizeMaskArtifacts,
 } from "./masks";
 export {
+  buildOutputManifestKey,
+  buildOutputManifestUrl,
+  resolveManifestResultForTask,
+  resolveOutputFolder,
+} from "./output-manifest";
+export {
   NetworkError,
   SegmentationApiError,
   SegmentationError,
@@ -12,6 +18,7 @@ export {
   ValidationError,
 } from "./errors";
 export type { ValidationDirection, ValidationIssue } from "./errors";
+export type { OutputManifest } from "./output-manifest";
 export type {
   BatchSegmentItemInput,
   BinaryData,
