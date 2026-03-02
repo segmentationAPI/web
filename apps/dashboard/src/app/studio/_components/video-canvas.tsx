@@ -3,16 +3,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { decodeCocoRleMask, type VideoFrameMaskMap } from "@segmentationapi/sdk";
 
+const UNSUPPORTED_COMPOSITE_MESSAGE = "Masked preview encoding is not supported in this browser.";
+const MASK_PALETTE: Array<[number, number, number]> = [
+  [56, 189, 248],
+  [34, 197, 94],
+  [244, 114, 182],
+  [250, 204, 21],
+  [251, 146, 60],
+];
+
 type VideoCanvasProps = {
   src: string;
   frameMasks: VideoFrameMaskMap;
   fps?: number;
   onFrameChange?: (frame: number) => void;
 };
-
-function toPercent(value: number) {
-  return `${Math.max(0, Math.min(100, value * 100))}%`;
-}
 
 export function VideoCanvas({
   src,
@@ -21,9 +26,11 @@ export function VideoCanvas({
   onFrameChange,
 }: VideoCanvasProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
+  const [compositedSrc, setCompositedSrc] = useState<string | null>(null);
+  const [isCompositing, setIsCompositing] = useState(false);
+  const [composeError, setComposeError] = useState<string | null>(null);
 
   const frameKeys = useMemo(
     () => Object.keys(frameMasks).map((key) => Number(key)).filter(Number.isFinite),
@@ -50,102 +57,322 @@ export function VideoCanvas({
     return 30;
   }, [fps, maxFrameIndex, videoDuration]);
 
-  const activeMasks = useMemo(() => {
-    return frameMasks[currentFrame] ?? [];
-  }, [currentFrame, frameMasks]);
+  const activeMasks = useMemo(() => frameMasks[currentFrame] ?? [], [currentFrame, frameMasks]);
+  const hasFrameMasks = frameKeys.length > 0;
 
-  const { rasterMasks, imageMasks, boxMasks } = useMemo(() => {
-    const raster = [];
-    const image = [];
-    const boxes = [];
-
-    for (const mask of activeMasks) {
-      if (mask.rle) {
-        raster.push(mask);
-        continue;
+  const resetCompositedSrc = () => {
+    setCompositedSrc((previousSrc) => {
+      if (previousSrc) {
+        URL.revokeObjectURL(previousSrc);
       }
-
-      image.push(mask);
-      if (Array.isArray(mask.box) && mask.box.length >= 4) {
-        boxes.push(mask);
-      }
-    }
-
-    return {
-      rasterMasks: raster,
-      imageMasks: image,
-      boxMasks: boxes,
-    };
-  }, [activeMasks]);
+      return null;
+    });
+  };
 
   useEffect(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) {
-      return;
-    }
+    return () => {
+      if (compositedSrc) {
+        URL.revokeObjectURL(compositedSrc);
+      }
+    };
+  }, [compositedSrc]);
 
-    const context = canvas.getContext("2d");
-    if (!context) {
-      return;
-    }
+  useEffect(() => {
+    let cancelled = false;
 
-    const displayWidth = Math.max(1, video.clientWidth);
-    const displayHeight = Math.max(1, video.clientHeight);
-
-    if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-      canvas.width = displayWidth;
-      canvas.height = displayHeight;
-    }
-
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    if (rasterMasks.length === 0) {
-      return;
-    }
-
-    const imageData = context.createImageData(canvas.width, canvas.height);
-    const pixels = imageData.data;
-    const palette: Array<[number, number, number]> = [
-      [56, 189, 248],
-      [34, 197, 94],
-      [244, 114, 182],
-      [250, 204, 21],
-      [251, 146, 60],
-    ];
-
-    for (let maskIndex = 0; maskIndex < rasterMasks.length; maskIndex += 1) {
-      const mask = rasterMasks[maskIndex]!;
-      const rle = mask.rle;
-      if (!rle) {
-        continue;
+    const renderCompositeVideo = async () => {
+      if (!hasFrameMasks) {
+        setComposeError(null);
+        setIsCompositing(false);
+        resetCompositedSrc();
+        return;
       }
 
-      const decoded = decodeCocoRleMask(rle);
-      const [red, green, blue] = palette[maskIndex % palette.length]!;
+      if (typeof MediaRecorder === "undefined") {
+        setComposeError(UNSUPPORTED_COMPOSITE_MESSAGE);
+        return;
+      }
 
-      for (let y = 0; y < canvas.height; y += 1) {
-        const sourceY = Math.min(decoded.height - 1, Math.floor((y * decoded.height) / canvas.height));
-        const sourceRowOffset = sourceY * decoded.width;
-        const targetRowOffset = y * canvas.width;
+      const probeCanvas = document.createElement("canvas");
+      if (typeof probeCanvas.captureStream !== "function") {
+        setComposeError(UNSUPPORTED_COMPOSITE_MESSAGE);
+        return;
+      }
 
-        for (let x = 0; x < canvas.width; x += 1) {
-          const sourceX = Math.min(decoded.width - 1, Math.floor((x * decoded.width) / canvas.width));
-          const sourceIndex = sourceRowOffset + sourceX;
-          if (decoded.data[sourceIndex] === 0) {
-            continue;
+      setComposeError(null);
+      setIsCompositing(true);
+
+      const sourceVideo = document.createElement("video");
+      sourceVideo.src = src;
+      sourceVideo.muted = true;
+      sourceVideo.playsInline = true;
+      sourceVideo.preload = "auto";
+
+      const loadMetadata = new Promise<void>((resolve, reject) => {
+        const onLoadedMetadata = () => {
+          cleanup();
+          resolve();
+        };
+        const onError = () => {
+          cleanup();
+          reject(new Error("Failed to load source video metadata."));
+        };
+        const cleanup = () => {
+          sourceVideo.removeEventListener("loadedmetadata", onLoadedMetadata);
+          sourceVideo.removeEventListener("error", onError);
+        };
+
+        sourceVideo.addEventListener("loadedmetadata", onLoadedMetadata);
+        sourceVideo.addEventListener("error", onError);
+      });
+
+      try {
+        await loadMetadata;
+
+        const renderWidth = Math.max(1, sourceVideo.videoWidth || sourceVideo.clientWidth || 1);
+        const renderHeight = Math.max(1, sourceVideo.videoHeight || sourceVideo.clientHeight || 1);
+        const renderCanvas = document.createElement("canvas");
+        renderCanvas.width = renderWidth;
+        renderCanvas.height = renderHeight;
+
+        const context = renderCanvas.getContext("2d");
+        if (!context) {
+          throw new Error("Unable to create 2D drawing context.");
+        }
+
+        const stream = renderCanvas.captureStream(Math.max(1, Math.floor(resolvedFps)));
+        const mimeTypeCandidates = [
+          "video/webm;codecs=vp9",
+          "video/webm;codecs=vp8",
+          "video/webm",
+        ];
+        const mimeType = mimeTypeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
+        if (!mimeType) {
+          throw new Error("No supported video codec found for masked preview.");
+        }
+
+        const recorder = new MediaRecorder(stream, {
+          mimeType,
+          videoBitsPerSecond: 4_000_000,
+        });
+        const streamTracks = stream.getTracks();
+        const chunks: BlobPart[] = [];
+
+        recorder.addEventListener("dataavailable", (event) => {
+          if (event.data.size > 0) {
+            chunks.push(event.data);
+          }
+        });
+
+        const imageCache = new Map<string, HTMLImageElement>();
+        const decodedRleCache = new Map<string, ReturnType<typeof decodeCocoRleMask>>();
+
+        const getImage = (url: string) => {
+          const cached = imageCache.get(url);
+          if (cached) {
+            return cached;
           }
 
-          const pixelOffset = (targetRowOffset + x) * 4;
-          pixels[pixelOffset] = red;
-          pixels[pixelOffset + 1] = green;
-          pixels[pixelOffset + 2] = blue;
-          pixels[pixelOffset + 3] = 110;
+          const next = new Image();
+          next.crossOrigin = "anonymous";
+          next.src = url;
+          imageCache.set(url, next);
+          return next;
+        };
+
+        const drawCurrentFrame = () => {
+          if (cancelled) {
+            return;
+          }
+
+          context.clearRect(0, 0, renderWidth, renderHeight);
+          context.drawImage(sourceVideo, 0, 0, renderWidth, renderHeight);
+
+          const frameIndex = Math.max(0, Math.floor(sourceVideo.currentTime * resolvedFps));
+          const masks = frameMasks[frameIndex] ?? [];
+
+          if (masks.length === 0) {
+            return;
+          }
+
+          const rasterMasks = masks.filter((mask) => mask.rle);
+          if (rasterMasks.length > 0) {
+            const imageData = context.getImageData(0, 0, renderWidth, renderHeight);
+            const pixels = imageData.data;
+
+            for (let maskIndex = 0; maskIndex < rasterMasks.length; maskIndex += 1) {
+              const mask = rasterMasks[maskIndex]!;
+              const rle = mask.rle;
+              if (!rle) {
+                continue;
+              }
+
+              const cacheKey = `${rle.size[0]}x${rle.size[1]}:${typeof rle.counts === "string" ? rle.counts : rle.counts.join(",")}`;
+              const decoded = decodedRleCache.get(cacheKey) ?? decodeCocoRleMask(rle);
+              if (!decodedRleCache.has(cacheKey)) {
+                decodedRleCache.set(cacheKey, decoded);
+              }
+
+              const [red, green, blue] = MASK_PALETTE[maskIndex % MASK_PALETTE.length]!;
+
+              for (let y = 0; y < renderHeight; y += 1) {
+                const sourceY = Math.min(
+                  decoded.height - 1,
+                  Math.floor((y * decoded.height) / renderHeight),
+                );
+                const sourceRowOffset = sourceY * decoded.width;
+                const targetRowOffset = y * renderWidth;
+
+                for (let x = 0; x < renderWidth; x += 1) {
+                  const sourceX = Math.min(
+                    decoded.width - 1,
+                    Math.floor((x * decoded.width) / renderWidth),
+                  );
+                  const sourceIndex = sourceRowOffset + sourceX;
+                  if (decoded.data[sourceIndex] === 0) {
+                    continue;
+                  }
+
+                  const pixelOffset = (targetRowOffset + x) * 4;
+                  pixels[pixelOffset] = red;
+                  pixels[pixelOffset + 1] = green;
+                  pixels[pixelOffset + 2] = blue;
+                  pixels[pixelOffset + 3] = 110;
+                }
+              }
+            }
+
+            context.putImageData(imageData, 0, 0);
+          }
+
+          context.save();
+          context.globalAlpha = 0.65;
+          for (const mask of masks) {
+            if (!mask.url) {
+              continue;
+            }
+
+            const image = getImage(mask.url);
+            if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
+              context.drawImage(image, 0, 0, renderWidth, renderHeight);
+            }
+          }
+          context.restore();
+
+          context.lineWidth = Math.max(1, Math.floor(renderWidth * 0.003));
+          context.strokeStyle = "rgba(56, 189, 248, 0.85)";
+          context.fillStyle = "rgba(56, 189, 248, 0.18)";
+
+          for (const mask of masks) {
+            const box = mask.box;
+            if (!box || box.length < 4) {
+              continue;
+            }
+
+            const [x1, y1, x2, y2] = box;
+            const left = Math.max(0, Math.min(renderWidth, x1 * renderWidth));
+            const top = Math.max(0, Math.min(renderHeight, y1 * renderHeight));
+            const width = Math.max(0, (x2 - x1) * renderWidth);
+            const height = Math.max(0, (y2 - y1) * renderHeight);
+
+            context.fillRect(left, top, width, height);
+            context.strokeRect(left, top, width, height);
+          }
+        };
+
+        const waitForStop = new Promise<void>((resolve, reject) => {
+          const onStop = () => {
+            cleanup();
+            resolve();
+          };
+          const onError = () => {
+            cleanup();
+            reject(new Error("Failed to encode masked preview."));
+          };
+          const cleanup = () => {
+            recorder.removeEventListener("stop", onStop);
+            recorder.removeEventListener("error", onError);
+          };
+
+          recorder.addEventListener("stop", onStop);
+          recorder.addEventListener("error", onError);
+        });
+
+        let rafHandle = 0;
+        const onVideoFrame = () => {
+          drawCurrentFrame();
+          if (!sourceVideo.ended) {
+            sourceVideo.requestVideoFrameCallback(onVideoFrame);
+          }
+        };
+
+        const renderWithRaf = () => {
+          drawCurrentFrame();
+          if (!sourceVideo.ended) {
+            rafHandle = window.requestAnimationFrame(renderWithRaf);
+          }
+        };
+
+        sourceVideo.addEventListener("ended", () => {
+          if (rafHandle !== 0) {
+            window.cancelAnimationFrame(rafHandle);
+            rafHandle = 0;
+          }
+          if (recorder.state !== "inactive") {
+            recorder.stop();
+          }
+        }, { once: true });
+
+        recorder.start();
+        await sourceVideo.play();
+
+        if ("requestVideoFrameCallback" in sourceVideo) {
+          sourceVideo.requestVideoFrameCallback(onVideoFrame);
+        } else {
+          rafHandle = window.requestAnimationFrame(renderWithRaf);
+        }
+
+        await waitForStop;
+        streamTracks.forEach((track) => track.stop());
+
+        if (cancelled || chunks.length === 0) {
+          return;
+        }
+
+        const resultBlob = new Blob(chunks, { type: mimeType });
+        const nextUrl = URL.createObjectURL(resultBlob);
+
+        setCompositedSrc((previousSrc) => {
+          if (previousSrc) {
+            URL.revokeObjectURL(previousSrc);
+          }
+          return nextUrl;
+        });
+      } catch (error) {
+        if (!cancelled) {
+          setComposeError(
+            error instanceof Error ? error.message : "Failed to render masked preview.",
+          );
+          resetCompositedSrc();
+        }
+      } finally {
+        sourceVideo.pause();
+        sourceVideo.removeAttribute("src");
+        sourceVideo.load();
+        if (!cancelled) {
+          setIsCompositing(false);
         }
       }
-    }
+    };
 
-    context.putImageData(imageData, 0, 0);
-  }, [rasterMasks]);
+    void renderCompositeVideo();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [frameMasks, hasFrameMasks, resolvedFps, src]);
+
+  const playbackSrc = compositedSrc ?? src;
 
   const updateCurrentFrame = (timeSeconds: number) => {
     const nextFrame = Math.max(0, Math.floor(timeSeconds * resolvedFps));
@@ -158,7 +385,7 @@ export function VideoCanvas({
       <div className="relative overflow-hidden rounded-xl border border-border/70 bg-background/80">
         <video
           ref={videoRef}
-          src={src}
+          src={playbackSrc}
           controls
           className="h-auto w-full"
           onLoadedMetadata={(event) => {
@@ -174,54 +401,22 @@ export function VideoCanvas({
             updateCurrentFrame(event.currentTarget.currentTime);
           }}
         />
-
-        <canvas
-          ref={canvasRef}
-          className="pointer-events-none absolute inset-0 h-full w-full"
-        />
-
-        {imageMasks.length > 0 ? (
-          <div className="pointer-events-none absolute inset-0">
-            {imageMasks.map((mask, index) => (
-              <img
-                key={`${mask.key}-${index}`}
-                src={mask.url}
-                alt={`Frame ${currentFrame} mask ${index + 1}`}
-                className="absolute inset-0 h-full w-full object-cover mix-blend-screen opacity-65"
-              />
-            ))}
-          </div>
-        ) : null}
-
-        {boxMasks.length > 0 ? (
-          <div className="pointer-events-none absolute inset-0">
-            {boxMasks.map((mask, index) => {
-              const box = mask.box;
-              if (!box) {
-                return null;
-              }
-
-              const [x1, y1, x2, y2] = box;
-              const left = toPercent(x1);
-              const top = toPercent(y1);
-              const width = toPercent(x2 - x1);
-              const height = toPercent(y2 - y1);
-
-              return (
-                <div
-                  key={`${mask.key}-box-${index}`}
-                  className="absolute border-2 border-sky-400/80 bg-sky-400/10"
-                  style={{ left, top, width, height }}
-                />
-              );
-            })}
-          </div>
-        ) : null}
       </div>
 
       <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
         Frame {currentFrame} · {activeMasks.length} masks
       </p>
+      {hasFrameMasks ? (
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+          {isCompositing
+            ? "Compositing masked video preview..."
+            : composeError
+              ? composeError
+              : compositedSrc
+                ? "Playing composited masked preview"
+                : "Mask compositing unavailable; playing source video"}
+        </p>
+      ) : null}
     </div>
   );
 }
