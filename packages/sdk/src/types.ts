@@ -113,13 +113,21 @@ export interface PresignedUploadRaw {
 }
 
 export type JobAcceptedType = "image_batch" | "video";
-export type JobRequestStatus =
-  | "queued"
-  | "processing"
-  | "completed"
-  | "completed_with_errors"
-  | "failed";
-export type JobTaskStatus = "queued" | "running" | "success" | "failed";
+
+export enum JobRequestStatus {
+  Queued = "queued",
+  Processing = "processing",
+  Completed = "completed",
+  CompletedWithErrors = "completed_with_errors",
+  Failed = "failed",
+}
+
+export enum JobTaskStatus {
+  Queued = "queued",
+  Running = "running",
+  Success = "success",
+  Failed = "failed",
+}
 
 export interface JobAcceptedRaw {
   requestId?: string;

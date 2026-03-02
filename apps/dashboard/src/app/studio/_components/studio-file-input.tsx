@@ -1,24 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
+import { FileKind, classifyFiles } from "../_store/studio-selectors";
 
 type StudioFileInputProps = {
+  files: File[];
   onFilesChange: (nextFiles: File[]) => void;
-  resetKey?: number;
 };
-
-type InternalFileKind = "image" | "video" | "none";
-
-function classifyFiles(files: File[]): InternalFileKind {
-  if (files.length === 0) return "none";
-  const firstIsVideo = files[0]!.type.startsWith("video/");
-  return firstIsVideo ? "video" : "image";
-}
 
 function getAcceptedFiles(next: FileList | null): File[] {
   const accepted = Array.from(next ?? []).filter(
@@ -37,8 +30,7 @@ function getAcceptedFiles(next: FileList | null): File[] {
   return accepted.filter((file) => file.type.startsWith("image/"));
 }
 
-export function StudioFileInput({ onFilesChange, resetKey = 0 }: StudioFileInputProps) {
-  const [files, setFiles] = useState<File[]>([]);
+export function StudioFileInput({ files, onFilesChange }: StudioFileInputProps) {
   const fileKind = useMemo(() => classifyFiles(files), [files]);
 
   const imagePreviewUrls = useMemo(
@@ -54,20 +46,13 @@ export function StudioFileInput({ onFilesChange, resetKey = 0 }: StudioFileInput
     };
   }, [imagePreviewUrls]);
 
-  useEffect(() => {
-    setFiles([]);
-    onFilesChange([]);
-  }, [onFilesChange, resetKey]);
-
   function handleSelection(next: FileList | null) {
     const selectedFiles = getAcceptedFiles(next);
-    setFiles(selectedFiles);
     onFilesChange(selectedFiles);
   }
 
   function removeFile(index: number) {
     const nextFiles = files.filter((_, fileIndex) => fileIndex !== index);
-    setFiles(nextFiles);
     onFilesChange(nextFiles);
   }
 
@@ -89,7 +74,7 @@ export function StudioFileInput({ onFilesChange, resetKey = 0 }: StudioFileInput
               key={`${file.name}-${index}`}
               className="flex items-center gap-2.5 rounded-lg border border-border/55 bg-muted/20 px-2.5 py-2"
             >
-              {fileKind === "image" ? (
+              {fileKind === FileKind.Image ? (
                 <Image
                   src={imagePreviewUrls[index]}
                   alt={file.name}
@@ -106,7 +91,7 @@ export function StudioFileInput({ onFilesChange, resetKey = 0 }: StudioFileInput
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs text-foreground">{file.name}</p>
                 <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                  {fileKind === "image" ? "image" : "video"} · {(file.size / 1024).toFixed(1)} KB
+                  {fileKind === FileKind.Image ? "image" : "video"} · {(file.size / 1024).toFixed(1)} KB
                 </p>
               </div>
               <Button

@@ -1,27 +1,20 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FileKind } from "../_store/studio-selectors";
 
 type PromptInputListProps = {
-  mode: "image" | "video" | "none";
+  mode: FileKind;
   boxCount: number;
+  prompts: string[];
+  onPromptsChange: (nextPrompts: string[]) => void;
   minPrompts?: number;
   disabled?: boolean;
-  onStateChange?: (state: PromptInputState) => void;
-};
-
-type PromptInputState = {
-  cleanPrompts: string[];
-};
-
-type PromptRow = {
-  id: string;
-  value: string;
 };
 
 function trimPrompts(prompts: string[]) {
@@ -31,32 +24,14 @@ function trimPrompts(prompts: string[]) {
 export function PromptInputList({
   mode,
   boxCount,
+  prompts,
+  onPromptsChange,
   minPrompts = 1,
   disabled = false,
-  onStateChange,
 }: PromptInputListProps) {
-  const nextPromptId = useRef(0);
-
-  const createRow = useCallback((): PromptRow => {
-    const next = nextPromptId.current;
-    nextPromptId.current += 1;
-    return { id: `prompt-${next}`, value: "" };
-  }, []);
-
-  const [rows, setRows] = useState<PromptRow[]>(() =>
-    Array.from({ length: minPrompts }, () => createRow()),
-  );
-
-  const emitPromptState = useCallback((nextRows: PromptRow[]) => {
-    const prompts = nextRows.map((row) => row.value);
-    onStateChange?.({
-      cleanPrompts: trimPrompts(prompts),
-    });
-  }, [onStateChange]);
-
   const cleanPrompts = useMemo(
-    () => trimPrompts(rows.map((row) => row.value)),
-    [rows],
+    () => trimPrompts(prompts),
+    [prompts],
   );
   const hasRequiredPrompt = cleanPrompts.length > 0;
   const requiresPromptBoxParity = boxCount > 0;
@@ -67,37 +42,23 @@ export function PromptInputList({
       ? `Prompt count must match box count (${cleanPrompts.length}/${boxCount}).`
       : null;
 
-  const replacePrompt = useCallback((index: number, nextValue: string) => {
-    setRows((current) => {
-      const nextRows = current.map((row, currentIndex) =>
-        currentIndex === index ? { ...row, value: nextValue } : row,
-      );
-      emitPromptState(nextRows);
-      return nextRows;
-    });
-  }, [emitPromptState]);
+  function replacePrompt(index: number, nextValue: string) {
+    onPromptsChange(prompts.map((prompt, promptIndex) => (promptIndex === index ? nextValue : prompt)));
+  }
 
-  const addPrompt = useCallback(() => {
-    setRows((current) => {
-      const nextRows = [...current, createRow()];
-      emitPromptState(nextRows);
-      return nextRows;
-    });
-  }, [createRow, emitPromptState]);
+  function addPrompt() {
+    onPromptsChange([...prompts, ""]);
+  }
 
-  const removePrompt = useCallback((index: number) => {
-    setRows((current) => {
-      if (current.length <= minPrompts) {
-        return current;
-      }
+  function removePrompt(index: number) {
+    if (prompts.length <= minPrompts) {
+      return;
+    }
 
-      const nextRows = current.filter((_, currentIndex) => currentIndex !== index);
-      emitPromptState(nextRows);
-      return nextRows;
-    });
-  }, [emitPromptState, minPrompts]);
+    onPromptsChange(prompts.filter((_, promptIndex) => promptIndex !== index));
+  }
 
-  const promptPlaceholder = mode === "video"
+  const promptPlaceholder = mode === FileKind.Video
     ? "describe object(s) to segment"
     : "object to segment";
 
@@ -106,10 +67,10 @@ export function PromptInputList({
       <Label className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
         Prompts {boxCount > 0 ? "(Required: one per box)" : "(Required)"}
       </Label>
-      {rows.map((row, index) => (
-        <div key={row.id} className="flex items-center gap-2">
+      {prompts.map((prompt, index) => (
+        <div key={`prompt-${index}`} className="flex items-center gap-2">
           <Input
-            value={row.value}
+            value={prompt}
             onChange={(event) => replacePrompt(index, event.target.value)}
             placeholder={promptPlaceholder}
             disabled={disabled}
@@ -118,7 +79,7 @@ export function PromptInputList({
           <Button
             type="button"
             onClick={() => removePrompt(index)}
-            disabled={disabled || rows.length <= minPrompts}
+            disabled={disabled || prompts.length <= minPrompts}
             variant="ghost"
             size="icon"
             className="size-8 shrink-0 text-muted-foreground transition-colors hover:text-destructive"

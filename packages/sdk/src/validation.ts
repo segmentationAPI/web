@@ -1,17 +1,19 @@
 import * as z from "zod/mini";
 import { ValidationError, type ValidationIssue } from "./errors";
-import type {
-  CreateJobRequest,
-  CreatePresignedUploadRequest,
-  FetchFunction,
-  GetSegmentJobRequest,
-  JobAcceptedRaw,
-  JobStatusItemRaw,
-  JobStatusRaw,
-  PresignedUploadRaw,
-  SegmentVideoRequest,
-  UploadAndCreateJobRequest,
-  UploadImageRequest,
+import {
+  JobRequestStatus,
+  JobTaskStatus,
+  type CreateJobRequest,
+  type CreatePresignedUploadRequest,
+  type FetchFunction,
+  type GetSegmentJobRequest,
+  type JobAcceptedRaw,
+  type JobStatusItemRaw,
+  type JobStatusRaw,
+  type PresignedUploadRaw,
+  type SegmentVideoRequest,
+  type UploadAndCreateJobRequest,
+  type UploadImageRequest,
 } from "./types";
 
 export const nonEmptyString = z
@@ -247,7 +249,7 @@ export const jobAcceptedRawSchema: z.ZodMiniType<JobAcceptedRaw> =
 
 export const jobStatusItemRawSchema: z.ZodMiniType<JobStatusItemRaw> = z.object({
   taskId: nonEmptyString,
-  status: z.enum(["queued", "running", "success", "failed"]),
+  status: z.enum(JobTaskStatus),
   error: z.optional(z.nullable(nonEmptyString)),
 });
 
@@ -256,13 +258,7 @@ export const jobStatusRawSchema: z.ZodMiniType<JobStatusRaw> =
     requestId: z.optional(z.string()),
     jobId: nonEmptyString,
     type: z.enum(["image_batch", "video"]),
-    status: z.enum([
-      "queued",
-      "processing",
-      "completed",
-      "completed_with_errors",
-      "failed",
-    ]),
+    status: z.enum(JobRequestStatus),
     totalItems: finiteNumber,
     queuedItems: finiteNumber,
     processingItems: finiteNumber,

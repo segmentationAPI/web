@@ -5,6 +5,7 @@ export {
   normalizeMaskArtifacts,
   normalizeVideoFrameMasks,
 } from "./masks";
+export { JobRequestStatus } from "./types";
 export {
   buildOutputManifestKey,
   buildOutputManifestUrl,
@@ -18,6 +19,7 @@ export {
   UploadError,
   ValidationError,
 } from "./errors";
+export { JobTaskStatus } from "./types";
 export type { ValidationDirection, ValidationIssue } from "./errors";
 export type { OutputManifest } from "./output-manifest";
 export type {
@@ -32,12 +34,10 @@ export type {
   JobAcceptedType,
   MaskArtifactContext,
   MaskArtifactResult,
-  JobRequestStatus,
   JobStatusItem,
   JobStatusItemRaw,
   JobStatusRaw,
   JobStatusResult,
-  JobTaskStatus,
   JobType,
   MaskResult,
   MaskResultRaw,
