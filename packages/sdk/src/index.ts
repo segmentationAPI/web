@@ -2,6 +2,8 @@ export { SegmentationClient } from "./client";
 export {
   buildMaskArtifactKey,
   buildMaskArtifactUrl,
+  decodeCocoRleMask,
+  loadVideoFrameMasks,
   normalizeMaskArtifacts,
   normalizeVideoFrameMasks,
 } from "./masks";
@@ -52,4 +54,6 @@ export type {
   UploadAndCreateJobRequest,
   UploadImageRequest,
   VideoFrameMaskMap,
+  CocoRle,
+  LoadVideoFrameMasksOptions,
 } from "./types";

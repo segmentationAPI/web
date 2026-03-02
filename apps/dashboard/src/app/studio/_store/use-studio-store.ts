@@ -3,8 +3,8 @@ import {
   JobTaskStatus,
   SegmentationClient,
   buildOutputManifestUrl,
+  loadVideoFrameMasks,
   normalizeMaskArtifacts,
-  normalizeVideoFrameMasks,
   resolveManifestResultForTask,
   resolveOutputFolder,
   type JobStatusResult,
@@ -130,19 +130,22 @@ async function loadMaskEntries(status: JobStatusResult, userId: string): Promise
     }
 
     const manifest = (await response.json()) as unknown;
-    return taskIds.map((taskId) => ({
-      taskId,
-      masks: normalizeMaskArtifacts(resolveManifestResultForTask(manifest, taskId), {
-        userId,
-        jobId: status.jobId,
-        taskId,
+    return Promise.all(
+      taskIds.map(async (taskId) => {
+        const context = {
+          userId,
+          jobId: status.jobId,
+          taskId,
+        };
+        const taskResult = resolveManifestResultForTask(manifest, taskId);
+
+        return {
+          taskId,
+          masks: normalizeMaskArtifacts(taskResult, context),
+          frameMasks: await loadVideoFrameMasks(taskResult, context),
+        };
       }),
-      frameMasks: normalizeVideoFrameMasks(resolveManifestResultForTask(manifest, taskId), {
-        userId,
-        jobId: status.jobId,
-        taskId,
-      }),
-    }));
+    );
   } catch {
     return fallbackEntries;
   }

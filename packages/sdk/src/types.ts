@@ -166,15 +166,26 @@ export interface MaskArtifactContext {
   taskId: string;
 }
 
+export interface CocoRle {
+  size: [number, number];
+  counts: string | number[];
+}
+
 export interface MaskArtifactResult {
   maskIndex: number;
   key: string;
   url: string;
   score: number | null;
   box: [number, number, number, number] | null;
+  rle?: CocoRle;
 }
 
 export type VideoFrameMaskMap = Record<number, MaskArtifactResult[]>;
+
+export interface LoadVideoFrameMasksOptions {
+  fetch?: FetchFunction;
+  signal?: AbortSignal;
+}
 
 export interface VideoOutputRaw {
   requestId: string;
