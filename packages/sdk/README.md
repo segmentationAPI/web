@@ -27,46 +27,49 @@ await client.uploadImage({
   contentType: "image/png",
 });
 
-const result = await client.segment({
+const accepted = await client.createJob({
+  type: "image_batch",
   prompts: ["painting"],
-  inputS3Key: presigned.inputS3Key,
+  items: [{ taskId: presigned.taskId }],
   threshold: 0.5,
   maskThreshold: 0.5,
 });
 
-console.log(result.jobId);
-console.log(result.outputUrl); // https://assets.segmentationapi.com/<outputPrefix>
-console.log(result.masks[0]?.url);
+const status = await client.getSegmentJob({ jobId: accepted.jobId });
+console.log(status.status, status.successItems, status.failedItems);
 ```
 
-## One-call Flow
+## Upload + Create Job Flow
 
 ```ts
-const result = await client.uploadAndSegment({
+const accepted = await client.uploadAndCreateJob({
+  type: "image_batch",
   prompts: ["painting"],
-  data: imageBytes,
-  contentType: "image/png",
+  files: [{ data: imageBytes, contentType: "image/png" }],
   threshold: 0.5,
   maskThreshold: 0.5,
 });
+
+const status = await client.getSegmentJob({ jobId: accepted.jobId });
+console.log(status.status, status.successItems, status.failedItems);
 ```
 
-## Batch Flow
+## Batch Image Flow
 
 ```ts
-const accepted = await client.createBatchSegmentJob({
+const accepted = await client.createJob({
+  type: "image_batch",
   prompts: ["cat"],
   threshold: 0.5,
   maskThreshold: 0.5,
   items: [
-    { inputS3Key: "inputs/acct_123/cat-1.png" },
-    { inputS3Key: "inputs/acct_123/cat-2.png" },
+    { taskId: "0000_a1b2c3d4" },
+    { taskId: "0001_e5f6g7h8" },
   ],
 });
 
 const status = await client.getSegmentJob({ jobId: accepted.jobId });
 console.log(status.status, status.successItems, status.failedItems);
-console.log(status.items[0]?.masks?.[0]?.url);
 ```
 
 ## Video Segmentation Flow
@@ -76,10 +79,7 @@ const accepted = await client.segmentVideo({
   file: videoFile, // Blob/File/Uint8Array
   fps: 2, // or numFrames
   maxFrames: 120,
-  points: [
-    { coordinates: [320, 180], isPositive: true, objectId: 1 },
-    { coordinates: [410, 260], isPositive: false, objectId: 1 },
-  ],
+  prompts: ["person"],
   frameIdx: 0,
 });
 
@@ -92,13 +92,12 @@ if (status.video?.status === "success") {
 ```
 
 The SDK uploads the video to S3 first using a presigned URL, then submits the
-video segmentation request with the uploaded `inputS3Key`.
+video job with the uploaded `taskId`.
 
-Video segmentation supports visual prompts only:
+Video segmentation supports text prompts only:
 
-- Provide exactly one prompt mode: `points` or `boxes`
-- Use inline prompt objects with `coordinates`, `isPositive`, and optional `objectId`
-- Do not send text prompts (`text` is unsupported)
+- Provide at least one prompt in `prompts`
+- Do not send `points` or `boxes`
 - Choose at most one sampling selector: `fps` or `numFrames`
 
 ## Client Options
@@ -137,7 +136,11 @@ import {
 } from "@segmentationapi/sdk";
 
 try {
-  await client.segment({ prompt: ["painting"], inputS3Key: "inputs/file.png" });
+  await client.createJob({
+    type: "image_batch",
+    prompts: ["painting"],
+    items: [{ taskId: "0000_a1b2c3d4" }],
+  });
 } catch (error) {
   if (error instanceof ValidationError) {
     console.error(error.operation, error.direction, error.issues);

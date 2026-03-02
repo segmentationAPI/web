@@ -302,9 +302,6 @@ export class SegmentationClient {
     if (parsedInput.boxes !== undefined) {
       payload.boxes = parsedInput.boxes;
     }
-    if (parsedInput.points !== undefined) {
-      payload.points = parsedInput.points;
-    }
 
     const raw = await this.requestApi({
       path: "/jobs",
@@ -347,11 +344,21 @@ export class SegmentationClient {
       onProgress?.(i + 1, parsedInput.files.length);
     }
 
+    if (parsedInput.type === "video") {
+      return this.createJob({
+        type: "video",
+        prompts: parsedInput.prompts,
+        threshold: parsedInput.threshold,
+        maskThreshold: parsedInput.maskThreshold,
+        items: uploadedTaskIds.map((taskId) => ({ taskId })),
+        signal: parsedInput.signal,
+      });
+    }
+
     return this.createJob({
-      type: parsedInput.type,
+      type: "image_batch",
       prompts: parsedInput.prompts,
       boxes: parsedInput.boxes,
-      points: parsedInput.points,
       threshold: parsedInput.threshold,
       maskThreshold: parsedInput.maskThreshold,
       items: uploadedTaskIds.map((taskId) => ({ taskId })),

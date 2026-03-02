@@ -60,20 +60,27 @@ export interface ImageBoxPrompt {
 
 export type JobType = "image_batch" | "video";
 
-export interface CreateJobRequest {
-  type: JobType;
+export interface CreateImageBatchJobRequest {
+  type: "image_batch";
   prompts?: string[];
   boxes?: ImageBoxPrompt[];
-  points?: Array<{
-    coordinates: [number, number];
-    isPositive: boolean;
-    objectId?: string;
-  }>;
   threshold?: number;
   maskThreshold?: number;
   items: BatchSegmentItemInput[];
   signal?: AbortSignal;
 }
+
+export interface CreateVideoJobRequest {
+  type: "video";
+  prompts: string[];
+  boxes?: never;
+  threshold?: number;
+  maskThreshold?: number;
+  items: BatchSegmentItemInput[];
+  signal?: AbortSignal;
+}
+
+export type CreateJobRequest = CreateImageBatchJobRequest | CreateVideoJobRequest;
 
 export interface GetSegmentJobRequest {
   jobId: string;
@@ -87,15 +94,10 @@ export interface UploadImageRequest {
   signal?: AbortSignal;
 }
 
-export interface UploadAndCreateJobRequest {
-  type: JobType;
+export interface UploadAndCreateImageBatchJobRequest {
+  type: "image_batch";
   prompts?: string[];
   boxes?: ImageBoxPrompt[];
-  points?: Array<{
-    coordinates: [number, number];
-    isPositive: boolean;
-    objectId?: string;
-  }>;
   files: Array<{
     data: BinaryData;
     contentType: string;
@@ -104,6 +106,21 @@ export interface UploadAndCreateJobRequest {
   maskThreshold?: number;
   signal?: AbortSignal;
 }
+
+export interface UploadAndCreateVideoJobRequest {
+  type: "video";
+  prompts: string[];
+  boxes?: never;
+  files: Array<{
+    data: BinaryData;
+    contentType: string;
+  }>;
+  threshold?: number;
+  maskThreshold?: number;
+  signal?: AbortSignal;
+}
+
+export type UploadAndCreateJobRequest = UploadAndCreateImageBatchJobRequest | UploadAndCreateVideoJobRequest;
 
 export interface PresignedUploadRaw {
   uploadUrl: string;

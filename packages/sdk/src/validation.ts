@@ -93,57 +93,73 @@ export const imageBoxSchema = z.object({
 
 export const imageBoxesSchema = z.array(imageBoxSchema);
 
-const pointSchema = z.object({
-  coordinates: z.tuple([finiteNumber, finiteNumber]),
-  isPositive: z.boolean(),
-  objectId: z.optional(z.string()),
-});
-
-const boxInputSchema = z.object({
-  coordinates: z.array(finiteNumber).check(
-    z.refine((value) => value.length >= 4, "Each box must have at least 4 coordinates."),
-  ),
-  isPositive: z.optional(z.boolean()),
-  objectId: z.optional(z.string()),
-});
-
 const batchSegmentItemInputSchema = z.object({
   taskId: nonEmptyString,
 });
 
-export const createJobRequestSchema: z.ZodMiniType<CreateJobRequest> =
-  z.object({
-    type: z.enum(["image_batch", "video"]),
-    prompts: z.optional(promptsSchema),
-    boxes: z.optional(imageBoxesSchema),
-    points: z.optional(z.array(pointSchema)),
-    threshold: z.optional(finiteNumber),
-    maskThreshold: z.optional(finiteNumber),
-    items: z.array(batchSegmentItemInputSchema).check(
-      z.refine((value) => value.length >= 1, "Expected at least 1 item."),
-      z.refine((value) => value.length <= 100, "Expected at most 100 items."),
-    ),
-    signal: abortSignalSchema,
-  });
+const createJobRequestCommonSchema = z.object({
+  threshold: z.optional(finiteNumber),
+  maskThreshold: z.optional(finiteNumber),
+  items: z.array(batchSegmentItemInputSchema).check(
+    z.refine((value) => value.length >= 1, "Expected at least 1 item."),
+    z.refine((value) => value.length <= 100, "Expected at most 100 items."),
+  ),
+  signal: abortSignalSchema,
+});
+
+const createImageBatchJobRequestSchema = z.object({
+  type: z.literal("image_batch"),
+  prompts: z.optional(promptsSchema),
+  boxes: z.optional(imageBoxesSchema),
+});
+
+const createVideoJobRequestSchema = z.object({
+  type: z.literal("video"),
+  prompts: promptsSchema.check(
+    z.refine((value) => value.length >= 1, "Expected at least 1 prompt."),
+  ),
+  boxes: z.optional(z.never("Field `boxes` is not supported for video jobs.")),
+  points: z.optional(z.never("Field `points` is not supported.")),
+});
+
+export const createJobRequestSchema: z.ZodMiniType<CreateJobRequest> = z.intersection(
+  createJobRequestCommonSchema,
+  z.union([createImageBatchJobRequestSchema, createVideoJobRequestSchema]),
+);
 
 const uploadFileSchema = z.object({
   data: binaryDataSchema,
   contentType: nonEmptyString,
 });
 
-export const uploadAndCreateJobRequestSchema: z.ZodMiniType<UploadAndCreateJobRequest> =
-  z.object({
-    type: z.enum(["image_batch", "video"]),
-    prompts: z.optional(promptsSchema),
-    boxes: z.optional(imageBoxesSchema),
-    points: z.optional(z.array(pointSchema)),
-    files: z.array(uploadFileSchema).check(
-      z.refine((value) => value.length >= 1, "Expected at least 1 file."),
-    ),
-    threshold: z.optional(finiteNumber),
-    maskThreshold: z.optional(finiteNumber),
-    signal: abortSignalSchema,
-  });
+const uploadAndCreateJobRequestCommonSchema = z.object({
+  files: z.array(uploadFileSchema).check(
+    z.refine((value) => value.length >= 1, "Expected at least 1 file."),
+  ),
+  threshold: z.optional(finiteNumber),
+  maskThreshold: z.optional(finiteNumber),
+  signal: abortSignalSchema,
+});
+
+const uploadAndCreateImageBatchJobRequestSchema = z.object({
+  type: z.literal("image_batch"),
+  prompts: z.optional(promptsSchema),
+  boxes: z.optional(imageBoxesSchema),
+});
+
+const uploadAndCreateVideoJobRequestSchema = z.object({
+  type: z.literal("video"),
+  prompts: promptsSchema.check(
+    z.refine((value) => value.length >= 1, "Expected at least 1 prompt."),
+  ),
+  boxes: z.optional(z.never("Field `boxes` is not supported for video jobs.")),
+  points: z.optional(z.never("Field `points` is not supported.")),
+});
+
+export const uploadAndCreateJobRequestSchema: z.ZodMiniType<UploadAndCreateJobRequest> = z.intersection(
+  uploadAndCreateJobRequestCommonSchema,
+  z.union([uploadAndCreateImageBatchJobRequestSchema, uploadAndCreateVideoJobRequestSchema]),
+);
 
 // --- Video request schemas ---
 
