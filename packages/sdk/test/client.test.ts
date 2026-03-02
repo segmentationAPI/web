@@ -17,7 +17,9 @@ function jsonResponse(payload: unknown, status = 200): Response {
   });
 }
 
-function asFetchMock(impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) {
+function asFetchMock(
+  impl: (input: Parameters<FetchFunction>[0], init?: Parameters<FetchFunction>[1]) => Promise<Response>,
+) {
   return vi.fn(impl) as unknown as FetchFunction & ReturnType<typeof vi.fn>;
 }
 
@@ -153,10 +155,7 @@ describe("SegmentationClient", () => {
       file: new Uint8Array([1, 2, 3, 4]),
       fps: 2.5,
       maxFrames: 80,
-      points: [
-        { coordinates: [10, 20], isPositive: true, objectId: 101 },
-        { coordinates: [30, 40], isPositive: false, objectId: 101 },
-      ],
+      prompts: ["dog", "person"],
       frameIdx: 5,
     });
 
@@ -178,11 +177,11 @@ describe("SegmentationClient", () => {
     expect(getHeaders(segmentInit).get("content-type")).toBe("application/json");
     const body = JSON.parse(String(segmentInit.body)) as Record<string, unknown>;
     expect(body.type).toBe("video");
-    expect((body.items as Array<{ taskId: string }>)[0].taskId).toBe("video-task-1");
+    expect((body.items as Array<{ taskId: string }>)[0]!.taskId).toBe("video-task-1");
     expect(body.fps).toBe(2.5);
     expect(body.maxFrames).toBe(80);
     expect(body.frameIdx).toBe(5);
-    expect(body.points).toBeDefined();
+    expect(body.prompts).toEqual(["dog", "person"]);
 
     expect(result.requestId).toBe("video-request-1");
     expect(result.jobId).toBe("video-job-1");
@@ -227,7 +226,7 @@ describe("SegmentationClient", () => {
     await client.segmentVideo({
       file: new Uint8Array([9, 8, 7]),
       numFrames: 16,
-      boxes: [{ coordinates: [1, 2, 3, 4], isPositive: true, objectId: 1 }],
+      prompts: ["car"],
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -328,7 +327,7 @@ describe("SegmentationClient", () => {
     ) as Record<string, unknown>;
     expect(jobBody.type).toBe("image_batch");
     expect(jobBody.prompts).toEqual(["painting"]);
-    expect((jobBody.items as Array<{ taskId: string }>)[0].taskId).toBe("task-flow");
+    expect((jobBody.items as Array<{ taskId: string }>)[0]!.taskId).toBe("task-flow");
     expect(result.jobId).toBe("job-3");
   });
 
@@ -622,8 +621,8 @@ describe("SegmentationClient", () => {
     await expect(
       client.segmentVideo({
         file: new Uint8Array([1]),
+        prompts: ["cat"],
         points: [{ coordinates: [1, 2], isPositive: true }],
-        boxes: [{ coordinates: [1, 2, 3, 4], isPositive: true }],
       } as never),
     ).rejects.toMatchObject({
       direction: "input",
@@ -633,7 +632,7 @@ describe("SegmentationClient", () => {
     await expect(
       client.segmentVideo({
         file: new Uint8Array([1]),
-        points: [{ coordinates: [1, 2], isPositive: true }],
+        prompts: ["cat"],
         fps: 1,
         numFrames: 5,
       } as never),
@@ -645,8 +644,7 @@ describe("SegmentationClient", () => {
     await expect(
       client.segmentVideo({
         file: new Uint8Array([1]),
-        points: [{ coordinates: [1, 2], isPositive: true }],
-        pointLabels: [1],
+        prompts: [],
       } as never),
     ).rejects.toMatchObject({
       direction: "input",

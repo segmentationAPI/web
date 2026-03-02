@@ -3,6 +3,7 @@ export {
   buildMaskArtifactKey,
   buildMaskArtifactUrl,
   normalizeMaskArtifacts,
+  normalizeVideoFrameMasks,
 } from "./masks";
 export {
   buildOutputManifestKey,
@@ -42,11 +43,7 @@ export type {
   MaskResultRaw,
   PresignedUploadRaw,
   PresignedUploadResult,
-  SegmentVideoBox,
-  SegmentVideoBoxesPrompt,
-  SegmentVideoObjectId,
-  SegmentVideoPoint,
-  SegmentVideoPointsPrompt,
+  SegmentVideoPrompts,
   SegmentVideoRequest,
   SegmentVideoSamplingByFps,
   SegmentVideoSamplingByFrameCount,
@@ -54,4 +51,5 @@ export type {
   SegmentationClientOptions,
   UploadAndCreateJobRequest,
   UploadImageRequest,
+  VideoFrameMaskMap,
 } from "./types";

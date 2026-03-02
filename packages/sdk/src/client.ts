@@ -266,20 +266,7 @@ export class SegmentationClient {
     if (parsedInput.maxFrames !== undefined) {
       requestBody.maxFrames = parsedInput.maxFrames;
     }
-
-    if (parsedInput.points !== undefined) {
-      requestBody.points = parsedInput.points.map((p) => ({
-        coordinates: p.coordinates,
-        isPositive: p.isPositive,
-        objectId: p.objectId !== undefined ? String(p.objectId) : undefined,
-      }));
-    } else {
-      requestBody.boxes = parsedInput.boxes!.map((b) => ({
-        coordinates: b.coordinates,
-        isPositive: b.isPositive,
-        objectId: b.objectId !== undefined ? String(b.objectId) : undefined,
-      }));
-    }
+    requestBody.prompts = parsedInput.prompts;
 
     const raw = await this.requestApi({
       path: "/jobs",

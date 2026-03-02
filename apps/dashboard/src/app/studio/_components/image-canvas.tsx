@@ -2,32 +2,28 @@
 
 import { useRef, useState } from "react";
 
-type AnnotationCanvasProps = {
+import type { BoxCoordinates, CanvasMask } from "./studio-canvas-types";
+
+type ImageCanvasProps = {
   src: string;
   alt?: string;
   readOnly?: boolean;
-  mode: "box" | "point";
-  boxes: number[][];
-  points: number[][];
-  onBoxAdded?: (box: number[]) => void;
-  onPointAdded?: (point: number[]) => void;
-  masks?: { key: string; url: string }[];
+  boxes: BoxCoordinates[];
+  masks?: CanvasMask[];
+  onBoxAdded?: (box: BoxCoordinates) => void;
 };
 
-export function AnnotationCanvas({
+export function ImageCanvas({
   src,
   alt = "Preview",
   readOnly = false,
-  mode,
   boxes,
-  points,
-  onBoxAdded,
-  onPointAdded,
   masks,
-}: AnnotationCanvasProps) {
+  onBoxAdded,
+}: ImageCanvasProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
-  const [currentBox, setCurrentBox] = useState<number[] | null>(null);
+  const [currentBox, setCurrentBox] = useState<BoxCoordinates | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
   function getCoords(e: React.MouseEvent<HTMLDivElement>): [number, number] | null {
@@ -45,24 +41,19 @@ export function AnnotationCanvas({
     const coords = getCoords(e);
     if (!coords) return;
 
-    if (mode === "point") {
-      onPointAdded?.(coords);
-      return;
-    }
-
     setIsDrawing(true);
     setCurrentBox([coords[0], coords[1], coords[0], coords[1]]);
   }
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-    if (mode !== "box" || !isDrawing || !currentBox) return;
+    if (!isDrawing || !currentBox) return;
     const coords = getCoords(e);
     if (!coords) return;
     setCurrentBox([currentBox[0], currentBox[1], coords[0], coords[1]]);
   }
 
   function handleMouseUp() {
-    if (mode !== "box" || !isDrawing || !currentBox) return;
+    if (!isDrawing || !currentBox) return;
     setIsDrawing(false);
     const x1 = Math.min(currentBox[0], currentBox[2]);
     const y1 = Math.min(currentBox[1], currentBox[3]);
@@ -74,7 +65,7 @@ export function AnnotationCanvas({
     setCurrentBox(null);
   }
 
-  function renderBox(box: number[], key: string, isDraft = false) {
+  function renderBox(box: BoxCoordinates, key: string, isDraft = false) {
     if (!dims) return null;
     const x1 = Math.min(box[0], box[2]);
     const y1 = Math.min(box[1], box[3]);
@@ -94,20 +85,6 @@ export function AnnotationCanvas({
     );
   }
 
-  function renderPoint(pt: number[], key: string) {
-    if (!dims) return null;
-    return (
-      <div
-        key={key}
-        className="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-emerald-500 shadow-sm pointer-events-none"
-        style={{
-          left: `${(pt[0] / dims.w) * 100}%`,
-          top: `${(pt[1] / dims.h) * 100}%`,
-        }}
-      />
-    );
-  }
-
   return (
     <div
       className={`relative overflow-hidden rounded-lg border border-border/60 select-none ${!readOnly ? "cursor-crosshair" : ""}`}
@@ -122,7 +99,12 @@ export function AnnotationCanvas({
         alt={alt}
         className="h-auto w-full pointer-events-none"
         draggable={false}
-        onLoad={(e) => setDims({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+        onLoad={(event) => {
+          setDims({
+            w: event.currentTarget.naturalWidth,
+            h: event.currentTarget.naturalHeight,
+          });
+        }}
       />
 
       {masks?.map((mask, index) => (
@@ -136,7 +118,6 @@ export function AnnotationCanvas({
 
       {!readOnly && boxes.map((box, index) => renderBox(box, `box-${index}`))}
       {!readOnly && currentBox && renderBox(currentBox, "current-box", true)}
-      {!readOnly && points.map((pt, index) => renderPoint(pt, `point-${index}`))}
     </div>
   );
 }

@@ -145,64 +145,17 @@ export const uploadAndCreateJobRequestSchema: z.ZodMiniType<UploadAndCreateJobRe
 
 // --- Video request schemas ---
 
-const segmentVideoPointSchema = z.object({
-  coordinates: z.tuple([finiteNumber, finiteNumber]),
-  isPositive: z.boolean(),
-  objectId: z.optional(z.union([finiteNumber, nonEmptyString])),
+const segmentVideoPromptsSchema = z.object({
+  prompts: promptsSchema.check(
+    z.refine((value) => value.length >= 1, "Expected at least 1 prompt."),
+  ),
+  points: z.optional(z.never("Field `points` is not supported for video segmentation.")),
+  boxes: z.optional(z.never("Field `boxes` is not supported for video segmentation.")),
+  text: z.optional(z.never("Field `text` is not supported for video segmentation.")),
+  pointLabels: z.optional(z.never("Field `pointLabels` is not supported for video segmentation.")),
+  pointObjectIds: z.optional(z.never("Field `pointObjectIds` is not supported for video segmentation.")),
+  boxObjectIds: z.optional(z.never("Field `boxObjectIds` is not supported for video segmentation.")),
 });
-
-const segmentVideoBoxSchema = z.object({
-  coordinates: z.tuple([
-    finiteNumber,
-    finiteNumber,
-    finiteNumber,
-    finiteNumber,
-  ]),
-  isPositive: z.boolean(),
-  objectId: z.optional(z.union([finiteNumber, nonEmptyString])),
-});
-
-const segmentVideoPointsPromptSchema = z
-  .object({
-    points: z
-      .array(segmentVideoPointSchema)
-      .check(
-        z.refine((value) => value.length >= 1, "Expected at least 1 point prompt."),
-      ),
-    boxes: z.optional(
-      z.never("Provide exactly one visual prompt mode: `points` or `boxes`."),
-    ),
-    pointLabels: z.optional(
-      z.never("Use inline point objects with `isPositive` and optional `objectId`."),
-    ),
-    pointObjectIds: z.optional(
-      z.never("Use inline point objects with `isPositive` and optional `objectId`."),
-    ),
-    boxObjectIds: z.optional(
-      z.never("Provide exactly one visual prompt mode: `points` or `boxes`."),
-    ),
-  });
-
-const segmentVideoBoxesPromptSchema = z
-  .object({
-    boxes: z
-      .array(segmentVideoBoxSchema)
-      .check(
-        z.refine((value) => value.length >= 1, "Expected at least 1 box prompt."),
-      ),
-    boxObjectIds: z.optional(
-      z.never("Use inline box objects with `isPositive` and optional `objectId`."),
-    ),
-    points: z.optional(
-      z.never("Provide exactly one visual prompt mode: `points` or `boxes`."),
-    ),
-    pointLabels: z.optional(
-      z.never("Provide exactly one visual prompt mode: `points` or `boxes`."),
-    ),
-    pointObjectIds: z.optional(
-      z.never("Provide exactly one visual prompt mode: `points` or `boxes`."),
-    ),
-  });
 
 const segmentVideoSamplingByFpsSchema = z.object({
   fps: finiteNumber.check(
@@ -235,7 +188,6 @@ const segmentVideoBaseSchema = z.object({
   file: binaryDataSchema,
   maxFrames: z.optional(finiteInteger),
   frameIdx: z.optional(finiteInteger),
-  text: z.optional(z.never("Field `text` is not supported for video segmentation.")),
   signal: abortSignalSchema,
 });
 
@@ -243,7 +195,7 @@ export const segmentVideoRequestSchema: z.ZodMiniType<SegmentVideoRequest> = z
   .intersection(
     segmentVideoBaseSchema,
     z.intersection(
-      z.union([segmentVideoPointsPromptSchema, segmentVideoBoxesPromptSchema]),
+      segmentVideoPromptsSchema,
       z.union([
         segmentVideoSamplingByFpsSchema,
         segmentVideoSamplingByFrameCountSchema,

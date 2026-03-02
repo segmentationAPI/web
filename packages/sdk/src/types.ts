@@ -21,30 +21,8 @@ export interface CreatePresignedUploadRequest {
   signal?: AbortSignal;
 }
 
-export type SegmentVideoPoint = [number, number];
-export type SegmentVideoBox = [number, number, number, number];
-export type SegmentVideoObjectId = number | string;
-
-export interface SegmentVideoPointPrompt {
-  coordinates: SegmentVideoPoint;
-  isPositive: boolean;
-  objectId?: SegmentVideoObjectId;
-}
-
-export interface SegmentVideoBoxPrompt {
-  coordinates: SegmentVideoBox;
-  isPositive: boolean;
-  objectId?: SegmentVideoObjectId;
-}
-
-export type SegmentVideoPointsPrompt = {
-  points: SegmentVideoPointPrompt[];
-  boxes?: never;
-};
-
-export type SegmentVideoBoxesPrompt = {
-  boxes: SegmentVideoBoxPrompt[];
-  points?: never;
+export type SegmentVideoPrompts = {
+  prompts: string[];
 };
 
 export type SegmentVideoSamplingByFps = {
@@ -62,7 +40,7 @@ export type SegmentVideoSamplingDefault = {
   numFrames?: never;
 };
 
-export type SegmentVideoRequest = (SegmentVideoPointsPrompt | SegmentVideoBoxesPrompt) &
+export type SegmentVideoRequest = SegmentVideoPrompts &
   (SegmentVideoSamplingByFps | SegmentVideoSamplingByFrameCount | SegmentVideoSamplingDefault) & {
     file: BinaryData;
     maxFrames?: number;
@@ -170,6 +148,8 @@ export interface MaskArtifactResult {
   score: number | null;
   box: [number, number, number, number] | null;
 }
+
+export type VideoFrameMaskMap = Record<number, MaskArtifactResult[]>;
 
 export interface VideoOutputRaw {
   requestId: string;
