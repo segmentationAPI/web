@@ -194,7 +194,6 @@ export interface VideoOutputRaw {
   completedAt: string;
   input: any;
   counts: any;
-  output: string;
   summary: any;
 }
 

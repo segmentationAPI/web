@@ -197,7 +197,7 @@ describe("mask artifact helpers", () => {
     expect(normalized).toEqual({});
   });
 
-  it("loads and normalizes frame masks from frames.ndjson.gz urls", async () => {
+  it("loads and normalizes frame masks using computed frames.ndjson.gz url", async () => {
     const ndjson = [
       JSON.stringify({
         frameIdx: 0,
@@ -226,9 +226,7 @@ describe("mask artifact helpers", () => {
     });
 
     const normalized = await loadVideoFrameMasks(
-      {
-        output: "https://assets.segmentationapi.com/outputs/user-a/job-1/task-9/frames.ndjson.gz",
-      },
+      {},
       {
         userId: "user-a",
         jobId: "job-1",
@@ -238,6 +236,13 @@ describe("mask artifact helpers", () => {
     );
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://assets.segmentationapi.com/outputs/user-a/job-1/task-9/frames.ndjson.gz",
+      {
+        method: "GET",
+        signal: undefined,
+      },
+    );
     expect(normalized[0]).toEqual([
       {
         maskIndex: 2,

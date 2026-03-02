@@ -159,6 +159,13 @@ export function buildMaskArtifactUrl(key: string): string {
   return `${ASSETS_BASE_URL}/${key.replace(/^\/+/, "")}`;
 }
 
+function buildVideoFrameMasksUrl(context: MaskArtifactContext): string {
+  const account = context.userId.trim().replace(/^\/+|\/+$/g, "");
+  const job = context.jobId.trim().replace(/^\/+|\/+$/g, "");
+  const task = context.taskId.trim().replace(/^\/+|\/+$/g, "");
+  return `${ASSETS_BASE_URL}/outputs/${account}/${job}/${task}/frames.ndjson.gz`;
+}
+
 export function normalizeMaskArtifacts(
   result: unknown,
   context: MaskArtifactContext,
@@ -267,31 +274,7 @@ function resolveVideoFrameMasksUrl(result: unknown): string | null {
     return typedResult.frames_url.trim();
   }
 
-  const rawOutput = typedResult.output;
-  if (typeof rawOutput === "string") {
-    const value = rawOutput.trim();
-    return isLikelyHttpUrl(value) ? value : null;
-  }
-
-  if (!rawOutput || typeof rawOutput !== "object") {
-    return null;
-  }
-
-  const output = rawOutput as Record<string, unknown>;
-  const outputUrl =
-    typeof output.framesNdjsonUrl === "string"
-      ? output.framesNdjsonUrl
-      : typeof output.frames_ndjson_url === "string"
-        ? output.frames_ndjson_url
-        : typeof output.framesUrl === "string"
-          ? output.framesUrl
-          : typeof output.frames_url === "string"
-            ? output.frames_url
-            : typeof output.url === "string"
-              ? output.url
-              : null;
-
-  return outputUrl?.trim() ?? null;
+  return null;
 }
 
 async function decompressGzipText(content: ArrayBuffer): Promise<string> {
@@ -330,10 +313,7 @@ export async function loadVideoFrameMasks(
     return inlineMasks;
   }
 
-  const framesUrl = resolveVideoFrameMasksUrl(result);
-  if (!framesUrl) {
-    return {};
-  }
+  const framesUrl = resolveVideoFrameMasksUrl(result) ?? buildVideoFrameMasksUrl(context);
 
   try {
     const fetchImpl = getFetchImplementation(options?.fetch);
