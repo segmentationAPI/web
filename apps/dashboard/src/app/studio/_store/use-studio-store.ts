@@ -3,13 +3,11 @@ import {
   JobTaskStatus,
   SegmentationClient,
   buildOutputManifestUrl,
-  loadVideoMaskTimeline,
   normalizeMaskArtifacts,
   resolveManifestResultForTask,
   resolveOutputFolder,
   type JobStatusResult,
   type MaskArtifactResult,
-  type VideoMaskTimeline,
 } from "@segmentationapi/sdk";
 
 import { authClient } from "@/lib/auth-client";
@@ -17,7 +15,6 @@ import { authClient } from "@/lib/auth-client";
 import type { BoxCoordinates } from "../_components/studio-canvas-types";
 import { parseVideoSourceFps } from "../_lib/video-fps-parser";
 import {
-  DEFAULT_VIDEO_EXCLUSIVE_MODE,
   DEFAULT_VIDEO_SAMPLING_FPS,
   FileKind,
   StudioRunMode,
@@ -27,12 +24,9 @@ import {
   selectFileKind,
   selectHasValidVideoSamplingFps,
   selectImageFiles,
-  selectResolvedVideoExclusiveMode,
-  selectVideoOutputModeForExclusiveMode,
   selectVideoFpsRange,
   type PromptRow,
   type StudioSelectorState,
-  type VideoExclusiveMode,
 } from "./studio-selectors";
 
 type UploadProgress = { done: number; total: number };
@@ -40,7 +34,6 @@ type UploadProgress = { done: number; total: number };
 type LoadedMaskEntry = {
   taskId: string;
   masks: MaskArtifactResult[];
-  timeline: VideoMaskTimeline;
   bakedVideoUrl: string | null;
 };
 
@@ -65,7 +58,6 @@ type StudioActions = {
   clearBoxes: () => void;
   setBatchCarouselIndex: (index: number) => void;
   setVideoSamplingFps: (fps: number) => void;
-  setVideoExclusiveMode: (mode: VideoExclusiveMode) => void;
   resetStudio: () => void;
   refreshJobStatus: (jobIdOverride?: string, silent?: boolean) => Promise<void>;
   runJob: () => Promise<void>;
@@ -101,7 +93,6 @@ function createInitialState(userId = ""): StudioState {
     uploadProgress: INITIAL_UPLOAD_PROGRESS,
     jobStatus: null,
     taskMasksByTaskId: {},
-    videoTimelineByTaskId: {},
     videoBakedUrlByTaskId: {},
     statusRefreshing: false,
     batchCarouselIndex: 0,
@@ -154,7 +145,6 @@ async function loadMaskEntries(status: JobStatusResult, userId: string): Promise
   const fallbackEntries: LoadedMaskEntry[] = taskIds.map((taskId) => ({
     taskId,
     masks: [],
-    timeline: { frames: [] },
     bakedVideoUrl: null,
   }));
   if (!userId) {
@@ -182,7 +172,6 @@ async function loadMaskEntries(status: JobStatusResult, userId: string): Promise
         return {
           taskId,
           masks: normalizeMaskArtifacts(taskResult, context),
-          timeline: await loadVideoMaskTimeline(taskResult, context),
           bakedVideoUrl: resolveBakedVideoUrl(taskResult),
         };
       }),
@@ -245,7 +234,6 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
         ? {
             mode: StudioRunMode.Idle as const,
             videoSamplingFps: DEFAULT_VIDEO_SAMPLING_FPS,
-            videoExclusiveMode: DEFAULT_VIDEO_EXCLUSIVE_MODE,
           }
         : { mode: StudioRunMode.Idle as const };
 
@@ -262,7 +250,6 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       uploadProgress: INITIAL_UPLOAD_PROGRESS,
       jobStatus: null,
       taskMasksByTaskId: {},
-      videoTimelineByTaskId: {},
       videoBakedUrlByTaskId: {},
       batchCarouselIndex: 0,
       statusRefreshing: false,
@@ -298,8 +285,6 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
           runState: {
             ...state.runState,
             videoSamplingFps: nextFps,
-            videoExclusiveMode:
-              state.runState.videoExclusiveMode ?? DEFAULT_VIDEO_EXCLUSIVE_MODE,
           },
         };
       });
@@ -316,7 +301,6 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
         runState: {
           mode: StudioRunMode.Idle,
           videoSamplingFps: 1,
-          videoExclusiveMode: DEFAULT_VIDEO_EXCLUSIVE_MODE,
         },
       });
     }
@@ -376,15 +360,6 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     }));
   },
 
-  setVideoExclusiveMode: (mode) => {
-    set((state) => ({
-      runState: {
-        ...state.runState,
-        videoExclusiveMode: mode,
-      },
-    }));
-  },
-
   resetStudio: () => {
     const userId = get().userId;
     const apiKey = get().apiKey;
@@ -415,18 +390,15 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       if (loadedMasks.length > 0) {
         set((state) => {
           const nextMasks = { ...state.taskMasksByTaskId };
-          const nextTimelines = { ...state.videoTimelineByTaskId };
           const nextBakedUrls = { ...state.videoBakedUrlByTaskId };
 
           for (const entry of loadedMasks) {
             nextMasks[entry.taskId] = entry.masks;
-            nextTimelines[entry.taskId] = entry.timeline;
             nextBakedUrls[entry.taskId] = entry.bakedVideoUrl;
           }
 
           return {
             taskMasksByTaskId: nextMasks,
-            videoTimelineByTaskId: nextTimelines,
             videoBakedUrlByTaskId: nextBakedUrls,
           };
         });
@@ -461,8 +433,6 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     const fileKind = selectFileKind(state);
     const cleanPrompts = selectCleanPrompts(state);
     const selectedVideoFps = state.runState.videoSamplingFps ?? DEFAULT_VIDEO_SAMPLING_FPS;
-    const selectedVideoExclusiveMode = selectResolvedVideoExclusiveMode({ runState: state.runState });
-    const selectedVideoOutputMode = selectVideoOutputModeForExclusiveMode(selectedVideoExclusiveMode);
 
     set({
       runError: null,
@@ -474,14 +444,12 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
         ...(fileKind === FileKind.Video
           ? {
               videoSamplingFps: selectedVideoFps,
-              videoExclusiveMode: selectedVideoExclusiveMode,
             }
           : {}),
       },
       uploadProgress: INITIAL_UPLOAD_PROGRESS,
       jobStatus: null,
       taskMasksByTaskId: {},
-      videoTimelineByTaskId: {},
       videoBakedUrlByTaskId: {},
       batchCarouselIndex: 0,
     });
@@ -510,7 +478,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
           frameIdx: 0,
           fps: selectedVideoFps,
           prompts: cleanPrompts,
-          videoOutputMode: selectedVideoOutputMode,
+          videoOutputMode: "frames_and_video",
         });
       } else {
         accepted = await client.uploadAndCreateJob(
@@ -545,7 +513,6 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
           ...(fileKind === FileKind.Video
             ? {
                 videoSamplingFps: selectedVideoFps,
-                videoExclusiveMode: selectedVideoExclusiveMode,
               }
             : {}),
         },

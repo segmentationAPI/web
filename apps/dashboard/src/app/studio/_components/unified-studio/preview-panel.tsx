@@ -1,6 +1,5 @@
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
-import type { MaskArtifactResult, VideoMaskTimeline } from "@segmentationapi/sdk";
-import dynamic from "next/dynamic";
+import type { MaskArtifactResult } from "@segmentationapi/sdk";
 import NextImage from "next/image";
 
 import { Button } from "@/components/ui/button";
@@ -12,23 +11,10 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 
-import { type VideoExclusiveMode } from "../../_store/studio-selectors";
 import type { BoxCoordinates } from "../studio-canvas-types";
 import { ImageCanvas } from "../image-canvas";
 import { SectionLabel } from "./studio-ui-primitives";
 import { useStudioPreviewViewModel } from "./use-studio-view-model";
-
-const VideoCanvas = dynamic(
-  () => import("../video-canvas").then((module) => module.VideoCanvas),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-56 items-center justify-center rounded-lg border border-border/40 bg-muted/10 text-xs text-muted-foreground">
-        Loading video preview...
-      </div>
-    ),
-  },
-);
 
 function EmptyPreview() {
   return (
@@ -189,49 +175,32 @@ function BatchImagePreview({
 }
 
 type VideoPreviewProps = {
-  videoPreviewUrl: string;
   isRunning: boolean;
-  resolvedVideoExclusiveMode: VideoExclusiveMode;
-  activeVideoTimeline: VideoMaskTimeline;
   activeVideoBakedUrl: string | null;
 };
 
 function VideoPreview({
-  videoPreviewUrl,
   isRunning,
-  resolvedVideoExclusiveMode,
-  activeVideoTimeline,
   activeVideoBakedUrl,
 }: VideoPreviewProps) {
-  if (resolvedVideoExclusiveMode === "baked_only") {
-    if (activeVideoBakedUrl) {
-      return (
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
-          <div className="overflow-hidden rounded-lg border border-border/40 bg-background/30">
-            <video src={activeVideoBakedUrl} controls className="max-h-full w-full object-contain" />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Backend-baked video playback.
-          </p>
-        </div>
-      );
-    }
-
+  if (activeVideoBakedUrl) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-border/40 bg-muted/10 p-4 text-center text-xs text-muted-foreground">
-        {isRunning
-          ? "Generating baked video on the backend..."
-          : "Baked video is unavailable for this job."}
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="overflow-hidden rounded-lg border border-border/40 bg-background/30">
+          <video src={activeVideoBakedUrl} controls className="max-h-full w-full object-contain" />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Backend-baked video playback.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <VideoCanvas src={videoPreviewUrl} timeline={activeVideoTimeline} />
-      {isRunning ? (
-        <p className="text-xs text-muted-foreground">Frame inspector mode (frames.ndjson).</p>
-      ) : null}
+    <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-border/40 bg-muted/10 p-4 text-center text-xs text-muted-foreground">
+      {isRunning
+        ? "Generating baked video on the backend..."
+        : "Baked video is unavailable for this job."}
     </div>
   );
 }
@@ -248,10 +217,8 @@ export function PreviewPanel() {
     activeBatchItem,
     activeBatchMasks,
     batchImageUrl,
-    activeVideoTimeline,
     activeVideoBakedUrl,
     singleImageMasks,
-    resolvedVideoExclusiveMode,
     firstImagePreviewUrl,
     isRunning,
     onBoxAdded,
@@ -319,10 +286,7 @@ export function PreviewPanel() {
 
         {viewMode === "video" && videoPreviewUrl ? (
           <VideoPreview
-            videoPreviewUrl={videoPreviewUrl}
             isRunning={isRunning}
-            resolvedVideoExclusiveMode={resolvedVideoExclusiveMode}
-            activeVideoTimeline={activeVideoTimeline}
             activeVideoBakedUrl={activeVideoBakedUrl}
           />
         ) : null}

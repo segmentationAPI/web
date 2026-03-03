@@ -9,7 +9,6 @@ import {
   formatStatus,
   selectActiveBatchItem,
   selectActiveVideoBakedUrl,
-  selectActiveVideoTimeline,
   selectBatchImageUrl,
   selectCanRefresh,
   selectCanRun,
@@ -22,7 +21,6 @@ import {
   selectImageFiles,
   selectJobStatusTone,
   selectProgressText,
-  selectResolvedVideoExclusiveMode,
   selectSingleImageMasks,
   selectStatusSummaryLine,
   selectStudioViewMode,
@@ -116,7 +114,6 @@ export function useStudioControlsViewModel() {
     updatePromptRow,
     removePromptRow,
     setVideoSamplingFps,
-    setVideoExclusiveMode,
     setHasAttemptedEmptyPromptSubmit,
   } = useStudioStore(
     useShallow((state) => ({
@@ -133,7 +130,6 @@ export function useStudioControlsViewModel() {
       updatePromptRow: state.updatePromptRow,
       removePromptRow: state.removePromptRow,
       setVideoSamplingFps: state.setVideoSamplingFps,
-      setVideoExclusiveMode: state.setVideoExclusiveMode,
       setHasAttemptedEmptyPromptSubmit: state.setHasAttemptedEmptyPromptSubmit,
     })),
   );
@@ -150,7 +146,6 @@ export function useStudioControlsViewModel() {
   const cleanPromptCount = selectCleanPromptCount({ promptRows });
   const hasPromptParityIssue = boxes.length > 0 && cleanPromptCount !== boxes.length;
   const videoFpsRange = selectVideoFpsRange({ videoSourceFps, runState });
-  const videoExclusiveMode = selectResolvedVideoExclusiveMode({ runState });
 
   const videoFpsStatusText =
     videoFpsParseState === "parsing"
@@ -215,7 +210,6 @@ export function useStudioControlsViewModel() {
     videoFpsParseError,
     videoFpsRange,
     videoFpsStatusText,
-    videoExclusiveMode,
     showVideoControls: fileKind === FileKind.Video,
     onPromptChange,
     onAddPromptRow,
@@ -223,7 +217,6 @@ export function useStudioControlsViewModel() {
     onFileSelection,
     onRemoveFile,
     onSetVideoSamplingFps: setVideoSamplingFps,
-    onSetVideoExclusiveMode: setVideoExclusiveMode,
   };
 }
 
@@ -234,7 +227,6 @@ export function useStudioPreviewViewModel() {
     runState,
     jobStatus,
     taskMasksByTaskId,
-    videoTimelineByTaskId,
     videoBakedUrlByTaskId,
     batchCarouselIndex,
     addBox,
@@ -247,7 +239,6 @@ export function useStudioPreviewViewModel() {
       runState: state.runState,
       jobStatus: state.jobStatus,
       taskMasksByTaskId: state.taskMasksByTaskId,
-      videoTimelineByTaskId: state.videoTimelineByTaskId,
       videoBakedUrlByTaskId: state.videoBakedUrlByTaskId,
       batchCarouselIndex: state.batchCarouselIndex,
       addBox: state.addBox,
@@ -265,10 +256,8 @@ export function useStudioPreviewViewModel() {
   const carouselIndex = selectCarouselIndex({ jobStatus }, batchCarouselIndex);
   const activeBatchItem = selectActiveBatchItem({ jobStatus }, batchCarouselIndex);
   const batchImageUrl = selectBatchImageUrl(imagePreviewUrls, carouselIndex);
-  const activeVideoTimeline = selectActiveVideoTimeline({ jobStatus, videoTimelineByTaskId });
   const activeVideoBakedUrl = selectActiveVideoBakedUrl({ jobStatus, videoBakedUrlByTaskId });
   const singleImageMasks = selectSingleImageMasks({ runState, jobStatus, taskMasksByTaskId }, imageFiles);
-  const resolvedVideoExclusiveMode = selectResolvedVideoExclusiveMode({ runState });
   const firstImagePreviewUrl = selectFirstImagePreviewUrl(imagePreviewUrls);
   const activeBatchMasks = activeBatchItem
     ? (taskMasksByTaskId[activeBatchItem.taskId] ?? [])
@@ -286,10 +275,8 @@ export function useStudioPreviewViewModel() {
     activeBatchItem,
     activeBatchMasks,
     batchImageUrl,
-    activeVideoTimeline,
     activeVideoBakedUrl,
     singleImageMasks,
-    resolvedVideoExclusiveMode,
     firstImagePreviewUrl,
     isRunning,
     onBoxAdded: addBox,

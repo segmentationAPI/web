@@ -4,17 +4,11 @@ import {
   type JobStatusResult,
   type JobType,
   type MaskArtifactResult,
-  type VideoOutputMode,
-  type VideoMaskTimeline,
 } from "@segmentationapi/sdk";
 
 import type { BoxCoordinates } from "../_components/studio-canvas-types";
 
-const EMPTY_VIDEO_TIMELINE: VideoMaskTimeline = { frames: [] };
 export const DEFAULT_VIDEO_SAMPLING_FPS = 2;
-export const VIDEO_EXCLUSIVE_MODES = ["baked_only", "frame_inspector_only"] as const;
-export type VideoExclusiveMode = (typeof VIDEO_EXCLUSIVE_MODES)[number];
-export const DEFAULT_VIDEO_EXCLUSIVE_MODE: VideoExclusiveMode = "baked_only";
 
 export type PromptRow = {
   id: string;
@@ -50,11 +44,9 @@ export type StudioSelectorState = {
     selectedType?: JobType;
     jobId?: string;
     videoSamplingFps?: number;
-    videoExclusiveMode?: VideoExclusiveMode;
   };
   jobStatus: JobStatusResult | null;
   taskMasksByTaskId: Record<string, MaskArtifactResult[]>;
-  videoTimelineByTaskId: Record<string, VideoMaskTimeline>;
   videoBakedUrlByTaskId: Record<string, string | null>;
 };
 
@@ -146,21 +138,6 @@ export function selectHasValidVideoSamplingFps(
   return Number(samplingFps) <= maxSourceFps;
 }
 
-export function selectResolvedVideoExclusiveMode(
-  state: Pick<StudioSelectorState, "runState">,
-): VideoExclusiveMode {
-  const mode = state.runState.videoExclusiveMode;
-  if (!mode || !VIDEO_EXCLUSIVE_MODES.includes(mode)) {
-    return DEFAULT_VIDEO_EXCLUSIVE_MODE;
-  }
-
-  return mode;
-}
-
-export function selectVideoOutputModeForExclusiveMode(mode: VideoExclusiveMode): VideoOutputMode {
-  return mode === "baked_only" ? "frames_and_video" : "frames_only";
-}
-
 export function isTerminalJobStatus(status: JobStatusResult["status"] | undefined) {
   return (
     status === JobRequestStatus.Completed ||
@@ -244,17 +221,6 @@ export function selectActiveVideoItemTaskId(state: Pick<StudioSelectorState, "jo
     state.jobStatus?.items?.[0]?.taskId ??
     null
   );
-}
-
-export function selectActiveVideoTimeline(
-  state: Pick<StudioSelectorState, "jobStatus" | "videoTimelineByTaskId">,
-) {
-  const activeVideoItemTaskId = selectActiveVideoItemTaskId(state);
-  if (!activeVideoItemTaskId) {
-    return EMPTY_VIDEO_TIMELINE;
-  }
-
-  return state.videoTimelineByTaskId[activeVideoItemTaskId] ?? EMPTY_VIDEO_TIMELINE;
 }
 
 export function selectActiveVideoBakedUrl(

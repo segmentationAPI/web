@@ -6,7 +6,6 @@ import { DeleteIconButton } from "@/components/ui/delete-icon-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 
 import { ErrorBanner, SectionDivider, SectionLabel } from "./studio-ui-primitives";
 import { useStudioControlsViewModel } from "./use-studio-view-model";
@@ -28,14 +27,12 @@ export function ControlsPanel() {
     videoFpsParseError,
     videoFpsRange,
     videoFpsStatusText,
-    videoExclusiveMode,
     onPromptChange,
     onAddPromptRow,
     onRemovePromptRow,
     onFileSelection,
     onRemoveFile,
     onSetVideoSamplingFps,
-    onSetVideoExclusiveMode,
   } = useStudioControlsViewModel();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -246,20 +243,6 @@ export function ControlsPanel() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/15 px-3 py-2.5">
-              <div>
-                <p className="text-xs font-medium text-foreground/85">Embed masks into video</p>
-              </div>
-
-              <Switch
-                aria-label="Toggle embed masks into video mode"
-                checked={videoExclusiveMode === "baked_only"}
-                disabled={isRunning}
-                onCheckedChange={(checked) => {
-                  onSetVideoExclusiveMode(checked ? "baked_only" : "frame_inspector_only");
-                }}
-              />
-            </div>
           </div>
         </>
       ) : null}
