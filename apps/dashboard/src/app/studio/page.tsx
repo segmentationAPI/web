@@ -16,7 +16,7 @@ async function StudioProtectedContent() {
 
 function StudioLoading() {
   return (
-    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-4 px-3 pb-8 pt-3 sm:gap-5 sm:px-6 sm:pb-10 sm:pt-4">
+    <main className="mx-auto flex h-[calc(100svh-61px)] min-h-[calc(100svh-61px)] w-full max-w-[1320px] flex-col overflow-hidden box-border px-3 py-3 sm:px-6 sm:py-4">
       <div className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 p-6">
         <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
           Loading studio...

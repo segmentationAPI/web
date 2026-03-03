@@ -1,23 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { decodeCocoRleMask, type MaskArtifactResult, type VideoMaskTimeline } from "@segmentationapi/sdk";
 import NextImage from "next/image";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { type VideoPreviewMode } from "../_store/studio-selectors";
 
 type VideoCanvasProps = {
   src: string;
   timeline: VideoMaskTimeline;
-  mode: VideoPreviewMode;
 };
 
 const MASK_ALPHA = 110;
 const MASK_IMAGE_ALPHA = 0.62;
 const THUMBNAIL_WIDTH = 220;
 const INSPECTOR_WIDTH = 960;
-export const TIMELINE_MATCH_EPSILON_SECONDS = 1 / 300;
 
 const MASK_COLORS: Array<[number, number, number]> = [
   [56, 189, 248],
@@ -31,6 +28,8 @@ type FrameEntry = {
   sampleIdx: number;
   timeSeconds: number;
   masks: MaskArtifactResult[];
+  rasterMasks: MaskArtifactResult[];
+  imageMasks: MaskArtifactResult[];
 };
 
 function splitMasks(masks: MaskArtifactResult[]) {
@@ -62,14 +61,20 @@ function drawRasterMasksToCanvas(
   sampleIdx: number,
   masks: MaskArtifactResult[],
   decodedRleCacheRef: MutableRefObject<Map<string, ReturnType<typeof decodeCocoRleMask>>>,
-  rasterOverlayCanvasRef: MutableRefObject<HTMLCanvasElement | null>,
+  renderedRasterMaskCacheRef: MutableRefObject<Map<string, HTMLCanvasElement>>,
 ) {
   if (masks.length === 0) {
     return;
   }
 
-  const overlayCanvas = rasterOverlayCanvasRef.current ?? document.createElement("canvas");
-  rasterOverlayCanvasRef.current = overlayCanvas;
+  const renderedMaskKey = `${sampleIdx}:${width}x${height}`;
+  const cachedMaskCanvas = renderedRasterMaskCacheRef.current.get(renderedMaskKey);
+  if (cachedMaskCanvas) {
+    context.drawImage(cachedMaskCanvas, 0, 0, width, height);
+    return;
+  }
+
+  const overlayCanvas = document.createElement("canvas");
   ensureCanvasSize(overlayCanvas, width, height);
 
   const overlayContext = overlayCanvas.getContext("2d");
@@ -116,6 +121,7 @@ function drawRasterMasksToCanvas(
   }
 
   overlayContext.putImageData(imageData, 0, 0);
+  renderedRasterMaskCacheRef.current.set(renderedMaskKey, overlayCanvas);
   context.drawImage(overlayCanvas, 0, 0, width, height);
 }
 
@@ -198,7 +204,7 @@ function loadImage(
   return promise;
 }
 
-async function drawImageMasksToCanvas(
+function drawImageMasksToCanvas(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
@@ -210,39 +216,27 @@ async function drawImageMasksToCanvas(
     return;
   }
 
-  const loadedMasks = await Promise.allSettled(
-    masks.map((mask) =>
-      loadImage(mask.url, imageCacheRef, loadingImagePromisesRef).then((image) => ({ image })),
-    ),
-  );
-
   context.save();
   context.globalAlpha = MASK_IMAGE_ALPHA;
   context.globalCompositeOperation = "screen";
 
-  for (const loadedMask of loadedMasks) {
-    if (loadedMask.status !== "fulfilled") {
+  for (const mask of masks) {
+    const cachedMaskImage = imageCacheRef.current.get(mask.url);
+    if (cachedMaskImage) {
+      context.drawImage(cachedMaskImage, 0, 0, width, height);
       continue;
     }
 
-    const { image } = loadedMask.value;
-    context.drawImage(image, 0, 0, width, height);
+    if (loadingImagePromisesRef.current.has(mask.url)) {
+      continue;
+    }
+
+    void loadImage(mask.url, imageCacheRef, loadingImagePromisesRef).catch(() => {
+      // Ignore individual mask image load failures and continue rendering the rest.
+    });
   }
 
   context.restore();
-}
-
-function findExactTimelineFrame(
-  frames: FrameEntry[],
-  timeSeconds: number,
-  epsilonSeconds = TIMELINE_MATCH_EPSILON_SECONDS,
-): FrameEntry | null {
-  for (const frame of frames) {
-    if (Math.abs(frame.timeSeconds - timeSeconds) <= epsilonSeconds) {
-      return frame;
-    }
-  }
-  return null;
 }
 
 async function renderCompositedFrameToCanvas({
@@ -250,7 +244,7 @@ async function renderCompositedFrameToCanvas({
   canvas,
   entry,
   decodedRleCacheRef,
-  rasterOverlayCanvasRef,
+  renderedRasterMaskCacheRef,
   imageCacheRef,
   loadingImagePromisesRef,
 }: {
@@ -258,7 +252,7 @@ async function renderCompositedFrameToCanvas({
   canvas: HTMLCanvasElement;
   entry: FrameEntry;
   decodedRleCacheRef: MutableRefObject<Map<string, ReturnType<typeof decodeCocoRleMask>>>;
-  rasterOverlayCanvasRef: MutableRefObject<HTMLCanvasElement | null>;
+  renderedRasterMaskCacheRef: MutableRefObject<Map<string, HTMLCanvasElement>>;
   imageCacheRef: MutableRefObject<Map<string, HTMLImageElement>>;
   loadingImagePromisesRef: MutableRefObject<Map<string, Promise<HTMLImageElement>>>;
 }) {
@@ -281,36 +275,31 @@ async function renderCompositedFrameToCanvas({
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  const { rasterMasks, imageMasks } = splitMasks(entry.masks);
   drawRasterMasksToCanvas(
     context,
     canvas.width,
     canvas.height,
     entry.sampleIdx,
-    rasterMasks,
+    entry.rasterMasks,
     decodedRleCacheRef,
-    rasterOverlayCanvasRef,
+    renderedRasterMaskCacheRef,
   );
-  await drawImageMasksToCanvas(
+  drawImageMasksToCanvas(
     context,
     canvas.width,
     canvas.height,
-    imageMasks,
+    entry.imageMasks,
     imageCacheRef,
     loadingImagePromisesRef,
   );
 }
 
-export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
-  const smoothVideoRef = useRef<HTMLVideoElement | null>(null);
-  const smoothCanvasRef = useRef<HTMLCanvasElement | null>(null);
+export function VideoCanvas({ src, timeline }: VideoCanvasProps) {
   const inspectorCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const decodedRleCacheRef = useRef<Map<string, ReturnType<typeof decodeCocoRleMask>>>(new Map());
-  const rasterOverlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const renderedRasterMaskCacheRef = useRef<Map<string, HTMLCanvasElement>>(new Map());
   const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
   const loadingImagePromisesRef = useRef<Map<string, Promise<HTMLImageElement>>>(new Map());
-  const renderFrameRequestRef = useRef<number | null>(null);
-  const videoFrameCallbackHandleRef = useRef<number | null>(null);
 
   const frameEntries = useMemo<FrameEntry[]>(
     () =>
@@ -320,9 +309,11 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
           sampleIdx: frame.sampleIdx,
           timeSeconds: frame.timeSec,
           masks: frame.masks,
+          ...splitMasks(frame.masks),
         })),
     [timeline],
   );
+
   const frameEntryBySampleIdx = useMemo(
     () =>
       new Map(
@@ -330,7 +321,7 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
       ),
     [frameEntries],
   );
-  const [currentSampleIdx, setCurrentSampleIdx] = useState<number | null>(null);
+
   const [selectedSampleIdx, setSelectedSampleIdx] = useState<number | null>(null);
   const [stripThumbnails, setStripThumbnails] = useState<Record<number, string>>({});
   const [loadingStripThumbnails, setLoadingStripThumbnails] = useState(false);
@@ -338,7 +329,7 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
 
   useEffect(() => {
     decodedRleCacheRef.current.clear();
-    rasterOverlayCanvasRef.current = null;
+    renderedRasterMaskCacheRef.current.clear();
     imageCacheRef.current.clear();
     loadingImagePromisesRef.current.clear();
   }, [src, timeline]);
@@ -348,134 +339,10 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
     setSelectedSampleIdx(nextSelected);
   }, [frameEntries]);
 
-  const renderSmoothFrame = useCallback(async (mediaTime?: number) => {
-    const video = smoothVideoRef.current;
-    const canvas = smoothCanvasRef.current;
-    if (!video || !canvas) {
-      return;
-    }
-
-    const width = Math.max(1, Math.floor(video.clientWidth));
-    const height = Math.max(1, Math.floor(video.clientHeight));
-    ensureCanvasSize(canvas, width, height);
-
-    const context = canvas.getContext("2d");
-    if (!context) {
-      return;
-    }
-
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const playbackTime = typeof mediaTime === "number" && Number.isFinite(mediaTime) ? mediaTime : video.currentTime;
-    const activeEntry = findExactTimelineFrame(frameEntries, playbackTime);
-    setCurrentSampleIdx(activeEntry?.sampleIdx ?? null);
-    if (!activeEntry) {
-      return;
-    }
-
-    const { rasterMasks, imageMasks } = splitMasks(activeEntry.masks);
-
-    drawRasterMasksToCanvas(
-      context,
-      canvas.width,
-      canvas.height,
-      activeEntry.sampleIdx,
-      rasterMasks,
-      decodedRleCacheRef,
-      rasterOverlayCanvasRef,
-    );
-    await drawImageMasksToCanvas(
-      context,
-      canvas.width,
-      canvas.height,
-      imageMasks,
-      imageCacheRef,
-      loadingImagePromisesRef,
-    );
-  }, [frameEntries]);
-
   useEffect(() => {
-    if (mode !== "smooth_playback") {
-      return;
-    }
-
-    const video = smoothVideoRef.current;
-    if (!video) {
-      return;
-    }
-
-    const cancelVideoFrameLoop = () => {
-      if (typeof video.cancelVideoFrameCallback === "function" && videoFrameCallbackHandleRef.current !== null) {
-        video.cancelVideoFrameCallback(videoFrameCallbackHandleRef.current);
-        videoFrameCallbackHandleRef.current = null;
-      }
-      if (renderFrameRequestRef.current !== null) {
-        cancelAnimationFrame(renderFrameRequestRef.current);
-        renderFrameRequestRef.current = null;
-      }
-    };
-
-    const tickWithVideoFrameCallback = () => {
-      if (typeof video.requestVideoFrameCallback !== "function") {
-        return;
-      }
-
-      const onFrame: VideoFrameRequestCallback = (_now, metadata) => {
-        void renderSmoothFrame(metadata.mediaTime);
-        if (!video.paused && !video.ended) {
-          videoFrameCallbackHandleRef.current = video.requestVideoFrameCallback(onFrame);
-        }
-      };
-
-      videoFrameCallbackHandleRef.current = video.requestVideoFrameCallback(onFrame);
-    };
-
-    const tickWithAnimationFrame = () => {
-      const loop = () => {
-        void renderSmoothFrame();
-        if (!video.paused && !video.ended) {
-          renderFrameRequestRef.current = requestAnimationFrame(loop);
-        }
-      };
-      renderFrameRequestRef.current = requestAnimationFrame(loop);
-    };
-
-    const startLoop = () => {
-      cancelVideoFrameLoop();
-      if (typeof video.requestVideoFrameCallback === "function") {
-        tickWithVideoFrameCallback();
-      } else {
-        tickWithAnimationFrame();
-      }
-    };
-
-    const renderCurrentFrame = () => {
-      void renderSmoothFrame();
-    };
-
-    video.addEventListener("loadedmetadata", renderCurrentFrame);
-    video.addEventListener("seeked", renderCurrentFrame);
-    video.addEventListener("pause", renderCurrentFrame);
-    video.addEventListener("ended", renderCurrentFrame);
-    video.addEventListener("play", startLoop);
-    window.addEventListener("resize", renderCurrentFrame);
-    renderCurrentFrame();
-
-    return () => {
-      video.removeEventListener("loadedmetadata", renderCurrentFrame);
-      video.removeEventListener("seeked", renderCurrentFrame);
-      video.removeEventListener("pause", renderCurrentFrame);
-      video.removeEventListener("ended", renderCurrentFrame);
-      video.removeEventListener("play", startLoop);
-      window.removeEventListener("resize", renderCurrentFrame);
-      cancelVideoFrameLoop();
-    };
-  }, [mode, renderSmoothFrame]);
-
-  useEffect(() => {
-    if (mode !== "frame_inspector" || frameEntries.length === 0) {
+    if (frameEntries.length === 0) {
       setStripThumbnails({});
+      setLoadingStripThumbnails(false);
       return;
     }
 
@@ -520,7 +387,7 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
             canvas: thumbnailCanvas,
             entry,
             decodedRleCacheRef,
-            rasterOverlayCanvasRef,
+            renderedRasterMaskCacheRef,
             imageCacheRef,
             loadingImagePromisesRef,
           });
@@ -547,13 +414,9 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
       previewVideo.removeAttribute("src");
       previewVideo.load();
     };
-  }, [frameEntries, mode, src]);
+  }, [frameEntries, src]);
 
   useEffect(() => {
-    if (mode !== "frame_inspector") {
-      return;
-    }
-
     const canvas = inspectorCanvasRef.current;
     if (!canvas || selectedSampleIdx === null) {
       return;
@@ -603,7 +466,7 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
           canvas,
           entry: selectedEntry,
           decodedRleCacheRef,
-          rasterOverlayCanvasRef,
+          renderedRasterMaskCacheRef,
           imageCacheRef,
           loadingImagePromisesRef,
         });
@@ -624,115 +487,85 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
       previewVideo.removeAttribute("src");
       previewVideo.load();
     };
-  }, [frameEntryBySampleIdx, mode, selectedSampleIdx, src]);
-
-  const selectedFrameMaskCount =
-    selectedSampleIdx === null ? 0 : (frameEntryBySampleIdx.get(selectedSampleIdx)?.masks.length ?? 0);
-  const currentEntry = currentSampleIdx === null ? null : frameEntryBySampleIdx.get(currentSampleIdx) ?? null;
+  }, [frameEntryBySampleIdx, selectedSampleIdx, src]);
 
   return (
-    <div className="space-y-3">
-      {mode === "smooth_playback" ? (
-        <div className="space-y-2">
-          <div className="relative overflow-hidden rounded-xl border border-border/70 bg-background/80">
-            <video
-              ref={smoothVideoRef}
-              src={src}
-              controls
-              className="h-auto w-full"
-            />
-            <canvas
-              ref={smoothCanvasRef}
-              className="pointer-events-none absolute inset-0 h-full w-full"
-            />
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex min-h-0 flex-1 flex-col">
+        {selectedSampleIdx === null ? (
+          <div className="flex min-h-0 flex-1 items-center justify-center text-xs text-muted-foreground">
+            No mask frames loaded yet.
           </div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-            Smooth playback · Sample {currentEntry?.sampleIdx ?? "-"} · Loaded samples {frameEntries.length} · Masks in sample{" "}
-            {currentEntry?.masks.length ?? 0}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="rounded-xl border border-border/70 bg-background/70 p-2.5">
-            {selectedSampleIdx === null ? (
-              <div className="flex h-56 items-center justify-center text-xs text-muted-foreground">
-                No mask frames loaded yet.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="relative overflow-hidden rounded-lg border border-border/60 bg-background/80">
-                  <canvas
-                    ref={inspectorCanvasRef}
-                    className="h-auto w-full"
-                  />
-                  {loadingInspectorFrame ? (
-                    <Skeleton className="absolute inset-0 rounded-none" />
-                  ) : null}
-                </div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                  Sample {selectedSampleIdx} · Masks {selectedFrameMaskCount}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-              Mask Samples ({frameEntries.length})
-            </p>
-            {frameEntries.length === 0 ? (
-              <div className="rounded-lg border border-border/60 bg-background/50 px-3 py-5 text-xs text-muted-foreground">
-                Run the job and refresh to load mask frames.
-              </div>
-            ) : (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {frameEntries.map((entry) => {
-                  const thumbnail = stripThumbnails[entry.sampleIdx];
-                  const isSelected = entry.sampleIdx === selectedSampleIdx;
-                  return (
-                    <button
-                      key={entry.sampleIdx}
-                      type="button"
-                      onClick={() => setSelectedSampleIdx(entry.sampleIdx)}
-                      className={`group shrink-0 rounded-lg border transition-colors ${
-                        isSelected
-                          ? "border-primary/70 bg-primary/10"
-                          : "border-border/60 bg-background/60 hover:border-primary/40"
-                      }`}
-                    >
-                      <div className="relative h-24 w-40 overflow-hidden rounded-t-lg bg-muted/30">
-                        {thumbnail ? (
-                          <NextImage
-                            src={thumbnail}
-                            alt={`Sample ${entry.sampleIdx}`}
-                            width={160}
-                            height={96}
-                            unoptimized
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <Skeleton className="h-full w-full rounded-none" />
-                        )}
-                      </div>
-                      <div className="space-y-0.5 px-2 py-1.5 text-left">
-                        <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
-                          Sample {entry.sampleIdx}
-                        </p>
-                        <p className="text-[11px] text-foreground">
-                          {entry.masks.length} masks
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {loadingStripThumbnails ? (
-              <p className="text-xs text-muted-foreground">Generating frame previews...</p>
+        ) : (
+          <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl bg-background/80">
+            <div className="flex h-full w-full items-center justify-center">
+              <canvas
+                ref={inspectorCanvasRef}
+                className="h-auto max-h-full w-auto max-w-full"
+              />
+            </div>
+            {loadingInspectorFrame ? (
+              <Skeleton className="absolute inset-0 rounded-none" />
             ) : null}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      <div className="shrink-0 space-y-2">
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+          Mask Samples ({frameEntries.length})
+        </p>
+        {frameEntries.length === 0 ? (
+          <div className="rounded-lg border border-border/60 bg-background/50 px-3 py-5 text-xs text-muted-foreground">
+            Run the job and refresh to load mask frames.
+          </div>
+        ) : (
+          <div className="flex gap-2 overflow-x-auto overflow-y-hidden pb-2 [scrollbar-gutter:stable]">
+            {frameEntries.map((entry) => {
+              const thumbnail = stripThumbnails[entry.sampleIdx];
+              const isSelected = entry.sampleIdx === selectedSampleIdx;
+              return (
+                <button
+                  key={entry.sampleIdx}
+                  type="button"
+                  onClick={() => setSelectedSampleIdx(entry.sampleIdx)}
+                  className={`group shrink-0 cursor-pointer rounded-lg border transition-colors ${
+                    isSelected
+                      ? "border-primary/70 bg-primary/10"
+                      : "border-border/60 bg-background/60 hover:border-primary/40"
+                  }`}
+                >
+                  <div className="relative h-24 w-40 overflow-hidden rounded-t-lg bg-muted/30">
+                    {thumbnail ? (
+                      <NextImage
+                        src={thumbnail}
+                        alt={`Sample ${entry.sampleIdx}`}
+                        width={160}
+                        height={96}
+                        unoptimized
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Skeleton className="h-full w-full rounded-none" />
+                    )}
+                  </div>
+                  <div className="space-y-0.5 px-2 py-1.5 text-left">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+                      Sample {entry.sampleIdx}
+                    </p>
+                    <p className="text-[11px] text-foreground">
+                      {entry.masks.length} masks
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {loadingStripThumbnails ? (
+          <p className="text-xs text-muted-foreground">Generating frame previews...</p>
+        ) : null}
+      </div>
     </div>
   );
 }

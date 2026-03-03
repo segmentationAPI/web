@@ -157,6 +157,7 @@ describe("SegmentationClient", () => {
       maxFrames: 80,
       prompts: ["dog", "person"],
       frameIdx: 5,
+      videoOutputMode: "frames_and_video",
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -182,6 +183,7 @@ describe("SegmentationClient", () => {
     expect(body.maxFrames).toBe(80);
     expect(body.frameIdx).toBe(5);
     expect(body.prompts).toEqual(["dog", "person"]);
+    expect(body.videoOutputMode).toBe("frames_and_video");
 
     expect(result.requestId).toBe("video-request-1");
     expect(result.jobId).toBe("video-job-1");
@@ -645,6 +647,17 @@ describe("SegmentationClient", () => {
       client.segmentVideo({
         file: new Uint8Array([1]),
         prompts: [],
+      } as never),
+    ).rejects.toMatchObject({
+      direction: "input",
+      operation: "segmentVideo",
+    });
+
+    await expect(
+      client.segmentVideo({
+        file: new Uint8Array([1]),
+        prompts: ["cat"],
+        videoOutputMode: "invalid_mode",
       } as never),
     ).rejects.toMatchObject({
       direction: "input",

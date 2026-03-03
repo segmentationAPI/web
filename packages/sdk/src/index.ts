@@ -53,6 +53,7 @@ export type {
   SegmentationClientOptions,
   UploadAndCreateJobRequest,
   UploadImageRequest,
+  VideoOutputMode,
   VideoMaskTimeline,
   VideoMaskTimelineFrame,
   CocoRle,

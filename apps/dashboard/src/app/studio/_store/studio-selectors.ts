@@ -4,6 +4,7 @@ import {
   type JobStatusResult,
   type JobType,
   type MaskArtifactResult,
+  type VideoOutputMode,
   type VideoMaskTimeline,
 } from "@segmentationapi/sdk";
 
@@ -11,9 +12,16 @@ import type { BoxCoordinates } from "../_components/studio-canvas-types";
 
 const EMPTY_VIDEO_TIMELINE: VideoMaskTimeline = { frames: [] };
 export const DEFAULT_VIDEO_SAMPLING_FPS = 2;
-export const VIDEO_PREVIEW_MODES = ["frame_inspector", "smooth_playback"] as const;
-export type VideoPreviewMode = (typeof VIDEO_PREVIEW_MODES)[number];
-export const DEFAULT_VIDEO_PREVIEW_MODE: VideoPreviewMode = "frame_inspector";
+export const VIDEO_EXCLUSIVE_MODES = ["baked_only", "frame_inspector_only"] as const;
+export type VideoExclusiveMode = (typeof VIDEO_EXCLUSIVE_MODES)[number];
+export const DEFAULT_VIDEO_EXCLUSIVE_MODE: VideoExclusiveMode = "baked_only";
+
+export type PromptRow = {
+  id: string;
+  value: string;
+};
+
+export type StudioViewMode = "empty" | "single-image" | "batch-image" | "video";
 
 export enum FileKind {
   Image = "image",
@@ -29,18 +37,25 @@ export enum StudioRunMode {
 
 export type StudioSelectorState = {
   files: File[];
-  prompts: string[];
+  promptRows: PromptRow[];
   boxes: BoxCoordinates[];
+  videoSourceFps: number | null;
+  videoFpsParseState: "idle" | "parsing" | "ready" | "error";
+  videoFpsParseError: string | null;
+  runError: string | null;
+  refreshError: string | null;
+  lastRefreshedAt: number | null;
   runState: {
     mode: StudioRunMode;
     selectedType?: JobType;
     jobId?: string;
     videoSamplingFps?: number;
-    videoPreviewMode?: VideoPreviewMode;
+    videoExclusiveMode?: VideoExclusiveMode;
   };
   jobStatus: JobStatusResult | null;
   taskMasksByTaskId: Record<string, MaskArtifactResult[]>;
   videoTimelineByTaskId: Record<string, VideoMaskTimeline>;
+  videoBakedUrlByTaskId: Record<string, string | null>;
 };
 
 export function classifyFiles(files: File[]): FileKind {
@@ -49,8 +64,8 @@ export function classifyFiles(files: File[]): FileKind {
   return firstIsVideo ? FileKind.Video : FileKind.Image;
 }
 
-export function trimPrompts(prompts: string[]) {
-  return prompts.map((prompt) => prompt.trim()).filter(Boolean);
+export function trimPrompts(promptRows: readonly PromptRow[]) {
+  return promptRows.map((promptRow) => promptRow.value.trim()).filter(Boolean);
 }
 
 export function selectFileKind(state: Pick<StudioSelectorState, "files">): FileKind {
@@ -65,12 +80,16 @@ export function selectFirstVideoFile(state: Pick<StudioSelectorState, "files">) 
   return state.files.find((file) => file.type.startsWith("video/")) ?? null;
 }
 
-export function selectCleanPrompts(state: Pick<StudioSelectorState, "prompts">) {
-  return trimPrompts(state.prompts);
+export function selectCleanPrompts(state: Pick<StudioSelectorState, "promptRows">) {
+  return trimPrompts(state.promptRows);
+}
+
+export function selectCleanPromptCount(state: Pick<StudioSelectorState, "promptRows">) {
+  return selectCleanPrompts(state).length;
 }
 
 export function selectHasPromptBoxParity(
-  state: Pick<StudioSelectorState, "files" | "prompts" | "boxes">,
+  state: Pick<StudioSelectorState, "files" | "promptRows" | "boxes">,
 ) {
   const fileKind = selectFileKind(state);
   if (fileKind !== FileKind.Image || state.boxes.length === 0) {
@@ -81,16 +100,21 @@ export function selectHasPromptBoxParity(
 }
 
 export function selectCanRun(
-  state: Pick<StudioSelectorState, "runState" | "files" | "prompts" | "boxes">,
+  state: Pick<
+    StudioSelectorState,
+    "runState" | "files" | "promptRows" | "boxes" | "videoSourceFps" | "videoFpsParseState"
+  >,
 ) {
   const hasRequiredPrompt = selectCleanPrompts(state).length > 0;
   const isVideo = selectFileKind(state) === FileKind.Video;
+  const hasReadyVideoMetadata = !isVideo || state.videoFpsParseState === "ready";
 
   return (
     state.runState.mode !== StudioRunMode.Running &&
     selectFileKind(state) !== FileKind.None &&
     hasRequiredPrompt &&
     selectHasPromptBoxParity(state) &&
+    hasReadyVideoMetadata &&
     (!isVideo || selectHasValidVideoSamplingFps(state))
   );
 }
@@ -107,21 +131,34 @@ export function selectResolvedVideoSamplingFps(
 }
 
 export function selectHasValidVideoSamplingFps(
-  state: Pick<StudioSelectorState, "runState">,
+  state: Pick<StudioSelectorState, "runState" | "videoSourceFps">,
 ) {
   const samplingFps = state.runState.videoSamplingFps;
-  return Number.isInteger(samplingFps) && Number(samplingFps) >= 1;
-}
+  const maxSourceFps = state.videoSourceFps ? Math.max(1, Math.floor(state.videoSourceFps)) : null;
 
-export function selectResolvedVideoPreviewMode(
-  state: Pick<StudioSelectorState, "runState">,
-): VideoPreviewMode {
-  const previewMode = state.runState.videoPreviewMode;
-  if (!previewMode || !VIDEO_PREVIEW_MODES.includes(previewMode)) {
-    return DEFAULT_VIDEO_PREVIEW_MODE;
+  if (!Number.isInteger(samplingFps) || Number(samplingFps) < 1) {
+    return false;
+  }
+  if (maxSourceFps === null) {
+    return true;
   }
 
-  return previewMode;
+  return Number(samplingFps) <= maxSourceFps;
+}
+
+export function selectResolvedVideoExclusiveMode(
+  state: Pick<StudioSelectorState, "runState">,
+): VideoExclusiveMode {
+  const mode = state.runState.videoExclusiveMode;
+  if (!mode || !VIDEO_EXCLUSIVE_MODES.includes(mode)) {
+    return DEFAULT_VIDEO_EXCLUSIVE_MODE;
+  }
+
+  return mode;
+}
+
+export function selectVideoOutputModeForExclusiveMode(mode: VideoExclusiveMode): VideoOutputMode {
+  return mode === "baked_only" ? "frames_and_video" : "frames_only";
 }
 
 export function isTerminalJobStatus(status: JobStatusResult["status"] | undefined) {
@@ -156,12 +193,22 @@ export function selectFirstImagePreviewUrl(imagePreviewUrls: readonly string[]) 
   return imagePreviewUrls[0] ?? null;
 }
 
-export function selectIsImagePreviewMode(fileKind: FileKind, firstImagePreviewUrl: string | null) {
-  return fileKind === FileKind.Image && Boolean(firstImagePreviewUrl);
-}
+export function selectStudioViewMode(
+  state: Pick<StudioSelectorState, "files">,
+  imagePreviewUrls: readonly string[],
+  videoPreviewUrl: string | null,
+): StudioViewMode {
+  const fileKind = selectFileKind(state);
 
-export function selectIsVideoPreviewMode(fileKind: FileKind, videoPreviewUrl: string | null) {
-  return fileKind === FileKind.Video && Boolean(videoPreviewUrl);
+  if (fileKind === FileKind.Video && videoPreviewUrl) {
+    return "video";
+  }
+
+  if (fileKind === FileKind.Image && selectFirstImagePreviewUrl(imagePreviewUrls)) {
+    return imagePreviewUrls.length === 1 ? "single-image" : "batch-image";
+  }
+
+  return "empty";
 }
 
 export function selectBatchItemCount(state: Pick<StudioSelectorState, "jobStatus">) {
@@ -210,6 +257,17 @@ export function selectActiveVideoTimeline(
   return state.videoTimelineByTaskId[activeVideoItemTaskId] ?? EMPTY_VIDEO_TIMELINE;
 }
 
+export function selectActiveVideoBakedUrl(
+  state: Pick<StudioSelectorState, "jobStatus" | "videoBakedUrlByTaskId">,
+) {
+  const activeVideoItemTaskId = selectActiveVideoItemTaskId(state);
+  if (!activeVideoItemTaskId) {
+    return null;
+  }
+
+  return state.videoBakedUrlByTaskId[activeVideoItemTaskId] ?? null;
+}
+
 export function selectIsSingleImageView(imageFiles: readonly File[]) {
   return imageFiles.length === 1;
 }
@@ -230,4 +288,65 @@ export function selectSingleImageMasks(
 
   const firstTaskId = state.jobStatus.items?.[0]?.taskId;
   return firstTaskId ? state.taskMasksByTaskId[firstTaskId] ?? null : null;
+}
+
+export function selectVideoFpsRange(
+  state: Pick<StudioSelectorState, "videoSourceFps" | "runState">,
+) {
+  const min = 1;
+  const max = state.videoSourceFps ? Math.max(1, Math.floor(state.videoSourceFps)) : null;
+  const rawValue = state.runState.videoSamplingFps;
+  const safeRaw = Number.isFinite(rawValue) ? Number(rawValue) : min;
+  const value = max === null ? Math.max(min, safeRaw) : Math.min(max, Math.max(min, safeRaw));
+
+  return { min, max, value };
+}
+
+export function selectCanRefresh(state: Pick<StudioSelectorState, "runState">) {
+  return Boolean(state.runState.jobId);
+}
+
+export function selectStudioModeLabel(state: Pick<StudioSelectorState, "files">) {
+  const fileKind = classifyFiles(state.files);
+  if (fileKind === FileKind.Video) {
+    return "Video";
+  }
+
+  if (fileKind === FileKind.Image) {
+    return state.files.length === 1 ? "Single Image" : "Image Batch";
+  }
+
+  return "No Media";
+}
+
+export function selectStatusSummaryLine(state: Pick<StudioSelectorState, "runState" | "jobStatus">) {
+  if (!state.runState.jobId) {
+    return "Awaiting input";
+  }
+
+  if (!state.jobStatus) {
+    return "Job accepted. Refresh to fetch current status.";
+  }
+
+  return `${formatStatus(state.jobStatus.status)} • ${state.jobStatus.successItems + state.jobStatus.failedItems}/${state.jobStatus.totalItems}`;
+}
+
+export function selectJobStatusTone(
+  state: Pick<StudioSelectorState, "runState" | "jobStatus">,
+): "neutral" | "warning" | "danger" | "success" {
+  if (!state.jobStatus) {
+    return state.runState.mode === StudioRunMode.Running ? "warning" : "neutral";
+  }
+
+  if (state.jobStatus.status === JobRequestStatus.Failed) {
+    return "danger";
+  }
+  if (state.jobStatus.status === JobRequestStatus.CompletedWithErrors) {
+    return "warning";
+  }
+  if (state.jobStatus.status === JobRequestStatus.Completed) {
+    return "success";
+  }
+
+  return "neutral";
 }

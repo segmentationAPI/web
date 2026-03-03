@@ -84,6 +84,7 @@ export const uploadImageRequestSchema: z.ZodMiniType<UploadImageRequest> =
 
 export const promptsSchema = z
   .array(nonEmptyString);
+export const videoOutputModeSchema = z.enum(["frames_only", "frames_and_video"]);
 
 export const imageBoxSchema = z.object({
   coordinates: z.tuple([finiteNumber, finiteNumber, finiteNumber, finiteNumber]),
@@ -118,6 +119,7 @@ const createVideoJobRequestSchema = z.object({
   prompts: promptsSchema.check(
     z.refine((value) => value.length >= 1, "Expected at least 1 prompt."),
   ),
+  videoOutputMode: z.optional(videoOutputModeSchema),
   boxes: z.optional(z.never("Field `boxes` is not supported for video jobs.")),
   points: z.optional(z.never("Field `points` is not supported.")),
 });
@@ -152,6 +154,7 @@ const uploadAndCreateVideoJobRequestSchema = z.object({
   prompts: promptsSchema.check(
     z.refine((value) => value.length >= 1, "Expected at least 1 prompt."),
   ),
+  videoOutputMode: z.optional(videoOutputModeSchema),
   boxes: z.optional(z.never("Field `boxes` is not supported for video jobs.")),
   points: z.optional(z.never("Field `points` is not supported.")),
 });
@@ -167,6 +170,7 @@ const segmentVideoPromptsSchema = z.object({
   prompts: promptsSchema.check(
     z.refine((value) => value.length >= 1, "Expected at least 1 prompt."),
   ),
+  videoOutputMode: z.optional(videoOutputModeSchema),
   points: z.optional(z.never("Field `points` is not supported for video segmentation.")),
   boxes: z.optional(z.never("Field `boxes` is not supported for video segmentation.")),
   text: z.optional(z.never("Field `text` is not supported for video segmentation.")),

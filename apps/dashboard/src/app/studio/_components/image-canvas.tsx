@@ -87,7 +87,8 @@ export function ImageCanvas({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-lg border border-border/60 select-none ${!readOnly ? "cursor-crosshair" : ""}`}
+      className={`relative mx-auto max-h-full overflow-hidden rounded-lg border border-border/60 select-none ${!readOnly ? "cursor-crosshair" : ""}`}
+      style={dims ? { aspectRatio: `${dims.w} / ${dims.h}` } : undefined}
       onMouseDown={!readOnly ? handleMouseDown : undefined}
       onMouseMove={!readOnly ? handleMouseMove : undefined}
       onMouseUp={!readOnly ? handleMouseUp : undefined}
@@ -97,7 +98,7 @@ export function ImageCanvas({
         ref={imgRef}
         src={src}
         alt={alt}
-        className="h-auto w-full pointer-events-none"
+        className="h-full w-full pointer-events-none"
         draggable={false}
         onLoad={(event) => {
           setDims({

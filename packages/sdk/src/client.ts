@@ -267,6 +267,9 @@ export class SegmentationClient {
       requestBody.maxFrames = parsedInput.maxFrames;
     }
     requestBody.prompts = parsedInput.prompts;
+    if (parsedInput.videoOutputMode !== undefined) {
+      requestBody.videoOutputMode = parsedInput.videoOutputMode;
+    }
 
     const raw = await this.requestApi({
       path: "/jobs",
@@ -301,6 +304,9 @@ export class SegmentationClient {
     }
     if (parsedInput.boxes !== undefined) {
       payload.boxes = parsedInput.boxes;
+    }
+    if (parsedInput.type === "video" && parsedInput.videoOutputMode !== undefined) {
+      payload.videoOutputMode = parsedInput.videoOutputMode;
     }
 
     const raw = await this.requestApi({
@@ -348,6 +354,7 @@ export class SegmentationClient {
       return this.createJob({
         type: "video",
         prompts: parsedInput.prompts,
+        videoOutputMode: parsedInput.videoOutputMode,
         threshold: parsedInput.threshold,
         maskThreshold: parsedInput.maskThreshold,
         items: uploadedTaskIds.map((taskId) => ({ taskId })),

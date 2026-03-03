@@ -21,6 +21,8 @@ export interface CreatePresignedUploadRequest {
   signal?: AbortSignal;
 }
 
+export type VideoOutputMode = "frames_only" | "frames_and_video";
+
 export type SegmentVideoPrompts = {
   prompts: string[];
 };
@@ -45,6 +47,7 @@ export type SegmentVideoRequest = SegmentVideoPrompts &
     file: BinaryData;
     maxFrames?: number;
     frameIdx?: number;
+    videoOutputMode?: VideoOutputMode;
     signal?: AbortSignal;
   };
 
@@ -73,6 +76,7 @@ export interface CreateImageBatchJobRequest {
 export interface CreateVideoJobRequest {
   type: "video";
   prompts: string[];
+  videoOutputMode?: VideoOutputMode;
   boxes?: never;
   threshold?: number;
   maskThreshold?: number;
@@ -110,6 +114,7 @@ export interface UploadAndCreateImageBatchJobRequest {
 export interface UploadAndCreateVideoJobRequest {
   type: "video";
   prompts: string[];
+  videoOutputMode?: VideoOutputMode;
   boxes?: never;
   files: Array<{
     data: BinaryData;
