@@ -190,35 +190,14 @@ export function normalizeMaskArtifacts(
     .sort((a, b) => a.maskIndex - b.maskIndex);
 }
 
-function parseFrames(result: unknown): NdjsonFrameRecord[] {
-  if (typeof result === "string") {
-    return parseFramesFromNdjson(result);
-  }
-  if (Array.isArray(result)) {
-    if (result.some((entry) => !entry || typeof entry !== "object")) {
-      throw new Error("Invalid timeline payload: `frames` entries must be objects.");
-    }
-    return result as NdjsonFrameRecord[];
-  }
-  if (result && typeof result === "object") {
-    const root = result as Record<string, unknown>;
-    if (!Array.isArray(root.frames)) {
-      throw new Error("Invalid timeline payload: expected `frames` array.");
-    }
-    if (root.frames.some((entry) => !entry || typeof entry !== "object")) {
-      throw new Error("Invalid timeline payload: `frames` entries must be objects.");
-    }
-    return root.frames as NdjsonFrameRecord[];
-  }
-
-  throw new Error("Invalid timeline payload: expected NDJSON text or object with `frames`.");
-}
-
 export function normalizeVideoMaskTimeline(
   result: unknown,
   context: MaskArtifactContext,
 ): VideoMaskTimeline {
-  const parsedFrames = parseFrames(result);
+  if (typeof result !== "string") {
+    throw new Error("Invalid timeline payload: expected NDJSON text.");
+  }
+  const parsedFrames = parseFramesFromNdjson(result);
 
   const timelineFrames: VideoMaskTimelineFrame[] = parsedFrames.map((frameRecord) => {
     if (!Array.isArray(frameRecord.objects)) {
@@ -285,19 +264,6 @@ function resolveVideoMaskTimelineUrl(result: unknown): string | null {
   const typedResult = result as Record<string, unknown>;
   if (typeof typedResult.output === "string") {
     return typedResult.output.trim();
-  }
-
-  if (typeof typedResult.framesNdjsonUrl === "string") {
-    return typedResult.framesNdjsonUrl.trim();
-  }
-  if (typeof typedResult.frames_ndjson_url === "string") {
-    return typedResult.frames_ndjson_url.trim();
-  }
-  if (typeof typedResult.framesUrl === "string") {
-    return typedResult.framesUrl.trim();
-  }
-  if (typeof typedResult.frames_url === "string") {
-    return typedResult.frames_url.trim();
   }
 
   return null;

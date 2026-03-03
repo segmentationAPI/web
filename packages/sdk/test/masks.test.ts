@@ -69,7 +69,7 @@ describe("mask artifact helpers", () => {
   it("normalizes strict timeline frames", () => {
     const normalized = normalizeVideoMaskTimeline(
       [
-        {
+        JSON.stringify({
           sampleIdx: 4,
           timeSec: 2,
           objects: [
@@ -80,8 +80,8 @@ describe("mask artifact helpers", () => {
               rle: { size: [2, 2], counts: [1, 2, 1] },
             },
           ],
-        },
-        {
+        }),
+        JSON.stringify({
           sampleIdx: 1,
           timeSec: 0.5,
           frameIdx: 15,
@@ -93,8 +93,8 @@ describe("mask artifact helpers", () => {
               rle: { size: [2, 2], counts: [1, 2, 1] },
             },
           ],
-        },
-      ],
+        }),
+      ].join("\n"),
       {
         userId: "user-a",
         jobId: "job-1",
@@ -123,14 +123,10 @@ describe("mask artifact helpers", () => {
   it("throws for missing required timeline fields", () => {
     expect(() =>
       normalizeVideoMaskTimeline(
-        {
-          frames: [
-            {
-              sampleIdx: 0,
-              objects: [{ objectId: 1, rle: { size: [2, 2], counts: [1, 2, 1] } }],
-            },
-          ],
-        },
+        JSON.stringify({
+          sampleIdx: 0,
+          objects: [{ objectId: 1, rle: { size: [2, 2], counts: [1, 2, 1] } }],
+        }),
         {
           userId: "user-a",
           jobId: "job-1",
@@ -138,6 +134,19 @@ describe("mask artifact helpers", () => {
         },
       ),
     ).toThrow(/timeSec/);
+  });
+
+  it("throws for non-string timeline payload", () => {
+    expect(() =>
+      normalizeVideoMaskTimeline(
+        [{ sampleIdx: 0, timeSec: 0, objects: [] }],
+        {
+          userId: "user-a",
+          jobId: "job-1",
+          taskId: "task-9",
+        },
+      ),
+    ).toThrow(/NDJSON text/);
   });
 
   it("loads timeline using explicit output url", async () => {

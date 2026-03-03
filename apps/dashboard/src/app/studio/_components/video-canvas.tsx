@@ -29,7 +29,6 @@ const MASK_COLORS: Array<[number, number, number]> = [
 
 type FrameEntry = {
   sampleIdx: number;
-  frameIdx?: number;
   timeSeconds: number;
   masks: MaskArtifactResult[];
 };
@@ -63,12 +62,22 @@ function drawRasterMasksToCanvas(
   sampleIdx: number,
   masks: MaskArtifactResult[],
   decodedRleCacheRef: MutableRefObject<Map<string, ReturnType<typeof decodeCocoRleMask>>>,
+  rasterOverlayCanvasRef: MutableRefObject<HTMLCanvasElement | null>,
 ) {
   if (masks.length === 0) {
     return;
   }
 
-  const imageData = context.createImageData(width, height);
+  const overlayCanvas = rasterOverlayCanvasRef.current ?? document.createElement("canvas");
+  rasterOverlayCanvasRef.current = overlayCanvas;
+  ensureCanvasSize(overlayCanvas, width, height);
+
+  const overlayContext = overlayCanvas.getContext("2d");
+  if (!overlayContext) {
+    return;
+  }
+
+  const imageData = overlayContext.createImageData(width, height);
   const pixels = imageData.data;
 
   for (const mask of masks) {
@@ -106,7 +115,8 @@ function drawRasterMasksToCanvas(
     }
   }
 
-  context.putImageData(imageData, 0, 0);
+  overlayContext.putImageData(imageData, 0, 0);
+  context.drawImage(overlayCanvas, 0, 0, width, height);
 }
 
 function ensureCanvasSize(canvas: HTMLCanvasElement, width: number, height: number) {
@@ -202,7 +212,7 @@ async function drawImageMasksToCanvas(
 
   const loadedMasks = await Promise.allSettled(
     masks.map((mask) =>
-      loadImage(mask.url, imageCacheRef, loadingImagePromisesRef).then((image) => ({ mask, image })),
+      loadImage(mask.url, imageCacheRef, loadingImagePromisesRef).then((image) => ({ image })),
     ),
   );
 
@@ -222,7 +232,7 @@ async function drawImageMasksToCanvas(
   context.restore();
 }
 
-export function findExactTimelineFrame(
+function findExactTimelineFrame(
   frames: FrameEntry[],
   timeSeconds: number,
   epsilonSeconds = TIMELINE_MATCH_EPSILON_SECONDS,
@@ -240,6 +250,7 @@ async function renderCompositedFrameToCanvas({
   canvas,
   entry,
   decodedRleCacheRef,
+  rasterOverlayCanvasRef,
   imageCacheRef,
   loadingImagePromisesRef,
 }: {
@@ -247,6 +258,7 @@ async function renderCompositedFrameToCanvas({
   canvas: HTMLCanvasElement;
   entry: FrameEntry;
   decodedRleCacheRef: MutableRefObject<Map<string, ReturnType<typeof decodeCocoRleMask>>>;
+  rasterOverlayCanvasRef: MutableRefObject<HTMLCanvasElement | null>;
   imageCacheRef: MutableRefObject<Map<string, HTMLImageElement>>;
   loadingImagePromisesRef: MutableRefObject<Map<string, Promise<HTMLImageElement>>>;
 }) {
@@ -270,7 +282,15 @@ async function renderCompositedFrameToCanvas({
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
   const { rasterMasks, imageMasks } = splitMasks(entry.masks);
-  drawRasterMasksToCanvas(context, canvas.width, canvas.height, entry.sampleIdx, rasterMasks, decodedRleCacheRef);
+  drawRasterMasksToCanvas(
+    context,
+    canvas.width,
+    canvas.height,
+    entry.sampleIdx,
+    rasterMasks,
+    decodedRleCacheRef,
+    rasterOverlayCanvasRef,
+  );
   await drawImageMasksToCanvas(
     context,
     canvas.width,
@@ -286,6 +306,7 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
   const smoothCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const inspectorCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const decodedRleCacheRef = useRef<Map<string, ReturnType<typeof decodeCocoRleMask>>>(new Map());
+  const rasterOverlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
   const loadingImagePromisesRef = useRef<Map<string, Promise<HTMLImageElement>>>(new Map());
   const renderFrameRequestRef = useRef<number | null>(null);
@@ -297,7 +318,6 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
         .sort((left, right) => left.sampleIdx - right.sampleIdx)
         .map((frame) => ({
           sampleIdx: frame.sampleIdx,
-          frameIdx: frame.frameIdx,
           timeSeconds: frame.timeSec,
           masks: frame.masks,
         })),
@@ -318,6 +338,7 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
 
   useEffect(() => {
     decodedRleCacheRef.current.clear();
+    rasterOverlayCanvasRef.current = null;
     imageCacheRef.current.clear();
     loadingImagePromisesRef.current.clear();
   }, [src, timeline]);
@@ -362,6 +383,7 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
       activeEntry.sampleIdx,
       rasterMasks,
       decodedRleCacheRef,
+      rasterOverlayCanvasRef,
     );
     await drawImageMasksToCanvas(
       context,
@@ -498,6 +520,7 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
             canvas: thumbnailCanvas,
             entry,
             decodedRleCacheRef,
+            rasterOverlayCanvasRef,
             imageCacheRef,
             loadingImagePromisesRef,
           });
@@ -580,6 +603,7 @@ export function VideoCanvas({ src, timeline, mode }: VideoCanvasProps) {
           canvas,
           entry: selectedEntry,
           decodedRleCacheRef,
+          rasterOverlayCanvasRef,
           imageCacheRef,
           loadingImagePromisesRef,
         });
