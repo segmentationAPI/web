@@ -1,10 +1,11 @@
 import type {
   CocoRle,
   FetchFunction,
-  LoadVideoFrameMasksOptions,
+  LoadVideoMaskTimelineOptions,
   MaskArtifactContext,
   MaskArtifactResult,
-  VideoFrameMaskMap,
+  VideoMaskTimeline,
+  VideoMaskTimelineFrame,
 } from "./types";
 
 const ASSETS_BASE_URL = "https://assets.segmentationapi.com";
@@ -68,30 +69,16 @@ function toCocoRleOrNull(value: unknown): CocoRle | null {
   return null;
 }
 
-function toFrameIndex(value: unknown): number | null {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return null;
-  }
-
-  const rounded = Math.floor(value);
-  if (rounded < 0) {
-    return null;
-  }
-
-  return rounded;
-}
-
 type NdjsonFrameObject = {
   objectId?: unknown;
   box?: unknown;
   score?: unknown;
-  confidence?: unknown;
-  maskUrl?: unknown;
-  mask_url?: unknown;
   rle?: unknown;
 };
 
 type NdjsonFrameRecord = {
+  sampleIdx?: unknown;
+  timeSec?: unknown;
   frameIdx?: unknown;
   objects?: unknown;
 };
@@ -99,50 +86,66 @@ type NdjsonFrameRecord = {
 function toMaskArtifactFromFrameObject(
   frameObject: NdjsonFrameObject,
   context: MaskArtifactContext,
-  fallbackIndex: number,
 ): MaskArtifactResult {
   const parsedObjectId = Number(frameObject.objectId);
-  const maskIndex = Number.isFinite(parsedObjectId)
-    ? Math.max(0, Math.floor(parsedObjectId))
-    : fallbackIndex;
+  if (!Number.isInteger(parsedObjectId) || parsedObjectId < 0) {
+    throw new Error("Invalid timeline object: `objectId` must be a non-negative integer.");
+  }
+  const maskIndex = parsedObjectId;
   const key = buildMaskArtifactKey(context, maskIndex);
 
-  const rawUrl =
-    typeof frameObject.maskUrl === "string"
-      ? frameObject.maskUrl
-      : typeof frameObject.mask_url === "string"
-        ? frameObject.mask_url
-        : "";
-  const url = rawUrl.trim().length > 0 ? rawUrl : buildMaskArtifactUrl(key);
-
   const rle = toCocoRleOrNull(frameObject.rle);
+  if (!rle) {
+    throw new Error("Invalid timeline object: `rle` is required and must be a valid COCO RLE.");
+  }
 
   return {
     maskIndex,
     key,
-    url,
-    score: toNumberOrNull(frameObject.score ?? frameObject.confidence),
+    url: buildMaskArtifactUrl(key),
+    score: toNumberOrNull(frameObject.score),
     box: toBoxOrNull(frameObject.box),
-    ...(rle ? { rle } : {}),
+    rle,
   };
 }
 
+function toNonNegativeInteger(value: unknown, fieldName: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+    throw new Error(`Invalid timeline frame: \`${fieldName}\` must be a non-negative integer.`);
+  }
+  return value;
+}
+
+function toFiniteNumber(value: unknown, fieldName: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`Invalid timeline frame: \`${fieldName}\` must be a finite number.`);
+  }
+  return value;
+}
+
 function parseFramesFromNdjson(content: string): NdjsonFrameRecord[] {
-  return content
+  const records: NdjsonFrameRecord[] = [];
+  const lines = content
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-    .flatMap((line) => {
-      try {
-        const parsed = JSON.parse(line) as unknown;
-        if (!parsed || typeof parsed !== "object") {
-          return [];
-        }
-        return [parsed as NdjsonFrameRecord];
-      } catch {
-        return [];
-      }
-    });
+    .filter((line) => line.length > 0);
+
+  for (const line of lines) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(line);
+    } catch {
+      throw new Error("Invalid timeline NDJSON: contains malformed JSON row.");
+    }
+
+    if (!parsed || typeof parsed !== "object") {
+      throw new Error("Invalid timeline NDJSON: each row must be an object.");
+    }
+
+    records.push(parsed as NdjsonFrameRecord);
+  }
+
+  return records;
 }
 
 export function buildMaskArtifactKey(
@@ -157,13 +160,6 @@ export function buildMaskArtifactKey(
 
 export function buildMaskArtifactUrl(key: string): string {
   return `${ASSETS_BASE_URL}/${key.replace(/^\/+/, "")}`;
-}
-
-function buildVideoFrameMasksUrl(context: MaskArtifactContext): string {
-  const account = context.userId.trim().replace(/^\/+|\/+$/g, "");
-  const job = context.jobId.trim().replace(/^\/+|\/+$/g, "");
-  const task = context.taskId.trim().replace(/^\/+|\/+$/g, "");
-  return `${ASSETS_BASE_URL}/outputs/${account}/${job}/${task}/frames.ndjson.gz`;
 }
 
 export function normalizeMaskArtifacts(
@@ -194,45 +190,72 @@ export function normalizeMaskArtifacts(
     .sort((a, b) => a.maskIndex - b.maskIndex);
 }
 
-export function normalizeVideoFrameMasks(
+function parseFrames(result: unknown): NdjsonFrameRecord[] {
+  if (typeof result === "string") {
+    return parseFramesFromNdjson(result);
+  }
+  if (Array.isArray(result)) {
+    if (result.some((entry) => !entry || typeof entry !== "object")) {
+      throw new Error("Invalid timeline payload: `frames` entries must be objects.");
+    }
+    return result as NdjsonFrameRecord[];
+  }
+  if (result && typeof result === "object") {
+    const root = result as Record<string, unknown>;
+    if (!Array.isArray(root.frames)) {
+      throw new Error("Invalid timeline payload: expected `frames` array.");
+    }
+    if (root.frames.some((entry) => !entry || typeof entry !== "object")) {
+      throw new Error("Invalid timeline payload: `frames` entries must be objects.");
+    }
+    return root.frames as NdjsonFrameRecord[];
+  }
+
+  throw new Error("Invalid timeline payload: expected NDJSON text or object with `frames`.");
+}
+
+export function normalizeVideoMaskTimeline(
   result: unknown,
   context: MaskArtifactContext,
-): VideoFrameMaskMap {
-  const frameMasks: VideoFrameMaskMap = {};
+): VideoMaskTimeline {
+  const parsedFrames = parseFrames(result);
 
-  let frames: NdjsonFrameRecord[] = [];
-  if (typeof result === "string") {
-    frames = parseFramesFromNdjson(result);
-  } else if (Array.isArray(result)) {
-    frames = result.filter((entry): entry is NdjsonFrameRecord => Boolean(entry) && typeof entry === "object");
-  } else if (result && typeof result === "object") {
-    const root = result as Record<string, unknown>;
-    if (Array.isArray(root.frames)) {
-      frames = root.frames.filter((entry): entry is NdjsonFrameRecord => Boolean(entry) && typeof entry === "object");
-    }
-  }
-
-  for (const frameRecord of frames) {
-    const frameIndex = toFrameIndex(frameRecord.frameIdx);
-    if (frameIndex === null || !Array.isArray(frameRecord.objects)) {
-      continue;
+  const timelineFrames: VideoMaskTimelineFrame[] = parsedFrames.map((frameRecord) => {
+    if (!Array.isArray(frameRecord.objects)) {
+      throw new Error("Invalid timeline frame: `objects` must be an array.");
     }
 
+    if (frameRecord.objects.some((entry) => !entry || typeof entry !== "object")) {
+      throw new Error("Invalid timeline frame: `objects` entries must be objects.");
+    }
+
+    const sampleIdx = toNonNegativeInteger(frameRecord.sampleIdx, "sampleIdx");
+    const timeSec = toFiniteNumber(frameRecord.timeSec, "timeSec");
+    if (timeSec < 0) {
+      throw new Error("Invalid timeline frame: `timeSec` must be >= 0.");
+    }
+
+    const frameIdx =
+      frameRecord.frameIdx === undefined
+        ? undefined
+        : toNonNegativeInteger(frameRecord.frameIdx, "frameIdx");
     const masks = frameRecord.objects
-      .filter((entry): entry is NdjsonFrameObject => Boolean(entry) && typeof entry === "object")
-      .map((objectEntry, index) => toMaskArtifactFromFrameObject(objectEntry, context, index))
+      .map((objectEntry) => toMaskArtifactFromFrameObject(objectEntry as NdjsonFrameObject, context))
       .sort((a, b) => a.maskIndex - b.maskIndex);
 
-    if (masks.length > 0) {
-      frameMasks[frameIndex] = masks;
+    return frameIdx === undefined
+      ? { sampleIdx, timeSec, masks }
+      : { sampleIdx, timeSec, masks, frameIdx };
+  });
+
+  timelineFrames.sort((left, right) => left.sampleIdx - right.sampleIdx);
+  for (let idx = 1; idx < timelineFrames.length; idx += 1) {
+    if (timelineFrames[idx]!.sampleIdx === timelineFrames[idx - 1]!.sampleIdx) {
+      throw new Error("Invalid timeline payload: duplicate `sampleIdx` values.");
     }
   }
 
-  if (Object.keys(frameMasks).length > 0) {
-    return frameMasks;
-  }
-
-  return {};
+  return { frames: timelineFrames };
 }
 
 function getFetchImplementation(fetchImpl?: FetchFunction): FetchFunction {
@@ -242,14 +265,14 @@ function getFetchImplementation(fetchImpl?: FetchFunction): FetchFunction {
   if (typeof globalThis.fetch === "function") {
     return globalThis.fetch.bind(globalThis);
   }
-  throw new Error("No fetch implementation found. Provide one in loadVideoFrameMasks options.");
+  throw new Error("No fetch implementation found. Provide one in loadVideoMaskTimeline options.");
 }
 
 function isLikelyHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
 }
 
-function resolveVideoFrameMasksUrl(result: unknown): string | null {
+function resolveVideoMaskTimelineUrl(result: unknown): string | null {
   if (typeof result === "string") {
     const value = result.trim();
     return isLikelyHttpUrl(value) ? value : null;
@@ -260,6 +283,9 @@ function resolveVideoFrameMasksUrl(result: unknown): string | null {
   }
 
   const typedResult = result as Record<string, unknown>;
+  if (typeof typedResult.output === "string") {
+    return typedResult.output.trim();
+  }
 
   if (typeof typedResult.framesNdjsonUrl === "string") {
     return typedResult.framesNdjsonUrl.trim();
@@ -296,17 +322,15 @@ async function readNdjsonPayload(response: Response): Promise<string> {
   }
 }
 
-export async function loadVideoFrameMasks(
+export async function loadVideoMaskTimeline(
   result: unknown,
   context: MaskArtifactContext,
-  options?: LoadVideoFrameMasksOptions,
-): Promise<VideoFrameMaskMap> {
-  const inlineMasks = normalizeVideoFrameMasks(result, context);
-  if (Object.keys(inlineMasks).length > 0) {
-    return inlineMasks;
+  options?: LoadVideoMaskTimelineOptions,
+): Promise<VideoMaskTimeline> {
+  const framesUrl = resolveVideoMaskTimelineUrl(result);
+  if (!framesUrl) {
+    return { frames: [] };
   }
-
-  const framesUrl = resolveVideoFrameMasksUrl(result) ?? buildVideoFrameMasksUrl(context);
 
   try {
     const fetchImpl = getFetchImplementation(options?.fetch);
@@ -316,13 +340,13 @@ export async function loadVideoFrameMasks(
     });
 
     if (!response.ok) {
-      return {};
+      return { frames: [] };
     }
 
     const ndjsonPayload = await readNdjsonPayload(response);
-    return normalizeVideoFrameMasks(ndjsonPayload, context);
+    return normalizeVideoMaskTimeline(ndjsonPayload, context);
   } catch {
-    return {};
+    return { frames: [] };
   }
 }
 

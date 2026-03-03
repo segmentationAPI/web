@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Sparkles } from "lucide-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 
 import {
@@ -14,7 +15,7 @@ import {
   classifyFiles,
   formatStatus,
   selectActiveBatchItem,
-  selectActiveVideoFrameMasks,
+  selectActiveVideoTimeline,
   selectBatchImageUrl,
   selectBatchItemCount,
   selectCanRun,
@@ -23,11 +24,14 @@ import {
   selectFirstVideoFile,
   selectFirstImagePreviewUrl,
   selectHasOutputs,
+  selectHasValidVideoSamplingFps,
   selectImageFiles,
   selectIsImagePreviewMode,
   selectIsSingleImageView,
   selectIsVideoPreviewMode,
   selectProgressText,
+  selectResolvedVideoPreviewMode,
+  selectResolvedVideoSamplingFps,
   selectSingleImageMasks,
 } from "../_store/studio-selectors";
 import { useStudioStore } from "../_store/use-studio-store";
@@ -49,13 +53,15 @@ export function UnifiedStudio({ userId }: UnifiedStudioProps) {
   const uploadProgress = useStudioStore((state) => state.uploadProgress);
   const jobStatus = useStudioStore((state) => state.jobStatus);
   const taskMasksByTaskId = useStudioStore((state) => state.taskMasksByTaskId);
-  const videoFrameMasksByTaskId = useStudioStore((state) => state.videoFrameMasksByTaskId);
+  const videoTimelineByTaskId = useStudioStore((state) => state.videoTimelineByTaskId);
   const statusRefreshing = useStudioStore((state) => state.statusRefreshing);
   const batchCarouselIndex = useStudioStore((state) => state.batchCarouselIndex);
 
   const addBox = useStudioStore((state) => state.addBox);
   const clearBoxes = useStudioStore((state) => state.clearBoxes);
   const setBatchCarouselIndex = useStudioStore((state) => state.setBatchCarouselIndex);
+  const setVideoSamplingFps = useStudioStore((state) => state.setVideoSamplingFps);
+  const setVideoPreviewMode = useStudioStore((state) => state.setVideoPreviewMode);
   const refreshJobStatus = useStudioStore((state) => state.refreshJobStatus);
   const runJob = useStudioStore((state) => state.runJob);
   const resetStudio = useStudioStore((state) => state.resetStudio);
@@ -111,19 +117,22 @@ export function UnifiedStudio({ userId }: UnifiedStudioProps) {
   const firstImagePreviewUrl = selectFirstImagePreviewUrl(imagePreviewUrls);
   const isImagePreviewMode = selectIsImagePreviewMode(fileKind, firstImagePreviewUrl);
   const isVideoPreviewMode = selectIsVideoPreviewMode(fileKind, videoPreviewUrl);
-  const resolvedVideoSamplingFps =
+  const resolvedVideoSamplingFps = selectResolvedVideoSamplingFps({ runState });
+  const resolvedVideoPreviewMode = selectResolvedVideoPreviewMode({ runState });
+  const hasValidVideoSamplingFps = selectHasValidVideoSamplingFps({ runState });
+  const videoSamplingInputValue =
     typeof runState.videoSamplingFps === "number" && Number.isFinite(runState.videoSamplingFps)
-      ? runState.videoSamplingFps
-      : 2;
+      ? String(runState.videoSamplingFps)
+      : "";
 
   const progressText = selectProgressText({ jobStatus });
   const batchItemCount = selectBatchItemCount({ jobStatus });
   const carouselIndex = selectCarouselIndex({ jobStatus }, batchCarouselIndex);
   const activeBatchItem = selectActiveBatchItem({ jobStatus }, batchCarouselIndex);
   const batchImageUrl = selectBatchImageUrl(imagePreviewUrls, carouselIndex);
-  const activeVideoFrameMasks = selectActiveVideoFrameMasks({
+  const activeVideoTimeline = selectActiveVideoTimeline({
     jobStatus,
-    videoFrameMasksByTaskId,
+    videoTimelineByTaskId,
   });
 
   const singleImageMasks = selectSingleImageMasks(
@@ -372,6 +381,64 @@ export function UnifiedStudio({ userId }: UnifiedStudioProps) {
 
           {isVideoPreviewMode ? (
             <div className="mt-3 space-y-3">
+              <div className="space-y-3 rounded-lg border border-border/60 bg-background/30 p-3">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  Video Workspace
+                </p>
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="video-sampling-fps"
+                      className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
+                    >
+                      Processing FPS
+                    </label>
+                    <Input
+                      id="video-sampling-fps"
+                      type="number"
+                      inputMode="numeric"
+                      step={1}
+                      min={1}
+                      value={videoSamplingInputValue}
+                      onChange={(event) => {
+                        const value = event.currentTarget.value.trim();
+                        if (value.length === 0) {
+                          setVideoSamplingFps(Number.NaN);
+                          return;
+                        }
+
+                        setVideoSamplingFps(Number(value));
+                      }}
+                      className="h-9"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {hasValidVideoSamplingFps
+                        ? "Whole numbers only. If FPS exceeds source/backend limits, job may fail or be clamped server-side."
+                        : "Enter a whole number FPS value greater than or equal to 1."}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 rounded-lg border border-border/60 bg-background/50 p-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={resolvedVideoPreviewMode === "frame_inspector" ? "secondary" : "ghost"}
+                      onClick={() => setVideoPreviewMode("frame_inspector")}
+                      className="h-8 px-2.5 font-mono text-[10px] uppercase tracking-[0.11em]"
+                    >
+                      Frame Inspector
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={resolvedVideoPreviewMode === "smooth_playback" ? "secondary" : "ghost"}
+                      onClick={() => setVideoPreviewMode("smooth_playback")}
+                      className="h-8 px-2.5 font-mono text-[10px] uppercase tracking-[0.11em]"
+                    >
+                      Smooth Playback
+                    </Button>
+                  </div>
+                </div>
+              </div>
               {runState.mode === StudioRunMode.Ready &&
               runState.selectedType === "video" &&
               runState.jobId ? (
@@ -394,9 +461,8 @@ export function UnifiedStudio({ userId }: UnifiedStudioProps) {
               {videoPreviewUrl ? (
                 <VideoCanvas
                   src={videoPreviewUrl}
-                  frameMasks={activeVideoFrameMasks}
-                  samplingFps={resolvedVideoSamplingFps}
-                  frameSyncPolicy="exact"
+                  timeline={activeVideoTimeline}
+                  mode={resolvedVideoPreviewMode}
                 />
               ) : (
                 <p className="text-sm text-muted-foreground">Video preview unavailable.</p>

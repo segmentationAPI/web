@@ -180,9 +180,18 @@ export interface MaskArtifactResult {
   rle?: CocoRle;
 }
 
-export type VideoFrameMaskMap = Record<number, MaskArtifactResult[]>;
+export interface VideoMaskTimelineFrame {
+  sampleIdx: number;
+  timeSec: number;
+  masks: MaskArtifactResult[];
+  frameIdx?: number;
+}
 
-export interface LoadVideoFrameMasksOptions {
+export interface VideoMaskTimeline {
+  frames: VideoMaskTimelineFrame[];
+}
+
+export interface LoadVideoMaskTimelineOptions {
   fetch?: FetchFunction;
   signal?: AbortSignal;
 }

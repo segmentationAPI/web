@@ -3,9 +3,9 @@ export {
   buildMaskArtifactKey,
   buildMaskArtifactUrl,
   decodeCocoRleMask,
-  loadVideoFrameMasks,
+  loadVideoMaskTimeline,
   normalizeMaskArtifacts,
-  normalizeVideoFrameMasks,
+  normalizeVideoMaskTimeline,
 } from "./masks";
 export { JobRequestStatus } from "./types";
 export {
@@ -53,7 +53,8 @@ export type {
   SegmentationClientOptions,
   UploadAndCreateJobRequest,
   UploadImageRequest,
-  VideoFrameMaskMap,
+  VideoMaskTimeline,
+  VideoMaskTimelineFrame,
   CocoRle,
-  LoadVideoFrameMasksOptions,
+  LoadVideoMaskTimelineOptions,
 } from "./types";

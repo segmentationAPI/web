@@ -3,25 +3,30 @@ import {
   JobTaskStatus,
   SegmentationClient,
   buildOutputManifestUrl,
-  loadVideoFrameMasks,
+  loadVideoMaskTimeline,
   normalizeMaskArtifacts,
   resolveManifestResultForTask,
   resolveOutputFolder,
   type JobStatusResult,
   type MaskArtifactResult,
-  type VideoFrameMaskMap,
+  type VideoMaskTimeline,
 } from "@segmentationapi/sdk";
 
 import { authClient } from "@/lib/auth-client";
 
 import type { BoxCoordinates } from "../_components/studio-canvas-types";
 import {
+  DEFAULT_VIDEO_PREVIEW_MODE,
+  DEFAULT_VIDEO_SAMPLING_FPS,
   FileKind,
   StudioRunMode,
+  classifyFiles,
   selectCanRun,
   selectCleanPrompts,
   selectFileKind,
+  selectHasValidVideoSamplingFps,
   selectImageFiles,
+  type VideoPreviewMode,
   type StudioSelectorState,
 } from "./studio-selectors";
 
@@ -30,7 +35,7 @@ type UploadProgress = { done: number; total: number };
 type LoadedMaskEntry = {
   taskId: string;
   masks: MaskArtifactResult[];
-  frameMasks: VideoFrameMaskMap;
+  timeline: VideoMaskTimeline;
 };
 
 type StudioState = StudioSelectorState & {
@@ -49,6 +54,8 @@ type StudioActions = {
   addBox: (box: BoxCoordinates) => void;
   clearBoxes: () => void;
   setBatchCarouselIndex: (index: number) => void;
+  setVideoSamplingFps: (fps: number) => void;
+  setVideoPreviewMode: (mode: VideoPreviewMode) => void;
   resetStudio: () => void;
   refreshJobStatus: (jobIdOverride?: string, silent?: boolean) => Promise<void>;
   runJob: () => Promise<void>;
@@ -57,8 +64,6 @@ type StudioActions = {
 type StudioStore = StudioState & StudioActions;
 
 const INITIAL_UPLOAD_PROGRESS: UploadProgress = { done: 0, total: 0 };
-const VIDEO_SAMPLING_FPS = 2;
-
 function createInitialState(userId = ""): StudioState {
   return {
     userId,
@@ -70,7 +75,7 @@ function createInitialState(userId = ""): StudioState {
     uploadProgress: INITIAL_UPLOAD_PROGRESS,
     jobStatus: null,
     taskMasksByTaskId: {},
-    videoFrameMasksByTaskId: {},
+    videoTimelineByTaskId: {},
     statusRefreshing: false,
     batchCarouselIndex: 0,
   };
@@ -121,7 +126,7 @@ async function loadMaskEntries(status: JobStatusResult, userId: string): Promise
   const fallbackEntries: LoadedMaskEntry[] = taskIds.map((taskId) => ({
     taskId,
     masks: [],
-    frameMasks: {},
+    timeline: { frames: [] },
   }));
   if (!userId) {
     return fallbackEntries;
@@ -148,7 +153,7 @@ async function loadMaskEntries(status: JobStatusResult, userId: string): Promise
         return {
           taskId,
           masks: normalizeMaskArtifacts(taskResult, context),
-          frameMasks: await loadVideoFrameMasks(taskResult, context),
+          timeline: await loadVideoMaskTimeline(taskResult, context),
         };
       }),
     );
@@ -178,14 +183,25 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
 
   setFiles: (files) => {
     const normalized = normalizeSelectedFiles(files);
+    const fileKind = classifyFiles(normalized);
+
+    const runState =
+      fileKind === FileKind.Video
+        ? {
+            mode: StudioRunMode.Idle as const,
+            videoSamplingFps: DEFAULT_VIDEO_SAMPLING_FPS,
+            videoPreviewMode: DEFAULT_VIDEO_PREVIEW_MODE,
+          }
+        : { mode: StudioRunMode.Idle as const };
+
     set({
       files: normalized,
       boxes: [],
-      runState: { mode: StudioRunMode.Idle },
+      runState,
       uploadProgress: INITIAL_UPLOAD_PROGRESS,
       jobStatus: null,
       taskMasksByTaskId: {},
-      videoFrameMasksByTaskId: {},
+      videoTimelineByTaskId: {},
       batchCarouselIndex: 0,
       statusRefreshing: false,
     });
@@ -205,6 +221,24 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
 
   setBatchCarouselIndex: (index) => {
     set({ batchCarouselIndex: index });
+  },
+
+  setVideoSamplingFps: (fps) => {
+    set((state) => ({
+      runState: {
+        ...state.runState,
+        videoSamplingFps: fps,
+      },
+    }));
+  },
+
+  setVideoPreviewMode: (mode) => {
+    set((state) => ({
+      runState: {
+        ...state.runState,
+        videoPreviewMode: mode,
+      },
+    }));
   },
 
   resetStudio: () => {
@@ -233,16 +267,16 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       if (loadedMasks.length > 0) {
         set((state) => {
           const nextMasks = { ...state.taskMasksByTaskId };
-          const nextFrameMasks = { ...state.videoFrameMasksByTaskId };
+          const nextTimelines = { ...state.videoTimelineByTaskId };
 
           for (const entry of loadedMasks) {
             nextMasks[entry.taskId] = entry.masks;
-            nextFrameMasks[entry.taskId] = entry.frameMasks;
+            nextTimelines[entry.taskId] = entry.timeline;
           }
 
           return {
             taskMasksByTaskId: nextMasks,
-            videoFrameMasksByTaskId: nextFrameMasks,
+            videoTimelineByTaskId: nextTimelines,
           };
         });
       }
@@ -266,17 +300,23 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
 
     const fileKind = selectFileKind(state);
     const cleanPrompts = selectCleanPrompts(state);
+    const selectedVideoFps = state.runState.videoSamplingFps ?? DEFAULT_VIDEO_SAMPLING_FPS;
 
     set({
       runState: {
         mode: StudioRunMode.Running,
         selectedType: fileKind === FileKind.Video ? "video" : "image_batch",
-        ...(fileKind === FileKind.Video ? { videoSamplingFps: VIDEO_SAMPLING_FPS } : {}),
+        ...(fileKind === FileKind.Video
+          ? {
+              videoSamplingFps: selectedVideoFps,
+              videoPreviewMode: state.runState.videoPreviewMode ?? DEFAULT_VIDEO_PREVIEW_MODE,
+            }
+          : {}),
       },
       uploadProgress: INITIAL_UPLOAD_PROGRESS,
       jobStatus: null,
       taskMasksByTaskId: {},
-      videoFrameMasksByTaskId: {},
+      videoTimelineByTaskId: {},
       batchCarouselIndex: 0,
     });
 
@@ -289,12 +329,14 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
         if (!videoFile) {
           throw new Error("Please select a video.");
         }
+        if (!selectHasValidVideoSamplingFps(state)) {
+          throw new Error("Video FPS must be a whole number greater than or equal to 1.");
+        }
 
         accepted = await client.segmentVideo({
           file: videoFile,
           frameIdx: 0,
-          fps: VIDEO_SAMPLING_FPS,
-          maxFrames: 120,
+          fps: selectedVideoFps,
           prompts: cleanPrompts,
         });
       } else {
@@ -327,7 +369,12 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
           mode: StudioRunMode.Ready,
           selectedType: fileKind === FileKind.Video ? "video" : "image_batch",
           jobId: accepted.jobId,
-          ...(fileKind === FileKind.Video ? { videoSamplingFps: VIDEO_SAMPLING_FPS } : {}),
+          ...(fileKind === FileKind.Video
+            ? {
+                videoSamplingFps: selectedVideoFps,
+                videoPreviewMode: state.runState.videoPreviewMode ?? DEFAULT_VIDEO_PREVIEW_MODE,
+              }
+            : {}),
         },
         uploadProgress: INITIAL_UPLOAD_PROGRESS,
       });
