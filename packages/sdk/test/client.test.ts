@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { strFromU8, unzipSync } from "fflate";
 import {
   NetworkError,
   SegmentationApiError,
@@ -17,8 +18,24 @@ function jsonResponse(payload: unknown, status = 200): Response {
   });
 }
 
+function binaryResponse(
+  payload: Uint8Array | string,
+  status = 200,
+  contentType = "application/octet-stream",
+): Response {
+  return new Response(payload, {
+    status,
+    headers: {
+      "content-type": contentType,
+    },
+  });
+}
+
 function asFetchMock(
-  impl: (input: Parameters<FetchFunction>[0], init?: Parameters<FetchFunction>[1]) => Promise<Response>,
+  impl: (
+    input: Parameters<FetchFunction>[0],
+    init?: Parameters<FetchFunction>[1],
+  ) => Promise<Response>,
 ) {
   return vi.fn(impl) as unknown as FetchFunction & ReturnType<typeof vi.fn>;
 }
@@ -765,6 +782,272 @@ describe("SegmentationClient", () => {
     const headers = getHeaders(init);
     expect(headers.get("authorization")).toBe("Bearer jwt_get_token");
     expect(headers.get("x-api-key")).toBeNull();
+  });
+
+  it("downloads image masks for successful tasks as a zip", async () => {
+    const jobId = "job-download-image";
+    const accountId = "account-image";
+    const manifestUrl =
+      "https://assets.segmentationapi.com/outputs/account-image/custom-output-folder/output_manifest.json";
+    const maskA0Url =
+      "https://assets.segmentationapi.com/outputs/account-image/job-download-image/task-a/mask_0.png";
+    const maskA2Url =
+      "https://assets.segmentationapi.com/outputs/account-image/job-download-image/task-a/mask_2.png";
+    const maskB1Url =
+      "https://assets.segmentationapi.com/outputs/account-image/job-download-image/task-b/mask_1.png";
+
+    const fetchMock = asFetchMock(async (input) => {
+      const url = String(input);
+
+      if (url.endsWith(`/jobs/${jobId}`)) {
+        return jsonResponse({
+          requestId: "download-image-1",
+          jobId,
+          type: "image_batch",
+          status: "completed",
+          totalItems: 2,
+          queuedItems: 0,
+          processingItems: 0,
+          successItems: 2,
+          failedItems: 0,
+          accountId,
+          outputFolder: "custom-output-folder",
+          items: [
+            { taskId: "task-a", status: "success" },
+            { taskId: "task-b", status: "success" },
+          ],
+        });
+      }
+
+      if (url === manifestUrl) {
+        return jsonResponse({
+          items: {
+            "task-a": {
+              result: [{ maskIndex: 0 }, { maskIndex: 2 }],
+            },
+            "task-b": {
+              result: { masks: [{ maskIndex: 1 }] },
+            },
+          },
+        });
+      }
+
+      if (url === maskA0Url) {
+        return binaryResponse(new Uint8Array([1]));
+      }
+
+      if (url === maskA2Url) {
+        return binaryResponse(new Uint8Array([2]));
+      }
+
+      if (url === maskB1Url) {
+        return binaryResponse(new Uint8Array([3]));
+      }
+
+      return new Response("unexpected", { status: 500 });
+    });
+
+    const client = new SegmentationClient({
+      apiKey: "test_key",
+      fetch: fetchMock,
+    });
+
+    const result = await client.downloadJobArtifacts({ jobId, accountId });
+    const calledUrls = fetchMock.mock.calls.map((call) => String(call[0]));
+
+    expect(result.jobId).toBe(jobId);
+    expect(result.type).toBe("image_batch");
+    expect(result.kind).toBe("image_masks_zip");
+    expect(result.fileName).toBe(`${jobId}-masks.zip`);
+    expect(result.mimeType).toBe("application/zip");
+    expect(result.taskCount).toBe(2);
+    expect(result.fileCount).toBe(3);
+    expect(calledUrls).toContain(`https://api.segmentationapi.com/v1/jobs/${jobId}`);
+    expect(calledUrls).toContain(manifestUrl);
+    expect(calledUrls).toContain(maskA0Url);
+    expect(calledUrls).toContain(maskA2Url);
+    expect(calledUrls).toContain(maskB1Url);
+
+    const zipContent = unzipSync(new Uint8Array(await result.blob.arrayBuffer()));
+    expect(Object.keys(zipContent).sort()).toEqual([
+      "task-a/mask_0.png",
+      "task-a/mask_2.png",
+      "task-b/mask_1.png",
+    ]);
+    expect(Array.from(zipContent["task-a/mask_0.png"] ?? [])).toEqual([1]);
+    expect(Array.from(zipContent["task-a/mask_2.png"] ?? [])).toEqual([2]);
+    expect(Array.from(zipContent["task-b/mask_1.png"] ?? [])).toEqual([3]);
+  });
+
+  it("downloads video frames.ndjson for a single successful task", async () => {
+    const jobId = "job-download-video-single";
+    const framesPayload = '{"sampleIdx":0,"timeSec":0,"objects":[]}\n';
+    const framesUrl =
+      "https://assets.segmentationapi.com/outputs/account-video/job-download-video-single/task-video-1/frames.ndjson";
+
+    const fetchMock = asFetchMock(async (input) => {
+      const url = String(input);
+
+      if (url.endsWith(`/jobs/${jobId}`)) {
+        return jsonResponse({
+          requestId: "download-video-single-1",
+          jobId,
+          type: "video",
+          status: "completed",
+          totalItems: 1,
+          queuedItems: 0,
+          processingItems: 0,
+          successItems: 1,
+          failedItems: 0,
+          accountId: "account-video",
+          items: [{ taskId: "task-video-1", status: "success" }],
+        });
+      }
+
+      if (url === framesUrl) {
+        return binaryResponse(framesPayload, 200, "application/x-ndjson");
+      }
+
+      return new Response("unexpected", { status: 500 });
+    });
+
+    const client = new SegmentationClient({
+      apiKey: "test_key",
+      fetch: fetchMock,
+    });
+
+    const result = await client.downloadJobArtifacts({ jobId, accountId: "account-video" });
+
+    expect(result.jobId).toBe(jobId);
+    expect(result.type).toBe("video");
+    expect(result.kind).toBe("video_frames_ndjson");
+    expect(result.fileName).toBe("frames.ndjson");
+    expect(result.mimeType).toBe("application/x-ndjson");
+    expect(result.taskCount).toBe(1);
+    expect(result.fileCount).toBe(1);
+    await expect(result.blob.text()).resolves.toBe(framesPayload);
+  });
+
+  it("downloads video frames as zip when multiple successful tasks exist", async () => {
+    const jobId = "job-download-video-multi";
+    const frameTask1 = '{"sampleIdx":0,"timeSec":0.0,"objects":[]}\n';
+    const frameTask2 = '{"sampleIdx":1,"timeSec":0.5,"objects":[]}\n';
+    const task1FramesUrl =
+      "https://assets.segmentationapi.com/outputs/account-video/job-download-video-multi/task-video-1/frames.ndjson";
+    const task2FramesUrl =
+      "https://assets.segmentationapi.com/outputs/account-video/job-download-video-multi/task-video-2/frames.ndjson";
+
+    const fetchMock = asFetchMock(async (input) => {
+      const url = String(input);
+
+      if (url.endsWith(`/jobs/${jobId}`)) {
+        return jsonResponse({
+          requestId: "download-video-multi-1",
+          jobId,
+          type: "video",
+          status: "completed_with_errors",
+          totalItems: 2,
+          queuedItems: 0,
+          processingItems: 0,
+          successItems: 2,
+          failedItems: 0,
+          accountId: "account-video",
+          items: [
+            { taskId: "task-video-1", status: "success" },
+            { taskId: "task-video-2", status: "success" },
+          ],
+        });
+      }
+
+      if (url === task1FramesUrl) {
+        return binaryResponse(frameTask1, 200, "application/x-ndjson");
+      }
+
+      if (url === task2FramesUrl) {
+        return binaryResponse(frameTask2, 200, "application/x-ndjson");
+      }
+
+      return new Response("unexpected", { status: 500 });
+    });
+
+    const client = new SegmentationClient({
+      apiKey: "test_key",
+      fetch: fetchMock,
+    });
+
+    const result = await client.downloadJobArtifacts({ jobId, accountId: "account-video" });
+
+    expect(result.jobId).toBe(jobId);
+    expect(result.type).toBe("video");
+    expect(result.kind).toBe("video_frames_zip");
+    expect(result.fileName).toBe(`${jobId}-frames.zip`);
+    expect(result.mimeType).toBe("application/zip");
+    expect(result.taskCount).toBe(2);
+    expect(result.fileCount).toBe(2);
+
+    const zipContent = unzipSync(new Uint8Array(await result.blob.arrayBuffer()));
+    expect(Object.keys(zipContent).sort()).toEqual([
+      "task-video-1/frames.ndjson",
+      "task-video-2/frames.ndjson",
+    ]);
+    expect(strFromU8(zipContent["task-video-1/frames.ndjson"] ?? new Uint8Array())).toBe(
+      frameTask1,
+    );
+    expect(strFromU8(zipContent["task-video-2/frames.ndjson"] ?? new Uint8Array())).toBe(
+      frameTask2,
+    );
+  });
+
+  it("throws an explicit error when no successful tasks are available for download", async () => {
+    const jobId = "job-download-no-success";
+    const fetchMock = asFetchMock(async () =>
+      jsonResponse({
+        requestId: "download-no-success-1",
+        jobId,
+        type: "image_batch",
+        status: "completed_with_errors",
+        totalItems: 1,
+        queuedItems: 0,
+        processingItems: 0,
+        successItems: 0,
+        failedItems: 1,
+        accountId: "account-image",
+        items: [{ taskId: "task-a", status: "failed", error: "failed" }],
+      }),
+    );
+
+    const client = new SegmentationClient({
+      apiKey: "test_key",
+      fetch: fetchMock,
+    });
+
+    await expect(
+      client.downloadJobArtifacts({ jobId, accountId: "account-image" }),
+    ).rejects.toThrow(/No successful tasks/);
+  });
+
+  it("fails fast on invalid downloadJobArtifacts input", async () => {
+    const fetchMock = asFetchMock(async () => jsonResponse({}));
+    const client = new SegmentationClient({
+      apiKey: "test_key",
+      fetch: fetchMock,
+    });
+
+    await expect(
+      client.downloadJobArtifacts({ jobId: "   ", accountId: "account-image" }),
+    ).rejects.toMatchObject({
+      direction: "input",
+      operation: "downloadJobArtifacts",
+    });
+
+    await expect(
+      client.downloadJobArtifacts({ jobId: "job-1", accountId: "   " }),
+    ).rejects.toMatchObject({
+      direction: "input",
+      operation: "downloadJobArtifacts",
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("fails fast on invalid createJob input", async () => {

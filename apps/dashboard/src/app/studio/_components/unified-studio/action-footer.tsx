@@ -1,4 +1,4 @@
-import { Cog, Loader2, Sparkles } from "lucide-react";
+import { Cog, Download, Loader2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DeleteIconButton } from "@/components/ui/delete-icon-button";
@@ -13,9 +13,13 @@ export function ActionFooter() {
   const {
     isRunning,
     canPressRun,
+    canDownloadArtifacts,
     uploadProgress,
+    downloadInFlight,
+    downloadAriaLabel,
     apiKey,
     onRunJob,
+    onDownloadArtifacts,
     onResetStudio,
     onSetApiKey,
     onClearApiKey,
@@ -45,6 +49,24 @@ export function ActionFooter() {
         size="lg"
       >
         Clear Workspace
+      </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="icon-lg"
+        aria-label={downloadInFlight ? "Downloading artifacts" : downloadAriaLabel}
+        title={downloadAriaLabel}
+        disabled={!canDownloadArtifacts || downloadInFlight}
+        onClick={() => {
+          void onDownloadArtifacts();
+        }}
+      >
+        {downloadInFlight ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : (
+          <Download className="size-4" />
+        )}
       </Button>
 
       <Popover>

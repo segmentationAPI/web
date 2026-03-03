@@ -6,6 +6,7 @@ import {
   normalizeMaskArtifacts,
   resolveManifestResultForTask,
   resolveOutputFolder,
+  type DownloadJobArtifactsResult,
   type JobStatusResult,
   type MaskArtifactResult,
 } from "@segmentationapi/sdk";
@@ -42,6 +43,7 @@ type StudioState = StudioSelectorState & {
   apiKey: string;
   uploadProgress: UploadProgress;
   statusRefreshing: boolean;
+  downloadInFlight: boolean;
   batchCarouselIndex: number;
   hasAttemptedEmptyPromptSubmit: boolean;
 };
@@ -61,6 +63,7 @@ type StudioActions = {
   resetStudio: () => void;
   refreshJobStatus: (jobIdOverride?: string, silent?: boolean) => Promise<void>;
   runJob: () => Promise<void>;
+  downloadArtifacts: () => Promise<DownloadJobArtifactsResult>;
 };
 
 type StudioStore = StudioState & StudioActions;
@@ -95,6 +98,7 @@ function createInitialState(userId = ""): StudioState {
     taskMasksByTaskId: {},
     videoBakedUrlByTaskId: {},
     statusRefreshing: false,
+    downloadInFlight: false,
     batchCarouselIndex: 0,
     hasAttemptedEmptyPromptSubmit: false,
   };
@@ -132,7 +136,10 @@ async function getAuthedClient(apiKeyInput?: string) {
   return new SegmentationClient({ jwt: tokenData.token });
 }
 
-async function loadMaskEntries(status: JobStatusResult, userId: string): Promise<LoadedMaskEntry[]> {
+async function loadMaskEntries(
+  status: JobStatusResult,
+  userId: string,
+): Promise<LoadedMaskEntry[]> {
   const taskIds =
     status.items
       ?.filter((item) => item.status === JobTaskStatus.Success)
@@ -248,6 +255,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       lastRefreshedAt: null,
       runState,
       uploadProgress: INITIAL_UPLOAD_PROGRESS,
+      downloadInFlight: false,
       jobStatus: null,
       taskMasksByTaskId: {},
       videoBakedUrlByTaskId: {},
@@ -448,6 +456,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
           : {}),
       },
       uploadProgress: INITIAL_UPLOAD_PROGRESS,
+      downloadInFlight: false,
       jobStatus: null,
       taskMasksByTaskId: {},
       videoBakedUrlByTaskId: {},
@@ -517,6 +526,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
             : {}),
         },
         uploadProgress: INITIAL_UPLOAD_PROGRESS,
+        downloadInFlight: false,
       });
 
       await get().refreshJobStatus(accepted.jobId, true);
@@ -526,7 +536,30 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
         runError: message,
         runState: { mode: StudioRunMode.Idle },
         uploadProgress: INITIAL_UPLOAD_PROGRESS,
+        downloadInFlight: false,
       });
+    }
+  },
+
+  downloadArtifacts: async () => {
+    const jobId = get().runState.jobId;
+    if (!jobId) {
+      throw new Error("Job ID is missing. Run and refresh a job before downloading artifacts.");
+    }
+    const accountId = get().userId.trim();
+    if (!accountId) {
+      throw new Error("Account ID is missing. Refresh your session and try again.");
+    }
+
+    set({ downloadInFlight: true });
+    try {
+      const client = await getAuthedClient(get().apiKey);
+      return await client.downloadJobArtifacts({
+        jobId,
+        accountId,
+      });
+    } finally {
+      set({ downloadInFlight: false });
     }
   },
 }));

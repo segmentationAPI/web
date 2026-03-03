@@ -91,6 +91,17 @@ export interface GetSegmentJobRequest {
   signal?: AbortSignal;
 }
 
+export interface DownloadJobArtifactsRequest {
+  jobId: string;
+  accountId: string;
+  signal?: AbortSignal;
+}
+
+export type DownloadJobArtifactsKind =
+  | "image_masks_zip"
+  | "video_frames_ndjson"
+  | "video_frames_zip";
+
 export interface UploadImageRequest {
   uploadUrl: string;
   data: BinaryData;
@@ -125,7 +136,9 @@ export interface UploadAndCreateVideoJobRequest {
   signal?: AbortSignal;
 }
 
-export type UploadAndCreateJobRequest = UploadAndCreateImageBatchJobRequest | UploadAndCreateVideoJobRequest;
+export type UploadAndCreateJobRequest =
+  | UploadAndCreateImageBatchJobRequest
+  | UploadAndCreateVideoJobRequest;
 
 export interface PresignedUploadRaw {
   uploadUrl: string;
@@ -277,6 +290,17 @@ export interface JobStatusResult {
   items?: JobStatusItem[];
   error?: string;
   raw: JobStatusRaw;
+}
+
+export interface DownloadJobArtifactsResult {
+  jobId: string;
+  type: JobType;
+  kind: DownloadJobArtifactsKind;
+  fileName: string;
+  mimeType: string;
+  blob: Blob;
+  taskCount: number;
+  fileCount: number;
 }
 
 export type ResponseBody = Record<string, unknown> | string | null;

@@ -110,7 +110,12 @@ function toMaskArtifactFromFrameObject(
 }
 
 function toNonNegativeInteger(value: unknown, fieldName: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    !Number.isInteger(value) ||
+    value < 0
+  ) {
     throw new Error(`Invalid timeline frame: \`${fieldName}\` must be a non-negative integer.`);
   }
   return value;
@@ -148,10 +153,7 @@ function parseFramesFromNdjson(content: string): NdjsonFrameRecord[] {
   return records;
 }
 
-export function buildMaskArtifactKey(
-  context: MaskArtifactContext,
-  maskIndex: number,
-): string {
+export function buildMaskArtifactKey(context: MaskArtifactContext, maskIndex: number): string {
   const account = context.userId.trim().replace(/^\/+|\/+$/g, "");
   const job = context.jobId.trim().replace(/^\/+|\/+$/g, "");
   const task = context.taskId.trim().replace(/^\/+|\/+$/g, "");
@@ -162,6 +164,17 @@ export function buildMaskArtifactUrl(key: string): string {
   return `${ASSETS_BASE_URL}/${key.replace(/^\/+/, "")}`;
 }
 
+export function buildVideoFramesArtifactKey(context: MaskArtifactContext): string {
+  const account = context.userId.trim().replace(/^\/+|\/+$/g, "");
+  const job = context.jobId.trim().replace(/^\/+|\/+$/g, "");
+  const task = context.taskId.trim().replace(/^\/+|\/+$/g, "");
+  return `outputs/${account}/${job}/${task}/frames.ndjson`;
+}
+
+export function buildVideoFramesArtifactUrl(key: string): string {
+  return `${ASSETS_BASE_URL}/${key.replace(/^\/+/, "")}`;
+}
+
 export function normalizeMaskArtifacts(
   result: unknown,
   context: MaskArtifactContext,
@@ -169,11 +182,13 @@ export function normalizeMaskArtifacts(
   const maskItems = Array.isArray(result)
     ? result
     : result && typeof result === "object" && Array.isArray((result as { masks?: unknown[] }).masks)
-      ? ((result as { masks: unknown[] }).masks)
+      ? (result as { masks: unknown[] }).masks
       : [];
 
   return maskItems
-    .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object")
+    .filter(
+      (entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object",
+    )
     .map((entry, index) => {
       const parsedMaskIndex = Number(entry.maskIndex ?? entry.mask_index ?? index);
       const maskIndex = Number.isFinite(parsedMaskIndex) ? parsedMaskIndex : index;
@@ -219,7 +234,9 @@ export function normalizeVideoMaskTimeline(
         ? undefined
         : toNonNegativeInteger(frameRecord.frameIdx, "frameIdx");
     const masks = frameRecord.objects
-      .map((objectEntry) => toMaskArtifactFromFrameObject(objectEntry as NdjsonFrameObject, context))
+      .map((objectEntry) =>
+        toMaskArtifactFromFrameObject(objectEntry as NdjsonFrameObject, context),
+      )
       .sort((a, b) => a.maskIndex - b.maskIndex);
 
     return frameIdx === undefined

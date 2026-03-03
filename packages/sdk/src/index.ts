@@ -2,6 +2,8 @@ export { SegmentationClient } from "./client";
 export {
   buildMaskArtifactKey,
   buildMaskArtifactUrl,
+  buildVideoFramesArtifactKey,
+  buildVideoFramesArtifactUrl,
   decodeCocoRleMask,
   loadVideoMaskTimeline,
   normalizeMaskArtifacts,
@@ -29,6 +31,9 @@ export type {
   BinaryData,
   CreateJobRequest,
   CreatePresignedUploadRequest,
+  DownloadJobArtifactsKind,
+  DownloadJobArtifactsRequest,
+  DownloadJobArtifactsResult,
   FetchFunction,
   GetSegmentJobRequest,
   JobAcceptedRaw,

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo } from "react";
+import { JobTaskStatus } from "@segmentationapi/sdk";
+import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 
 import {
@@ -19,6 +21,7 @@ import {
   selectFirstVideoFile,
   selectHasOutputs,
   selectImageFiles,
+  isTerminalJobStatus,
   selectJobStatusTone,
   selectProgressText,
   selectSingleImageMasks,
@@ -30,7 +33,9 @@ import {
 import { useStudioStore } from "../../_store/use-studio-store";
 import { useFilePreviewUrls } from "./use-file-preview-urls";
 
-const SYNTHETIC_PROMPT_ROW: PromptRow[] = [{ id: "synthetic-prompt", value: "__placeholder_prompt__" }];
+const SYNTHETIC_PROMPT_ROW: PromptRow[] = [
+  { id: "synthetic-prompt", value: "__placeholder_prompt__" },
+];
 
 export function useBindStudioUser(userId: string) {
   const setUserId = useStudioStore((state) => state.setUserId);
@@ -257,11 +262,12 @@ export function useStudioPreviewViewModel() {
   const activeBatchItem = selectActiveBatchItem({ jobStatus }, batchCarouselIndex);
   const batchImageUrl = selectBatchImageUrl(imagePreviewUrls, carouselIndex);
   const activeVideoBakedUrl = selectActiveVideoBakedUrl({ jobStatus, videoBakedUrlByTaskId });
-  const singleImageMasks = selectSingleImageMasks({ runState, jobStatus, taskMasksByTaskId }, imageFiles);
+  const singleImageMasks = selectSingleImageMasks(
+    { runState, jobStatus, taskMasksByTaskId },
+    imageFiles,
+  );
   const firstImagePreviewUrl = selectFirstImagePreviewUrl(imagePreviewUrls);
-  const activeBatchMasks = activeBatchItem
-    ? (taskMasksByTaskId[activeBatchItem.taskId] ?? [])
-    : [];
+  const activeBatchMasks = activeBatchItem ? (taskMasksByTaskId[activeBatchItem.taskId] ?? []) : [];
   const isRunning = runState.mode === StudioRunMode.Running;
 
   return {
@@ -293,11 +299,14 @@ export function useStudioFooterViewModel() {
     boxes,
     videoSourceFps,
     videoFpsParseState,
+    jobStatus,
     uploadProgress,
+    downloadInFlight,
     apiKey,
     setApiKey,
     runJob,
     resetStudio,
+    downloadArtifacts,
     setHasAttemptedEmptyPromptSubmit,
   } = useStudioStore(
     useShallow((state) => ({
@@ -307,11 +316,14 @@ export function useStudioFooterViewModel() {
       boxes: state.boxes,
       videoSourceFps: state.videoSourceFps,
       videoFpsParseState: state.videoFpsParseState,
+      jobStatus: state.jobStatus,
       uploadProgress: state.uploadProgress,
+      downloadInFlight: state.downloadInFlight,
       apiKey: state.apiKey,
       setApiKey: state.setApiKey,
       runJob: state.runJob,
       resetStudio: state.resetStudio,
+      downloadArtifacts: state.downloadArtifacts,
       setHasAttemptedEmptyPromptSubmit: state.setHasAttemptedEmptyPromptSubmit,
     })),
   );
@@ -333,9 +345,16 @@ export function useStudioFooterViewModel() {
     [runState, files, boxes, videoSourceFps, videoFpsParseState],
   );
 
-  const canAttemptRunWithoutPrompts =
-    cleanPromptCount < 1 && !canRun && canRunWithSyntheticPrompt;
+  const canAttemptRunWithoutPrompts = cleanPromptCount < 1 && !canRun && canRunWithSyntheticPrompt;
   const canPressRun = canRun || canAttemptRunWithoutPrompts;
+  const successfulTaskCount =
+    jobStatus?.items?.filter((item) => item.status === JobTaskStatus.Success).length ?? 0;
+  const canDownloadArtifacts =
+    runState.mode === StudioRunMode.Ready &&
+    isTerminalJobStatus(jobStatus?.status) &&
+    successfulTaskCount > 0;
+  const downloadAriaLabel =
+    (jobStatus?.type ?? runState.selectedType) === "video" ? "Download frames" : "Download masks";
 
   const onRunJob = useCallback(() => {
     if (cleanPromptCount < 1) {
@@ -356,12 +375,37 @@ export function useStudioFooterViewModel() {
     setApiKey("");
   }, [setApiKey]);
 
+  const onDownloadArtifacts = useCallback(async () => {
+    try {
+      const payload = await downloadArtifacts();
+      const objectUrl = URL.createObjectURL(payload.blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = payload.fileName;
+      anchor.rel = "noopener";
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+      }, 0);
+      toast.success(`Downloaded ${payload.fileName}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to download artifacts.";
+      toast.error(message);
+    }
+  }, [downloadArtifacts]);
+
   return {
     isRunning,
     canPressRun,
+    canDownloadArtifacts,
     uploadProgress,
+    downloadInFlight,
+    downloadAriaLabel,
     apiKey,
     onRunJob,
+    onDownloadArtifacts,
     onResetStudio,
     onSetApiKey: setApiKey,
     onClearApiKey,

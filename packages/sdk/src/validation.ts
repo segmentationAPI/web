@@ -5,6 +5,7 @@ import {
   JobTaskStatus,
   type CreateJobRequest,
   type CreatePresignedUploadRequest,
+  type DownloadJobArtifactsRequest,
   type FetchFunction,
   type GetSegmentJobRequest,
   type JobAcceptedRaw,
@@ -18,19 +19,12 @@ import {
 
 export const nonEmptyString = z
   .string()
-  .check(
-    z.refine(
-      (value) => value.trim().length > 0,
-      "Expected a non-empty string.",
-    ),
-  );
+  .check(z.refine((value) => value.trim().length > 0, "Expected a non-empty string."));
 
 export const finiteNumber = z
   .number()
   .check(z.refine(Number.isFinite, "Expected a finite number."));
-export const finiteInteger = finiteNumber.check(
-  z.refine(Number.isInteger, "Expected an integer."),
-);
+export const finiteInteger = finiteNumber.check(z.refine(Number.isInteger, "Expected an integer."));
 
 export const urlString = z.url();
 
@@ -74,16 +68,14 @@ export const createPresignedUploadRequestSchema: z.ZodMiniType<CreatePresignedUp
     signal: abortSignalSchema,
   });
 
-export const uploadImageRequestSchema: z.ZodMiniType<UploadImageRequest> =
-  z.object({
-    uploadUrl: urlString,
-    data: binaryDataSchema,
-    contentType: z.optional(nonEmptyString),
-    signal: abortSignalSchema,
-  });
+export const uploadImageRequestSchema: z.ZodMiniType<UploadImageRequest> = z.object({
+  uploadUrl: urlString,
+  data: binaryDataSchema,
+  contentType: z.optional(nonEmptyString),
+  signal: abortSignalSchema,
+});
 
-export const promptsSchema = z
-  .array(nonEmptyString);
+export const promptsSchema = z.array(nonEmptyString);
 export const videoOutputModeSchema = z.enum(["frames_only", "frames_and_video"]);
 
 export const imageBoxSchema = z.object({
@@ -135,9 +127,9 @@ const uploadFileSchema = z.object({
 });
 
 const uploadAndCreateJobRequestCommonSchema = z.object({
-  files: z.array(uploadFileSchema).check(
-    z.refine((value) => value.length >= 1, "Expected at least 1 file."),
-  ),
+  files: z
+    .array(uploadFileSchema)
+    .check(z.refine((value) => value.length >= 1, "Expected at least 1 file.")),
   threshold: z.optional(finiteNumber),
   maskThreshold: z.optional(finiteNumber),
   signal: abortSignalSchema,
@@ -159,10 +151,11 @@ const uploadAndCreateVideoJobRequestSchema = z.object({
   points: z.optional(z.never("Field `points` is not supported.")),
 });
 
-export const uploadAndCreateJobRequestSchema: z.ZodMiniType<UploadAndCreateJobRequest> = z.intersection(
-  uploadAndCreateJobRequestCommonSchema,
-  z.union([uploadAndCreateImageBatchJobRequestSchema, uploadAndCreateVideoJobRequestSchema]),
-);
+export const uploadAndCreateJobRequestSchema: z.ZodMiniType<UploadAndCreateJobRequest> =
+  z.intersection(
+    uploadAndCreateJobRequestCommonSchema,
+    z.union([uploadAndCreateImageBatchJobRequestSchema, uploadAndCreateVideoJobRequestSchema]),
+  );
 
 // --- Video request schemas ---
 
@@ -175,35 +168,27 @@ const segmentVideoPromptsSchema = z.object({
   boxes: z.optional(z.never("Field `boxes` is not supported for video segmentation.")),
   text: z.optional(z.never("Field `text` is not supported for video segmentation.")),
   pointLabels: z.optional(z.never("Field `pointLabels` is not supported for video segmentation.")),
-  pointObjectIds: z.optional(z.never("Field `pointObjectIds` is not supported for video segmentation.")),
-  boxObjectIds: z.optional(z.never("Field `boxObjectIds` is not supported for video segmentation.")),
+  pointObjectIds: z.optional(
+    z.never("Field `pointObjectIds` is not supported for video segmentation."),
+  ),
+  boxObjectIds: z.optional(
+    z.never("Field `boxObjectIds` is not supported for video segmentation."),
+  ),
 });
 
 const segmentVideoSamplingByFpsSchema = z.object({
-  fps: finiteNumber.check(
-    z.refine((value) => value > 0, "`fps` must be greater than 0."),
-  ),
-  numFrames: z.optional(
-    z.never("Provide only one sampling selector: `fps` or `numFrames`."),
-  ),
+  fps: finiteNumber.check(z.refine((value) => value > 0, "`fps` must be greater than 0.")),
+  numFrames: z.optional(z.never("Provide only one sampling selector: `fps` or `numFrames`.")),
 });
 
 const segmentVideoSamplingByFrameCountSchema = z.object({
-  fps: z.optional(
-    z.never("Provide only one sampling selector: `fps` or `numFrames`."),
-  ),
-  numFrames: finiteInteger.check(
-    z.refine((value) => value >= 1, "`numFrames` must be >= 1."),
-  ),
+  fps: z.optional(z.never("Provide only one sampling selector: `fps` or `numFrames`.")),
+  numFrames: finiteInteger.check(z.refine((value) => value >= 1, "`numFrames` must be >= 1.")),
 });
 
 const segmentVideoSamplingDefaultSchema = z.object({
-  fps: z.optional(
-    z.never("Provide only one sampling selector: `fps` or `numFrames`."),
-  ),
-  numFrames: z.optional(
-    z.never("Provide only one sampling selector: `fps` or `numFrames`."),
-  ),
+  fps: z.optional(z.never("Provide only one sampling selector: `fps` or `numFrames`.")),
+  numFrames: z.optional(z.never("Provide only one sampling selector: `fps` or `numFrames`.")),
 });
 
 const segmentVideoBaseSchema = z.object({
@@ -236,9 +221,15 @@ export const segmentVideoRequestSchema: z.ZodMiniType<SegmentVideoRequest> = z
     ),
   );
 
-export const getSegmentJobRequestSchema: z.ZodMiniType<GetSegmentJobRequest> =
+export const getSegmentJobRequestSchema: z.ZodMiniType<GetSegmentJobRequest> = z.object({
+  jobId: nonEmptyString,
+  signal: abortSignalSchema,
+});
+
+export const downloadJobArtifactsRequestSchema: z.ZodMiniType<DownloadJobArtifactsRequest> =
   z.object({
     jobId: nonEmptyString,
+    accountId: nonEmptyString,
     signal: abortSignalSchema,
   });
 
@@ -250,22 +241,20 @@ export const apiErrorBodySchema = z.object({
   requestId: z.optional(z.string()),
 });
 
-export const presignedUploadRawSchema: z.ZodMiniType<PresignedUploadRaw> =
-  z.object({
-    uploadUrl: urlString,
-    taskId: nonEmptyString,
-    bucket: nonEmptyString,
-    expiresIn: finiteNumber,
-  });
+export const presignedUploadRawSchema: z.ZodMiniType<PresignedUploadRaw> = z.object({
+  uploadUrl: urlString,
+  taskId: nonEmptyString,
+  bucket: nonEmptyString,
+  expiresIn: finiteNumber,
+});
 
-export const jobAcceptedRawSchema: z.ZodMiniType<JobAcceptedRaw> =
-  z.object({
-    requestId: z.optional(z.string()),
-    jobId: nonEmptyString,
-    type: z.enum(["image_batch", "video"]),
-    status: z.literal("queued"),
-    totalItems: finiteNumber,
-  });
+export const jobAcceptedRawSchema: z.ZodMiniType<JobAcceptedRaw> = z.object({
+  requestId: z.optional(z.string()),
+  jobId: nonEmptyString,
+  type: z.enum(["image_batch", "video"]),
+  status: z.literal("queued"),
+  totalItems: finiteNumber,
+});
 
 export const jobStatusItemRawSchema: z.ZodMiniType<JobStatusItemRaw> = z.object({
   taskId: nonEmptyString,
@@ -273,34 +262,29 @@ export const jobStatusItemRawSchema: z.ZodMiniType<JobStatusItemRaw> = z.object(
   error: z.optional(z.nullable(nonEmptyString)),
 });
 
-export const jobStatusRawSchema: z.ZodMiniType<JobStatusRaw> =
-  z.object({
-    requestId: z.optional(z.string()),
-    jobId: nonEmptyString,
-    type: z.enum(["image_batch", "video"]),
-    status: z.enum(JobRequestStatus),
-    totalItems: finiteNumber,
-    queuedItems: finiteNumber,
-    processingItems: finiteNumber,
-    successItems: finiteNumber,
-    failedItems: finiteNumber,
-    accountId: z.optional(nonEmptyString),
-    outputFolder: z.optional(nonEmptyString),
-    inputs: z.optional(z.array(nonEmptyString)),
-    items: z.optional(z.array(jobStatusItemRawSchema)),
-    error: z.optional(nonEmptyString),
-  });
+export const jobStatusRawSchema: z.ZodMiniType<JobStatusRaw> = z.object({
+  requestId: z.optional(z.string()),
+  jobId: nonEmptyString,
+  type: z.enum(["image_batch", "video"]),
+  status: z.enum(JobRequestStatus),
+  totalItems: finiteNumber,
+  queuedItems: finiteNumber,
+  processingItems: finiteNumber,
+  successItems: finiteNumber,
+  failedItems: finiteNumber,
+  accountId: z.optional(nonEmptyString),
+  outputFolder: z.optional(nonEmptyString),
+  inputs: z.optional(z.array(nonEmptyString)),
+  items: z.optional(z.array(jobStatusItemRawSchema)),
+  error: z.optional(nonEmptyString),
+});
 
 // --- Parse helpers ---
 
-function normalizeIssues(
-  issues: readonly z.core.$ZodIssue[],
-): ValidationIssue[] {
+function normalizeIssues(issues: readonly z.core.$ZodIssue[]): ValidationIssue[] {
   return issues.map((issue) => ({
     path:
-      issue.path.length === 0
-        ? "<root>"
-        : issue.path.map((segment) => String(segment)).join("."),
+      issue.path.length === 0 ? "<root>" : issue.path.map((segment) => String(segment)).join("."),
     message: issue.message,
     code: issue.code,
   }));

@@ -1,11 +1,24 @@
 import type { ZodMiniType } from "zod/mini";
+import { zipSync } from "fflate";
 import { NetworkError, SegmentationApiError, UploadError } from "./errors";
+import {
+  buildVideoFramesArtifactKey,
+  buildVideoFramesArtifactUrl,
+  normalizeMaskArtifacts,
+} from "./masks";
+import {
+  buildOutputManifestUrl,
+  resolveManifestResultForTask,
+  resolveOutputFolder,
+} from "./output-manifest";
+import { JobTaskStatus } from "./types";
 import {
   jobAcceptedRawSchema,
   jobStatusRawSchema,
   apiErrorBodySchema,
   createJobRequestSchema,
   createPresignedUploadRequestSchema,
+  downloadJobArtifactsRequestSchema,
   getSegmentJobRequestSchema,
   parseInputOrThrow,
   parseResponseOrThrow,
@@ -20,6 +33,8 @@ import type {
   BinaryData,
   CreateJobRequest,
   CreatePresignedUploadRequest,
+  DownloadJobArtifactsRequest,
+  DownloadJobArtifactsResult,
   FetchFunction,
   GetSegmentJobRequest,
   JobAcceptedRaw,
@@ -135,9 +150,7 @@ function buildJobAcceptedResult(raw: JobAcceptedRaw): JobAcceptedResult {
   };
 }
 
-function buildJobStatusResult(
-  raw: JobStatusRaw,
-): JobStatusResult {
+function buildJobStatusResult(raw: JobStatusRaw): JobStatusResult {
   return {
     requestId: raw.requestId ?? "",
     jobId: raw.jobId,
@@ -156,6 +169,24 @@ function buildJobStatusResult(
     error: raw.error,
     raw,
   };
+}
+
+function zipEntriesToBlob(entries: Record<string, Uint8Array>): Blob {
+  const zipped = zipSync(entries);
+  return new Blob([new Uint8Array(zipped).buffer], { type: "application/zip" });
+}
+
+function ensureTaskIdsWithSuccess(status: JobStatusResult): string[] {
+  const taskIds =
+    status.items
+      ?.filter((item) => item.status === JobTaskStatus.Success)
+      .map((item) => item.taskId) ?? [];
+
+  if (taskIds.length < 1) {
+    throw new Error("No successful tasks are available for download.");
+  }
+
+  return taskIds;
 }
 
 export class SegmentationClient {
@@ -286,11 +317,7 @@ export class SegmentationClient {
   }
 
   async createJob(input: CreateJobRequest): Promise<JobAcceptedResult> {
-    const parsedInput = parseInputOrThrow(
-      createJobRequestSchema,
-      input,
-      "createJob",
-    );
+    const parsedInput = parseInputOrThrow(createJobRequestSchema, input, "createJob");
     const prompts = normalizePrompts(parsedInput.prompts);
 
     const payload: Record<string, unknown> = {
@@ -385,6 +412,144 @@ export class SegmentationClient {
     });
 
     return buildJobStatusResult(raw);
+  }
+
+  async downloadJobArtifacts(
+    input: DownloadJobArtifactsRequest,
+  ): Promise<DownloadJobArtifactsResult> {
+    const parsedInput = parseInputOrThrow(
+      downloadJobArtifactsRequestSchema,
+      input,
+      "downloadJobArtifacts",
+    );
+    const status = await this.getSegmentJob({
+      jobId: parsedInput.jobId,
+      signal: parsedInput.signal,
+    });
+
+    const userId = parsedInput.accountId;
+
+    const successfulTaskIds = ensureTaskIdsWithSuccess(status);
+
+    if (status.type === "video") {
+      const taskContent = await Promise.all(
+        successfulTaskIds.map(async (taskId) => {
+          const key = buildVideoFramesArtifactKey({
+            userId,
+            jobId: status.jobId,
+            taskId,
+          });
+          const url = buildVideoFramesArtifactUrl(key);
+          const binary = await this.fetchAssetBinary(url, parsedInput.signal);
+          return { taskId, binary };
+        }),
+      );
+
+      if (taskContent.length === 1) {
+        return {
+          jobId: status.jobId,
+          type: "video",
+          kind: "video_frames_ndjson",
+          fileName: "frames.ndjson",
+          mimeType: "application/x-ndjson",
+          blob: new Blob([new Uint8Array(taskContent[0]!.binary).buffer], {
+            type: "application/x-ndjson",
+          }),
+          taskCount: 1,
+          fileCount: 1,
+        };
+      }
+
+      const zipEntries: Record<string, Uint8Array> = {};
+      for (const entry of taskContent) {
+        zipEntries[`${entry.taskId}/frames.ndjson`] = entry.binary;
+      }
+
+      return {
+        jobId: status.jobId,
+        type: "video",
+        kind: "video_frames_zip",
+        fileName: `${status.jobId}-frames.zip`,
+        mimeType: "application/zip",
+        blob: zipEntriesToBlob(zipEntries),
+        taskCount: successfulTaskIds.length,
+        fileCount: taskContent.length,
+      };
+    }
+
+    const manifestUrl = buildOutputManifestUrl(userId, status.jobId, resolveOutputFolder(status));
+    const manifest = await this.fetchAssetJson(manifestUrl, parsedInput.signal);
+    const maskArtifactsByTask = successfulTaskIds.flatMap((taskId) =>
+      normalizeMaskArtifacts(resolveManifestResultForTask(manifest, taskId), {
+        userId,
+        jobId: status.jobId,
+        taskId,
+      }).map((artifact) => ({ taskId, artifact })),
+    );
+
+    if (maskArtifactsByTask.length < 1) {
+      throw new Error("No mask artifacts were found for successful tasks.");
+    }
+
+    const zipEntries: Record<string, Uint8Array> = {};
+    await Promise.all(
+      maskArtifactsByTask.map(async ({ taskId, artifact }) => {
+        const binary = await this.fetchAssetBinary(artifact.url, parsedInput.signal);
+        const maskSuffix = Number.isInteger(artifact.maskIndex)
+          ? artifact.maskIndex
+          : Math.floor(artifact.maskIndex);
+        const fileKey = `${taskId}/mask_${maskSuffix}.png`;
+        zipEntries[fileKey] = binary;
+      }),
+    );
+
+    return {
+      jobId: status.jobId,
+      type: "image_batch",
+      kind: "image_masks_zip",
+      fileName: `${status.jobId}-masks.zip`,
+      mimeType: "application/zip",
+      blob: zipEntriesToBlob(zipEntries),
+      taskCount: successfulTaskIds.length,
+      fileCount: Object.keys(zipEntries).length,
+    };
+  }
+
+  private async fetchAssetResponse(url: string, signal?: AbortSignal): Promise<Response> {
+    let response: Response;
+    try {
+      response = await this.fetchImpl(url, {
+        method: "GET",
+        signal,
+      });
+    } catch (error) {
+      throw new NetworkError("Artifact download failed due to a network error.", {
+        context: "api",
+        cause: error,
+      });
+    }
+
+    if (!response.ok) {
+      throw new Error(`Artifact download failed for ${url} with status ${response.status}.`);
+    }
+
+    return response;
+  }
+
+  private async fetchAssetJson(url: string, signal?: AbortSignal): Promise<unknown> {
+    const response = await this.fetchAssetResponse(url, signal);
+
+    try {
+      return await response.json();
+    } catch {
+      throw new Error(`Artifact response is not valid JSON: ${url}.`);
+    }
+  }
+
+  private async fetchAssetBinary(url: string, signal?: AbortSignal): Promise<Uint8Array> {
+    const response = await this.fetchAssetResponse(url, signal);
+    const buffer = await response.arrayBuffer();
+    return new Uint8Array(buffer);
   }
 
   private async requestApi<TPayload>(input: {

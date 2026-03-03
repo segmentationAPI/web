@@ -161,9 +161,7 @@ function BatchImagePreview({
           type="button"
           size="icon-sm"
           variant="outline"
-          onClick={() =>
-            onSetBatchCarouselIndex(Math.min(imageFileCount - 1, carouselIndex + 1))
-          }
+          onClick={() => onSetBatchCarouselIndex(Math.min(imageFileCount - 1, carouselIndex + 1))}
           disabled={carouselIndex >= imageFileCount - 1}
           aria-label="Next batch image"
         >
@@ -179,19 +177,14 @@ type VideoPreviewProps = {
   activeVideoBakedUrl: string | null;
 };
 
-function VideoPreview({
-  isRunning,
-  activeVideoBakedUrl,
-}: VideoPreviewProps) {
+function VideoPreview({ isRunning, activeVideoBakedUrl }: VideoPreviewProps) {
   if (activeVideoBakedUrl) {
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <div className="overflow-hidden rounded-lg border border-border/40 bg-background/30">
           <video src={activeVideoBakedUrl} controls className="max-h-full w-full object-contain" />
         </div>
-        <p className="text-xs text-muted-foreground">
-          Backend-baked video playback.
-        </p>
+        <p className="text-xs text-muted-foreground">Backend-baked video playback.</p>
       </div>
     );
   }
@@ -228,35 +221,37 @@ export function PreviewPanel() {
 
   return (
     <div className="flex min-h-0 flex-col overflow-hidden p-4 sm:p-5">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <SectionLabel>Preview & Output</SectionLabel>
 
-        {viewMode === "single-image" ? (
-          <div className="flex items-center gap-2">
-            {singleImageMasks ? (
-              <span className="font-mono text-[10px] uppercase tracking-[0.11em] text-secondary">
-                {singleImageMasks.length} masks
-              </span>
-            ) : boxes.length > 0 ? (
-              <>
-                <span className="font-mono text-[10px] uppercase tracking-[0.11em] text-muted-foreground">
-                  {boxes.length} boxes
+        <div className="flex items-center gap-2">
+          {viewMode === "single-image" ? (
+            <>
+              {singleImageMasks ? (
+                <span className="font-mono text-[10px] uppercase tracking-[0.11em] text-secondary">
+                  {singleImageMasks.length} masks
                 </span>
-                {!hasOutputs ? (
-                  <Button
-                    type="button"
-                    size="xs"
-                    variant="ghost"
-                    onClick={onClearBoxes}
-                    className="text-muted-foreground"
-                  >
-                    Clear
-                  </Button>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-        ) : null}
+              ) : boxes.length > 0 ? (
+                <>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.11em] text-muted-foreground">
+                    {boxes.length} boxes
+                  </span>
+                  {!hasOutputs ? (
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="ghost"
+                      onClick={onClearBoxes}
+                      className="text-muted-foreground"
+                    >
+                      Clear
+                    </Button>
+                  ) : null}
+                </>
+              ) : null}
+            </>
+          ) : null}
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
@@ -285,10 +280,7 @@ export function PreviewPanel() {
         ) : null}
 
         {viewMode === "video" && videoPreviewUrl ? (
-          <VideoPreview
-            isRunning={isRunning}
-            activeVideoBakedUrl={activeVideoBakedUrl}
-          />
+          <VideoPreview isRunning={isRunning} activeVideoBakedUrl={activeVideoBakedUrl} />
         ) : null}
       </div>
     </div>
