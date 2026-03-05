@@ -7,7 +7,7 @@ import {
   useStudioMetadataViewModel,
   useStudioStatusHeaderViewModel,
 } from "./use-studio-view-model";
-import { formatTimestamp, ToneBadge } from "./studio-ui-primitives";
+import { formatTimestamp, ToneBadge } from "@/components/studio/studio-status-primitives";
 
 export function StatusHeader() {
   const {

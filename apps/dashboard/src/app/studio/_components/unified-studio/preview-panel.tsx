@@ -10,10 +10,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { SectionLabel } from "@/components/studio/studio-status-primitives";
 
 import type { BoxCoordinates } from "../studio-canvas-types";
 import { ImageCanvas } from "../image-canvas";
-import { SectionLabel } from "./studio-ui-primitives";
 import { useStudioPreviewViewModel } from "./use-studio-view-model";
 
 function EmptyPreview() {

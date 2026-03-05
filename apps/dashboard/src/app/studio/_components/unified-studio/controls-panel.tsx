@@ -6,8 +6,12 @@ import { DeleteIconButton } from "@/components/ui/delete-icon-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import {
+  ErrorBanner,
+  SectionDivider,
+  SectionLabel,
+} from "@/components/studio/studio-status-primitives";
 
-import { ErrorBanner, SectionDivider, SectionLabel } from "./studio-ui-primitives";
 import { useStudioControlsViewModel } from "./use-studio-view-model";
 
 const FILE_INPUT_ID = "studio-file-input";

@@ -1,4 +1,4 @@
-import { ErrorBanner } from "./studio-ui-primitives";
+import { ErrorBanner } from "@/components/studio/studio-status-primitives";
 import { useStudioErrorViewModel } from "./use-studio-view-model";
 
 export function ErrorStrip() {

@@ -49,4 +49,20 @@ export type JobDetail = JobListItem & {
     framesWithMasks: number;
     totalMasks: number;
   } | null;
+  requestConfig: {
+    prompts: string[];
+    boxes: Array<{
+      coordinates: [number, number, number, number];
+      isPositive: boolean;
+    }> | null;
+    points: Array<{
+      coordinates: [number, number];
+      isPositive: boolean;
+    }> | null;
+    threshold: number | null;
+    maskThreshold: number | null;
+    frameIdx: number | null;
+    fps: number | null;
+    videoOutputMode: string | null;
+  };
 };

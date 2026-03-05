@@ -50,6 +50,14 @@ type InputManifestDocument = {
     prompts?: unknown;
     boxes?: unknown;
     points?: unknown;
+    threshold?: unknown;
+    maskThreshold?: unknown;
+    mask_threshold?: unknown;
+    frameIdx?: unknown;
+    frame_idx?: unknown;
+    fps?: unknown;
+    videoOutputMode?: unknown;
+    video_output_mode?: unknown;
     inputS3Key?: unknown;
   };
 };
@@ -69,6 +77,99 @@ function normalizeImageOutputs(
     score: mask.score,
     box: mask.box,
   }));
+}
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+  return value;
+}
+
+function parseBoxes(value: unknown): JobDetail["requestConfig"]["boxes"] {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const parsed = value.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+
+    const typedItem = item as Record<string, unknown>;
+    const coordinates = Array.isArray(typedItem.coordinates) ? typedItem.coordinates : null;
+    if (!coordinates || coordinates.length !== 4) {
+      return [];
+    }
+
+    const [x1, y1, x2, y2] = coordinates;
+    if ([x1, y1, x2, y2].some((entry) => typeof entry !== "number" || !Number.isFinite(entry))) {
+      return [];
+    }
+
+    return [
+      {
+        coordinates: [x1, y1, x2, y2] as [number, number, number, number],
+        isPositive: typedItem.isPositive !== false,
+      },
+    ];
+  });
+
+  return parsed.length > 0 ? parsed : null;
+}
+
+function parsePoints(value: unknown): JobDetail["requestConfig"]["points"] {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const parsed = value.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+
+    const typedItem = item as Record<string, unknown>;
+    const coordinates = Array.isArray(typedItem.coordinates) ? typedItem.coordinates : null;
+    if (!coordinates || coordinates.length !== 2) {
+      return [];
+    }
+
+    const [x, y] = coordinates;
+    if ([x, y].some((entry) => typeof entry !== "number" || !Number.isFinite(entry))) {
+      return [];
+    }
+
+    return [
+      {
+        coordinates: [x, y] as [number, number],
+        isPositive: typedItem.isPositive !== false,
+      },
+    ];
+  });
+
+  return parsed.length > 0 ? parsed : null;
+}
+
+function normalizeRequestConfig(payload: InputManifestDocument["payload"], fallbackPrompts: string[]) {
+  const prompts = Array.isArray(payload?.prompts)
+    ? payload.prompts.map((value) => String(value).trim()).filter((value) => value.length > 0)
+    : fallbackPrompts;
+
+  return {
+    prompts,
+    boxes: parseBoxes(payload?.boxes),
+    points: parsePoints(payload?.points),
+    threshold: toFiniteNumber(payload?.threshold),
+    maskThreshold: toFiniteNumber(payload?.maskThreshold ?? payload?.mask_threshold),
+    frameIdx: toFiniteNumber(payload?.frameIdx ?? payload?.frame_idx),
+    fps: toFiniteNumber(payload?.fps),
+    videoOutputMode:
+      typeof payload?.videoOutputMode === "string"
+        ? payload.videoOutputMode
+        : typeof payload?.video_output_mode === "string"
+          ? payload.video_output_mode
+          : null,
+  } satisfies JobDetail["requestConfig"];
 }
 
 function normalizeVideoOutput(
@@ -154,32 +255,85 @@ export async function listApiKeysForUser(userId: string) {
 export async function listJobsForUser(params: {
   limit?: number;
   offset?: number;
+  query?: string;
+  status?: JobListItem["status"] | "all";
+  mode?: JobListItem["processingMode"] | "all";
   userId: string;
 }): Promise<{
   items: JobListItem[];
   nextOffset: number | null;
+  totalCount: number;
 }> {
   const offset = params.offset ?? 0;
   const parsedLimit = params.limit ?? DEFAULT_PAGE_SIZE;
   const limit = Math.min(Math.max(parsedLimit, 1), 100);
+  const normalizedQuery = (params.query ?? "").trim().toLowerCase();
 
   const jobs = await listDynamoJobsForAccount(params.userId);
-  const page = jobs.slice(offset, offset + limit);
+  let filteredJobs = jobs.filter((job) => {
+    const statusMatches = params.status === undefined || params.status === "all"
+      ? true
+      : toUiStatus(job.status) === params.status;
+    const modeMatches = params.mode === undefined || params.mode === "all"
+      ? true
+      : toUiProcessingMode(job.requestType) === params.mode;
 
-  const apiKeyIds = Array.from(
-    new Set(page.map((job) => job.apiKeyId).filter(Boolean)),
-  ) as string[];
-  const prefixes = apiKeyIds.length
-    ? await db
-        .select({
-          id: apiKey.id,
-          keyPrefix: apiKey.keyPrefix,
-        })
-        .from(apiKey)
-        .where(and(eq(apiKey.userId, params.userId), inArray(apiKey.id, apiKeyIds)))
-    : [];
+    return statusMatches && modeMatches;
+  });
 
-  const prefixById = new Map(prefixes.map((row) => [row.id, row.keyPrefix]));
+  const prefixById = new Map<string, string>();
+
+  if (normalizedQuery.length > 0) {
+    const filteredApiKeyIds = Array.from(
+      new Set(filteredJobs.map((job) => job.apiKeyId).filter(Boolean)),
+    ) as string[];
+
+    const queryPrefixes = filteredApiKeyIds.length
+      ? await db
+          .select({
+            id: apiKey.id,
+            keyPrefix: apiKey.keyPrefix,
+          })
+          .from(apiKey)
+          .where(and(eq(apiKey.userId, params.userId), inArray(apiKey.id, filteredApiKeyIds)))
+      : [];
+
+    for (const row of queryPrefixes) {
+      prefixById.set(row.id, row.keyPrefix);
+    }
+
+    filteredJobs = filteredJobs.filter((job) => {
+      const apiKeyPrefix = job.apiKeyId ? prefixById.get(job.apiKeyId) ?? "" : "";
+      return (
+        job.jobId.toLowerCase().includes(normalizedQuery) ||
+        apiKeyPrefix.toLowerCase().includes(normalizedQuery)
+      );
+    });
+  }
+
+  const totalCount = filteredJobs.length;
+  const page = filteredJobs.slice(offset, offset + limit);
+  const pageApiKeyIds = Array.from(
+    new Set(
+      page
+        .map((job) => job.apiKeyId)
+        .filter((id): id is string => typeof id === "string" && !prefixById.has(id)),
+    ),
+  );
+
+  if (pageApiKeyIds.length > 0) {
+    const pagePrefixes = await db
+      .select({
+        id: apiKey.id,
+        keyPrefix: apiKey.keyPrefix,
+      })
+      .from(apiKey)
+      .where(and(eq(apiKey.userId, params.userId), inArray(apiKey.id, pageApiKeyIds)));
+
+    for (const row of pagePrefixes) {
+      prefixById.set(row.id, row.keyPrefix);
+    }
+  }
 
   const items: JobListItem[] = page.map((job) => ({
     id: job.jobId,
@@ -199,7 +353,8 @@ export async function listJobsForUser(params: {
 
   return {
     items,
-    nextOffset: offset + page.length >= jobs.length ? null : offset + page.length,
+    nextOffset: offset + page.length >= totalCount ? null : offset + page.length,
+    totalCount,
   };
 }
 
@@ -266,10 +421,8 @@ export async function getJobDetailForUser(params: {
         .then((rows) => rows[0]?.keyPrefix ?? null)
     : null;
 
-  const firstTaskManifest = taskManifests[0]?.inputManifest?.payload ?? {};
-  const promptsFromManifest = Array.isArray(firstTaskManifest.prompts)
-    ? firstTaskManifest.prompts.map((value) => String(value).trim()).filter((value) => value.length > 0)
-    : [];
+  const firstTaskManifest = taskManifests[0]?.inputManifest?.payload;
+  const requestConfig = normalizeRequestConfig(firstTaskManifest, job.prompts);
 
   const imageGroups = taskManifests
     .filter(() => job.requestType !== "video")
@@ -315,7 +468,7 @@ export async function getJobDetailForUser(params: {
     userId: job.accountId,
     apiKeyId: job.apiKeyId,
     apiKeyPrefix,
-    prompts: promptsFromManifest.length > 0 ? promptsFromManifest : job.prompts,
+    prompts: requestConfig.prompts,
     status: toUiStatus(job.status),
     modality: toUiModality(job.requestType),
     processingMode: toUiProcessingMode(job.requestType),
@@ -329,5 +482,6 @@ export async function getJobDetailForUser(params: {
     outputs,
     imageGroups,
     videoOutput,
+    requestConfig,
   };
 }
