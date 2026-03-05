@@ -285,18 +285,6 @@ export function selectStudioModeLabel(state: Pick<StudioSelectorState, "files">)
   return "No Media";
 }
 
-export function selectStatusSummaryLine(state: Pick<StudioSelectorState, "runState" | "jobStatus">) {
-  if (!state.runState.jobId) {
-    return "Awaiting input";
-  }
-
-  if (!state.jobStatus) {
-    return "Job accepted. Refresh to fetch current status.";
-  }
-
-  return `${formatStatus(state.jobStatus.status)} • ${state.jobStatus.successItems + state.jobStatus.failedItems}/${state.jobStatus.totalItems}`;
-}
-
 export function selectJobStatusTone(
   state: Pick<StudioSelectorState, "runState" | "jobStatus">,
 ): "neutral" | "warning" | "danger" | "success" {

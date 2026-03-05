@@ -25,7 +25,6 @@ import {
   selectJobStatusTone,
   selectProgressText,
   selectSingleImageMasks,
-  selectStatusSummaryLine,
   selectStudioViewMode,
   selectVideoFpsRange,
   type PromptRow,
@@ -56,7 +55,6 @@ export function useStudioStatusHeaderViewModel() {
   );
 
   const statusTone = selectJobStatusTone({ runState, jobStatus });
-  const statusSummary = selectStatusSummaryLine({ runState, jobStatus });
   const statusLabel = formatStatus(jobStatus?.status ?? runState.mode);
   const canRefresh = selectCanRefresh({ runState });
 
@@ -66,7 +64,6 @@ export function useStudioStatusHeaderViewModel() {
 
   return {
     statusTone,
-    statusSummary,
     statusLabel,
     canRefresh,
     statusRefreshing,
