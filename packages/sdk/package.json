@@ -55,7 +55,6 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "fflate": "^0.8.2",
     "zod": "^4.1.13"
   }
 }

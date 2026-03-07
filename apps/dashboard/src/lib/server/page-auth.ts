@@ -1,7 +1,10 @@
+import "server-only";
+
 import { auth } from "@segmentation/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { getActiveApiKeyForuser } from "./queries";
 
 export const requirePageSession = cache(async () => {
   const session = await auth.api.getSession({
@@ -13,4 +16,15 @@ export const requirePageSession = cache(async () => {
   }
 
   return session;
+});
+
+export const requireActiveApiKey = cache(async () => {
+  const session = await requirePageSession();
+  const activeApiKey = await getActiveApiKeyForuser(session.user.id);
+
+  if (!activeApiKey) {
+    redirect("/");
+  }
+
+  return activeApiKey;
 });

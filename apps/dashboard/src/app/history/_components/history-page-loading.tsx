@@ -6,36 +6,41 @@ type HistoryPageLoadingProps = {
   resultsOnly?: boolean;
 };
 
-export function HistoryPageLoading({ showDetail = false, resultsOnly = false }: HistoryPageLoadingProps) {
-  if (resultsOnly) {
-    return (
-      <div className="space-y-3">
-        <div className="space-y-3 md:hidden">
-          <div className="rounded-xl border border-border/70 bg-card/55 p-3">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="mt-2 h-4 w-full" />
-            <Skeleton className="mt-3 h-4 w-1/2" />
-            <Skeleton className="mt-3 h-9 w-full" />
-          </div>
-          <div className="rounded-xl border border-border/70 bg-card/55 p-3">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="mt-2 h-4 w-full" />
-            <Skeleton className="mt-3 h-4 w-1/2" />
-            <Skeleton className="mt-3 h-9 w-full" />
-          </div>
-        </div>
+function HistoryJobCardSkeleton() {
+  return (
+    <div className="rounded-xl border border-border/70 bg-card/55 p-3">
+      <Skeleton className="h-3 w-20" />
+      <Skeleton className="mt-2 h-4 w-full" />
+      <Skeleton className="mt-3 h-4 w-1/2" />
+      <Skeleton className="mt-3 h-9 w-full" />
+    </div>
+  );
+}
 
-        <div className="hidden overflow-x-auto rounded-xl border border-border/70 bg-card/55 md:block">
-          <div className="space-y-2 p-3">
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
+function HistoryResultsSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="space-y-3 md:hidden">
+        <HistoryJobCardSkeleton />
+        <HistoryJobCardSkeleton />
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border border-border/70 bg-card/55 md:block">
+        <div className="space-y-2 p-3">
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
         </div>
       </div>
-    );
+    </div>
+  );
+}
+
+export function HistoryPageLoading({ showDetail = false, resultsOnly = false }: HistoryPageLoadingProps) {
+  if (resultsOnly) {
+    return <HistoryResultsSkeleton />;
   }
 
   if (showDetail) {
@@ -65,30 +70,7 @@ export function HistoryPageLoading({ showDetail = false, resultsOnly = false }: 
         <Skeleton className="h-9 w-full sm:w-24" />
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="space-y-3 md:hidden">
-          <div className="rounded-xl border border-border/70 bg-card/55 p-3">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="mt-2 h-4 w-full" />
-            <Skeleton className="mt-3 h-4 w-1/2" />
-            <Skeleton className="mt-3 h-9 w-full" />
-          </div>
-          <div className="rounded-xl border border-border/70 bg-card/55 p-3">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="mt-2 h-4 w-full" />
-            <Skeleton className="mt-3 h-4 w-1/2" />
-            <Skeleton className="mt-3 h-9 w-full" />
-          </div>
-        </div>
-
-        <div className="hidden overflow-x-auto rounded-xl border border-border/70 bg-card/55 md:block">
-          <div className="space-y-2 p-3">
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </div>
+        <HistoryResultsSkeleton />
       </CardContent>
     </Card>
   );

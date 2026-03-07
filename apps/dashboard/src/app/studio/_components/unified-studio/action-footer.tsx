@@ -1,33 +1,78 @@
-import { Cog, Download, Loader2, Sparkles } from "lucide-react";
+"use client";
+
+import { Download, Loader2, Sparkles } from "lucide-react";
+import type { PresignRequest } from "@segmentationapi/sdk";
 
 import { Button } from "@/components/ui/button";
-import { DeleteIconButton } from "@/components/ui/delete-icon-button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Progress } from "@/components/ui/progress";
+import {
+  useInputTasks,
+  useIsValidInput,
+  usePrompts,
+  useSetJobId,
+  useSetJobStatus,
+  useStatus,
+  useSetTotalItems,
+  useUpdateInputTask,
+} from "../../_store/studio.store";
+import { createJob, createPresignRequest } from "../../actions";
+import {
+  buildStudioJobRequest,
+  ensurePreparedTasks,
+  isStudioJobRunning,
+  toSupportedContentType,
+} from "../../utils";
+import { putToPresignedS3 } from "@/lib/utils";
 
-import { useStudioFooterViewModel } from "./use-studio-view-model";
+type SubmitInputTask = {
+  file: File;
+  uploadUrl?: string;
+  taskId?: string;
+};
 
 export function ActionFooter() {
-  const {
-    isRunning,
-    canPressRun,
-    canDownloadArtifacts,
-    uploadProgress,
-    downloadInFlight,
-    downloadAriaLabel,
-    apiKey,
-    onRunJob,
-    onDownloadArtifacts,
-    onResetStudio,
-    onSetApiKey,
-    onClearApiKey,
-  } = useStudioFooterViewModel();
+  const isValidInput = useIsValidInput();
+  const inputTasks = useInputTasks();
+  const prompts = usePrompts();
+  const setJobId = useSetJobId();
+  const setJobStatus = useSetJobStatus();
+  const status = useStatus();
+  const setTotalItems = useSetTotalItems();
+  const updateInputTask = useUpdateInputTask();
+
+  const isRunning = isStudioJobRunning(status);
+
+  const handleRunJob = async () => {
+    if (!inputTasks.length || !prompts.length) return;
+
+    const uploadedTasks: SubmitInputTask[] = [...inputTasks];
+
+    for (const [index, inputTask] of inputTasks.entries()) {
+      if (!inputTask.taskId || !inputTask.uploadUrl) {
+        const request: PresignRequest = { contentType: toSupportedContentType(inputTask.file) };
+        const response = await createPresignRequest(request);
+        await putToPresignedS3(response.uploadUrl, inputTask.file);
+
+        updateInputTask(index, response.taskId, response.uploadUrl);
+        uploadedTasks[index] = {
+          ...uploadedTasks[index],
+          taskId: response.taskId,
+          uploadUrl: response.uploadUrl,
+        };
+      }
+    }
+
+    const preparedTasks = ensurePreparedTasks(uploadedTasks);
+    const jobRequest = buildStudioJobRequest(preparedTasks, prompts);
+    const jobResponse = await createJob(jobRequest);
+
+    setJobId(jobResponse.jobId);
+    setJobStatus(jobResponse.status);
+    setTotalItems(jobResponse.totalItems);
+  };
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-border/30 px-4 py-3 sm:px-5">
-      <Button type="button" disabled={!canPressRun} onClick={onRunJob} size="lg">
+    <div className="border-border/30 flex shrink-0 flex-wrap items-center gap-3 border-t px-4 py-3 sm:px-5">
+      <Button type="button" disabled={!isValidInput} onClick={handleRunJob} size="lg">
         {isRunning ? (
           <>
             <Loader2 className="size-3.5 animate-spin" />
@@ -44,79 +89,18 @@ export function ActionFooter() {
       <Button
         type="button"
         variant="outline"
-        onClick={onResetStudio}
-        disabled={isRunning}
-        size="lg"
-      >
-        Clear Workspace
-      </Button>
-
-      <Button
-        type="button"
-        variant="outline"
         size="icon-lg"
-        aria-label={downloadInFlight ? "Downloading artifacts" : downloadAriaLabel}
-        title={downloadAriaLabel}
-        disabled={!canDownloadArtifacts || downloadInFlight}
+        aria-label={"Downloading artifacts"}
+        disabled={false}
         onClick={() => {
-          void onDownloadArtifacts();
+          // TODO: implement download
+          console.log("Download clicked");
         }}
       >
-        {downloadInFlight ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <Download className="size-4" />
-        )}
+        <Download className="size-4" />
       </Button>
 
-      <Popover>
-        <PopoverTrigger
-          render={
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-lg"
-              aria-label="API key settings"
-              disabled={isRunning}
-            />
-          }
-        >
-          <Cog className="size-4" />
-        </PopoverTrigger>
-
-        <PopoverContent align="end" side="top" className="w-72 rounded-md p-3">
-          <div className="space-y-2.5">
-            <Label
-              htmlFor="api-key"
-              className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
-            >
-              API Key (Optional)
-            </Label>
-            <Input
-              id="api-key"
-              type="password"
-              value={apiKey}
-              onChange={(event) => onSetApiKey(event.target.value)}
-              placeholder="Use JWT if empty"
-              autoComplete="off"
-              spellCheck={false}
-              className="rounded-md"
-            />
-            <div className="flex justify-end">
-              <DeleteIconButton onClick={onClearApiKey} ariaLabel="Delete API key" />
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
-
-      {isRunning && uploadProgress.total > 0 ? (
-        <div className="flex min-w-0 flex-1 items-center gap-3" aria-live="polite">
-          <Progress value={(uploadProgress.done / uploadProgress.total) * 100} className="flex-1" />
-          <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
-            {uploadProgress.done}/{uploadProgress.total}
-          </span>
-        </div>
-      ) : null}
+      {/* TODO: implement upload progress*/}
     </div>
   );
 }

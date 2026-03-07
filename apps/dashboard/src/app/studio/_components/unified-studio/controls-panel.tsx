@@ -1,79 +1,79 @@
+"use client";
+
 import { Film, ImageIcon, Plus, Upload } from "lucide-react";
 import { useRef } from "react";
-
 import { Button } from "@/components/ui/button";
 import { DeleteIconButton } from "@/components/ui/delete-icon-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { SectionDivider, SectionLabel } from "@/components/studio/studio-status-primitives";
 import {
-  ErrorBanner,
-  SectionDivider,
-  SectionLabel,
-} from "@/components/studio/studio-status-primitives";
-
-import { useStudioControlsViewModel } from "./use-studio-view-model";
+  useAddFiles,
+  useAddPrompt,
+  useInputTasks,
+  useFps,
+  useInputType,
+  useMaxFps,
+  usePrompts,
+  useRemoveFile,
+  useRemovePrompt,
+  useSetFps,
+  useSetPrompt,
+  useStatus,
+} from "../../_store/studio.store";
+import { isStudioJobRunning } from "../../utils";
 
 const FILE_INPUT_ID = "studio-file-input";
 
 export function ControlsPanel() {
-  const {
-    files,
-    promptRows,
-    boxCount,
-    isRunning,
-    cleanPromptCount,
-    hasPromptParityIssue,
-    hasAttemptedEmptyPromptSubmit,
-    promptPlaceholder,
-    showVideoControls,
-    videoFpsParseState,
-    videoFpsParseError,
-    videoFpsRange,
-    videoFpsStatusText,
-    onPromptChange,
-    onAddPromptRow,
-    onRemovePromptRow,
-    onFileSelection,
-    onRemoveFile,
-    onSetVideoSamplingFps,
-  } = useStudioControlsViewModel();
+  const inputType = useInputType();
+  const prompts = usePrompts();
+  const setPrompt = useSetPrompt();
+  const removePrompt = useRemovePrompt();
+  const addPrompt = useAddPrompt();
+  const inputTasks = useInputTasks();
+  const addFiles = useAddFiles();
+  const removeFile = useRemoveFile();
+  const status = useStatus();
+  const fps = useFps();
+  const maxFps = useMaxFps();
+  const setFps = useSetFps();
+
+  const isRunning = isStudioJobRunning(status);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="flex flex-col overflow-y-auto border-b border-border/30 xl:border-r xl:border-b-0">
+    <div className="border-border/30 flex flex-col overflow-y-auto border-b xl:border-r xl:border-b-0">
       <div className="space-y-3 p-4 sm:p-5">
         <div className="flex items-center justify-between">
           <SectionLabel>Prompts</SectionLabel>
-          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/60">
-            {cleanPromptCount} active
-          </span>
         </div>
 
         <div className="space-y-2">
-          {promptRows.map((promptRow, index) => {
-            const inputId = `studio-prompt-${promptRow.id}`;
+          {prompts.map((prompt, index) => {
+            const inputId = `studio-prompt-${index}`;
 
             return (
-              <div key={promptRow.id} className="group flex items-center gap-1.5">
+              <div key={index} className="group flex items-center gap-1.5">
                 <Label htmlFor={inputId} className="sr-only">
                   Prompt {index + 1}
                 </Label>
                 <Input
                   id={inputId}
-                  value={promptRow.value}
-                  onChange={(event) => onPromptChange(promptRow.id, event.target.value)}
-                  placeholder={promptPlaceholder}
+                  value={prompt}
+                  onChange={(event) => setPrompt(index, event.target.value)}
+                  placeholder="your prompt"
                   disabled={isRunning}
                   className="rounded-md"
                 />
                 <DeleteIconButton
-                  onClick={() => onRemovePromptRow(promptRow.id)}
-                  disabled={promptRows.length <= 1 || isRunning}
+                  onClick={() => removePrompt(index)}
+                  disabled={prompts.length <= 1 || isRunning}
                   ariaLabel={`Delete prompt ${index + 1}`}
                   className={`size-6 shrink-0 transition-opacity ${
-                    promptRows.length > 1 ? "opacity-70 hover:opacity-100" : "opacity-0"
+                    prompts.length > 1 ? "opacity-70 hover:opacity-100" : "opacity-0"
                   }`}
                 />
               </div>
@@ -85,23 +85,13 @@ export function ControlsPanel() {
           type="button"
           variant="outline"
           size="sm"
-          onClick={onAddPromptRow}
+          onClick={addPrompt}
           disabled={isRunning}
           className="w-full"
         >
           <Plus className="size-3" />
           Add Prompt
         </Button>
-
-        {hasAttemptedEmptyPromptSubmit && cleanPromptCount < 1 ? (
-          <p className="text-[11px] text-destructive">Add at least one prompt.</p>
-        ) : null}
-
-        {hasPromptParityIssue ? (
-          <p className="text-[11px] text-destructive">
-            Prompt count must match selected boxes ({cleanPromptCount}/{boxCount}).
-          </p>
-        ) : null}
       </div>
 
       <SectionDivider />
@@ -109,9 +99,9 @@ export function ControlsPanel() {
       <div className="space-y-3 p-4 sm:p-5">
         <div className="flex items-center justify-between">
           <SectionLabel>Assets</SectionLabel>
-          {files.length > 0 ? (
-            <span className="font-mono text-[10px] tabular-nums text-muted-foreground/60">
-              {files.length} file{files.length > 1 ? "s" : ""}
+          {inputTasks.length > 0 ? (
+            <span className="text-muted-foreground/60 font-mono text-[10px] tabular-nums">
+              {inputTasks.length} file{inputTasks.length > 1 ? "s" : ""}
             </span>
           ) : null}
         </div>
@@ -126,52 +116,54 @@ export function ControlsPanel() {
           multiple
           accept="image/*,video/*"
           onChange={(event) => {
-            onFileSelection(event.target.files);
+            if (!event.target.files) return;
+
+            addFiles(event.target.files);
             event.currentTarget.value = "";
           }}
           className="hidden"
         />
 
-        {files.length === 0 ? (
+        {inputTasks.length === 0 ? (
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="group flex w-full cursor-pointer flex-col items-center gap-2.5 rounded-lg border border-dashed border-border/50 bg-muted/10 px-4 py-6 transition-colors hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="group border-border/50 bg-muted/10 hover:border-primary/40 hover:bg-primary/5 focus-visible:ring-primary/40 flex w-full cursor-pointer flex-col items-center gap-2.5 rounded-lg border border-dashed px-4 py-6 transition-colors focus-visible:ring-2 focus-visible:outline-none"
             aria-label="Upload media files"
           >
-            <div className="flex size-10 items-center justify-center rounded-lg bg-muted/30 text-muted-foreground transition-colors group-hover:bg-primary/15 group-hover:text-primary">
+            <div className="bg-muted/30 text-muted-foreground group-hover:bg-primary/15 group-hover:text-primary flex size-10 items-center justify-center rounded-lg transition-colors">
               <Upload className="size-4" />
             </div>
             <div className="text-center">
-              <p className="text-xs font-medium text-foreground/80">Upload media</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">Images or video</p>
+              <p className="text-foreground/80 text-xs font-medium">Upload media</p>
+              <p className="text-muted-foreground mt-0.5 text-[11px]">Images or video</p>
             </div>
           </button>
         ) : (
           <div className="space-y-1.5">
             <div className="max-h-48 space-y-1 overflow-y-auto pr-0.5">
-              {files.map((file, index) => (
+              {inputTasks.map((task, index) => (
                 <div
-                  key={`${file.name}-${index}`}
-                  className="group flex items-center gap-2.5 rounded-md bg-muted/20 px-2.5 py-2 transition-colors hover:bg-muted/35"
+                  key={`${task.file.name}-${index}`}
+                  className="group bg-muted/20 hover:bg-muted/35 flex items-center gap-2.5 rounded-md px-2.5 py-2 transition-colors"
                 >
-                  <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
-                    {file.type.startsWith("video/") ? (
+                  <div className="bg-muted/40 text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-md">
+                    {task.file.type.startsWith("video/") ? (
                       <Film className="size-3" />
                     ) : (
                       <ImageIcon className="size-3" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs text-foreground/90">{file.name}</p>
-                    <p className="font-mono text-[10px] text-muted-foreground/60">
-                      {(file.size / 1024).toFixed(1)} KB
+                    <p className="text-foreground/90 truncate text-xs">{task.file.name}</p>
+                    <p className="text-muted-foreground/60 font-mono text-[10px]">
+                      {(task.file.size / 1024).toFixed(1)} KB
                     </p>
                   </div>
                   <DeleteIconButton
-                    onClick={() => onRemoveFile(index)}
+                    onClick={() => removeFile(index)}
                     disabled={isRunning}
-                    ariaLabel={`Delete file ${file.name}`}
+                    ariaLabel={`Delete file ${task.file.name}`}
                     className="size-6 opacity-0 transition-opacity group-hover:opacity-100"
                   />
                 </div>
@@ -183,7 +175,7 @@ export function ControlsPanel() {
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={isRunning}
-              className="w-full text-muted-foreground"
+              className="text-muted-foreground w-full"
             >
               <Plus className="size-3" />
               Replace files
@@ -192,38 +184,32 @@ export function ControlsPanel() {
         )}
       </div>
 
-      {showVideoControls ? (
+      {inputType === "video" ? (
         <>
           <SectionDivider />
           <div className="space-y-3 p-4 sm:p-5">
             <SectionLabel>Video Processing</SectionLabel>
-            <p className="text-[11px] leading-relaxed text-muted-foreground">{videoFpsStatusText}</p>
-
-            {videoFpsParseError ? <ErrorBanner message={videoFpsParseError} /> : null}
+            <p className="text-muted-foreground text-[11px] leading-relaxed">{fps}</p>
 
             <div className="space-y-2">
               <Label
                 htmlFor="video-fps"
-                className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
+                className="text-muted-foreground font-mono text-[10px] tracking-[0.12em] uppercase"
               >
                 Processing FPS
               </Label>
 
               <div className="flex items-center gap-3">
                 <Slider
-                  min={videoFpsRange.min}
-                  max={Math.max(videoFpsRange.min + 1, videoFpsRange.max ?? videoFpsRange.min + 1)}
-                  value={[videoFpsRange.value]}
+                  min={1}
+                  max={maxFps}
+                  value={[fps]}
                   step={1}
-                  disabled={
-                    videoFpsParseState !== "ready" ||
-                    isRunning ||
-                    (videoFpsRange.max ?? videoFpsRange.min) <= videoFpsRange.min
-                  }
+                  disabled={isRunning}
                   onValueChange={(value) => {
                     const next = Array.isArray(value) ? value[0] : value;
                     if (typeof next === "number" && Number.isFinite(next)) {
-                      onSetVideoSamplingFps(Math.floor(next));
+                      setFps(Math.floor(next));
                     }
                   }}
                   className="flex-1 [&_[data-slot=slider-thumb]]:rounded-full [&_[data-slot=slider-track]]:rounded-full"
@@ -232,21 +218,20 @@ export function ControlsPanel() {
                 <Input
                   id="video-fps"
                   type="number"
-                  min={videoFpsRange.min}
-                  max={videoFpsRange.max ?? undefined}
-                  value={String(videoFpsRange.value)}
-                  disabled={videoFpsParseState !== "ready" || isRunning}
+                  min={1}
+                  max={maxFps}
+                  value={String(fps)}
+                  disabled={isRunning}
                   onChange={(event) => {
                     const value = Number.parseInt(event.target.value, 10);
                     if (Number.isFinite(value)) {
-                      onSetVideoSamplingFps(value);
+                      setFps(value);
                     }
                   }}
                   className="w-16 rounded-md text-center"
                 />
               </div>
             </div>
-
           </div>
         </>
       ) : null}

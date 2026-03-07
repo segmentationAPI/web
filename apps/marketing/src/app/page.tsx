@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { env } from "@segmentation/env/marketing";
-import { ArrowRight, Boxes, Braces, Cpu, Radar, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, Braces, Cpu, Radar, ShieldCheck, Zap } from "lucide-react";
 
 const capabilityCards = [
   {
@@ -28,9 +28,9 @@ const workflow = [
       "Use direct upload, signed URLs, or webhook ingestion from your existing capture pipeline.",
   },
   {
-    title: "Prompt with points, boxes, or text",
+    title: "Prompt with text",
     detail:
-      "Mix prompts in one request to build accurate masks with near-zero post-processing.",
+      "Describe the target in plain language and let the model return accurate masks with near-zero post-processing.",
   },
   {
     title: "Receive mask + vectors instantly",
@@ -190,7 +190,7 @@ export default function HomePage() {
               style={{ animationDelay: `${420 + index * 90}ms` }}
             >
               <p className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                <Boxes className="h-4 w-4 text-secondary" />
+                <Braces className="h-4 w-4 text-secondary" />
                 Step {index + 1}
               </p>
               <h3 className="font-display text-xl">{step.title}</h3>

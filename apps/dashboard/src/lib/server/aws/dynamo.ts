@@ -1,3 +1,5 @@
+import "server-only";
+
 import {
   GetItemCommand,
   PutItemCommand,
@@ -24,10 +26,14 @@ export type DynamoJob = {
   errorCode: string | null;
   errorMessage: string | null;
   inputs: string[];
-  outputFolder: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
+
+type DerivedJobStats = Pick<
+  DynamoJob,
+  "status" | "totalTasks" | "queuedTasks" | "processingTasks" | "successTasks" | "failedTasks"
+>;
 
 export type DynamoTask = {
   accountId: string;
@@ -39,12 +45,6 @@ export type DynamoTask = {
   inputS3Key: string | null;
   errorCode: string | null;
   errorMessage: string | null;
-  masks: Array<{
-    maskIndex: number;
-    s3Path: string;
-    score: number | null;
-    box: [number, number, number, number] | null;
-  }>;
   videoOutput: {
     framesUrl: string;
     maskEncoding: string;
@@ -86,10 +86,7 @@ function parseJob(item: Record<string, unknown>): DynamoJob {
     ? item.inputs.map((value) => String(value).trim()).filter((value) => value.length > 0)
     : [];
 
-  const accountId =
-    toNullableString(item.accountId) ??
-    parsePrefixedKey(item.PK, "USER#") ??
-    "";
+  const accountId = toNullableString(item.accountId) ?? parsePrefixedKey(item.PK, "USER#") ?? "";
 
   const jobId =
     toNullableString(item.jobId) ??
@@ -102,7 +99,7 @@ function parseJob(item: Record<string, unknown>): DynamoJob {
     accountId,
     jobId,
     requestType: String(item.type ?? "image_batch") as DynamoJob["requestType"],
-    status: String(item.status ?? "queued") as DynamoJob["status"],
+    status: "queued",
     prompts: Array.isArray(item.prompts)
       ? item.prompts.map((prompt) => String(prompt)).filter(Boolean)
       : [],
@@ -115,7 +112,6 @@ function parseJob(item: Record<string, unknown>): DynamoJob {
     errorCode: toNullableString(item.errorCode),
     errorMessage: toNullableString(item.errorMessage),
     inputs: parsedInputs,
-    outputFolder: toNullableString(item.outputFolder),
     createdAt: toDate(item.createdAt),
     updatedAt: toDate(item.updatedAt ?? item.createdAt),
   };
@@ -123,37 +119,19 @@ function parseJob(item: Record<string, unknown>): DynamoJob {
 
 function parseTask(item: Record<string, unknown>): DynamoTask {
   const parsedTaskId = toNullableString(item.taskId) ?? toNullableString(item.id) ?? "";
-
-  let masksData: unknown[] = [];
-  if (typeof item.masks === "string") {
-    try {
-      const parsed = JSON.parse(item.masks);
-      masksData = Array.isArray(parsed) ? parsed : [];
-    } catch {
-      // ignore malformed JSON
-    }
-  } else if (Array.isArray(item.masks)) {
-    masksData = item.masks;
-  }
-
-  const masks = masksData
-    .filter((mask): mask is Record<string, unknown> => Boolean(mask) && typeof mask === "object")
-    .map((mask, index) => ({
-      maskIndex: Number(mask.mask_index ?? index),
-      s3Path: String(mask.s3_path ?? ""),
-      score: mask.score == null ? null : Number(mask.score),
-      box: Array.isArray(mask.box) && mask.box.length === 4
-        ? (mask.box.map((point) => Number(point)) as [number, number, number, number])
-        : null,
-    }))
-    .filter((mask) => mask.s3Path.length > 0)
-    .sort((a, b) => a.maskIndex - b.maskIndex);
+  const accountId = toNullableString(item.accountId) ?? parsePrefixedKey(item.PK, "USER#") ?? "";
+  const requestId =
+    toNullableString(item.jobId) ??
+    parsePrefixedKey(item.GSI1PK, "JOB#") ??
+    parseTaskJobId(item.SK) ??
+    "";
 
   let videoOutputRaw: Record<string, unknown> | null = null;
   if (typeof item.videoOutput === "string") {
     try {
       const parsed = JSON.parse(item.videoOutput);
-      videoOutputRaw = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+      videoOutputRaw =
+        parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
     } catch {
       // ignore malformed JSON
     }
@@ -162,13 +140,13 @@ function parseTask(item: Record<string, unknown>): DynamoTask {
   }
 
   const videoOutput =
-    videoOutputRaw &&
-    typeof videoOutputRaw.frames_url === "string"
+    videoOutputRaw && typeof videoOutputRaw.frames_url === "string"
       ? {
           framesUrl: videoOutputRaw.frames_url,
-          maskEncoding: typeof videoOutputRaw.mask_encoding === "string"
-            ? videoOutputRaw.mask_encoding
-            : "coco_rle",
+          maskEncoding:
+            typeof videoOutputRaw.mask_encoding === "string"
+              ? videoOutputRaw.mask_encoding
+              : "coco_rle",
           framesProcessed: Number(videoOutputRaw.frames_processed ?? 0),
           framesWithMasks: Number(videoOutputRaw.frames_with_masks ?? 0),
           totalMasks: Number(videoOutputRaw.total_masks ?? 0),
@@ -186,19 +164,92 @@ function parseTask(item: Record<string, unknown>): DynamoTask {
   }
 
   return {
-    accountId: String(item.accountId ?? ""),
+    accountId,
     id: parsedTaskId,
     taskId: parsedTaskId,
-    requestId: String(item.jobId ?? ""),
-    taskType: String(item.type ?? item.requestType ?? "image_batch") === "video" ? "video" : "image",
+    requestId,
+    taskType:
+      String(item.type ?? item.requestType ?? "image_batch") === "video" ? "video" : "image",
     status: String(item.status ?? "queued") as DynamoTask["status"],
     inputS3Key: toNullableString(payload.inputS3Key),
     errorCode: toNullableString(item.errorCode),
     errorMessage: toNullableString(item.errorMessage),
-    masks,
     videoOutput,
     createdAt: toDate(item.createdAt),
     updatedAt: toDate(item.updatedAt),
+  };
+}
+
+function parseTaskJobId(value: unknown) {
+  if (typeof value !== "string" || !value.startsWith("TASK#")) {
+    return null;
+  }
+
+  const remainder = value.slice("TASK#".length);
+  const separatorIndex = remainder.indexOf("#");
+  if (separatorIndex === -1) {
+    return null;
+  }
+
+  return remainder.slice(0, separatorIndex) || null;
+}
+
+function deriveJobStats(tasks: DynamoTask[]): DerivedJobStats {
+  const queuedTasks = tasks.filter((task) => task.status === "queued").length;
+  const processingTasks = tasks.filter(
+    (task) => task.status === "running" || task.status === "processing",
+  ).length;
+  const failedTasks = tasks.filter((task) => task.status === "failed").length;
+  const successTasks = tasks.filter((task) => task.status === "success").length;
+  const totalTasks = tasks.length;
+
+  if (totalTasks === 0 || queuedTasks === totalTasks) {
+    return {
+      status: "queued",
+      totalTasks,
+      queuedTasks,
+      processingTasks,
+      successTasks,
+      failedTasks,
+    };
+  }
+
+  if (queuedTasks + processingTasks > 0) {
+    return {
+      status: "processing",
+      totalTasks,
+      queuedTasks,
+      processingTasks,
+      successTasks,
+      failedTasks,
+    };
+  }
+
+  if (failedTasks === totalTasks) {
+    return {
+      status: "failed",
+      totalTasks,
+      queuedTasks,
+      processingTasks,
+      successTasks,
+      failedTasks,
+    };
+  }
+
+  return {
+    status: failedTasks > 0 ? "completed_with_errors" : "completed",
+    totalTasks,
+    queuedTasks,
+    processingTasks,
+    successTasks,
+    failedTasks,
+  };
+}
+
+function applyDerivedJobStats(job: DynamoJob, tasks: DynamoTask[]): DynamoJob {
+  return {
+    ...job,
+    ...deriveJobStats(tasks),
   };
 }
 
@@ -294,7 +345,12 @@ export async function getDynamoJob(accountId: string, jobId: string) {
     return null;
   }
 
-  return parseJob(unmarshall(response.Item));
+  const [job, tasks] = await Promise.all([
+    Promise.resolve(parseJob(unmarshall(response.Item))),
+    listDynamoTasksForJob(accountId, jobId),
+  ]);
+
+  return applyDerivedJobStats(job, tasks);
 }
 
 export async function listDynamoJobsForAccount(accountId: string) {
@@ -318,11 +374,48 @@ export async function listDynamoJobsForAccount(accountId: string) {
       jobs.push(parseJob(unmarshall(item)));
     }
 
-    lastEvaluatedKey = response.LastEvaluatedKey ? unmarshall(response.LastEvaluatedKey) : undefined;
+    lastEvaluatedKey = response.LastEvaluatedKey
+      ? unmarshall(response.LastEvaluatedKey)
+      : undefined;
   } while (lastEvaluatedKey);
 
-  jobs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  return jobs;
+  const tasksByJobId = new Map<string, DynamoTask[]>();
+  let lastTaskKey: Record<string, unknown> | undefined;
+
+  do {
+    const response = await dynamoClient.send(
+      new QueryCommand({
+        TableName: env.AWS_DYNAMO_TASKS_TABLE,
+        KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
+        ExpressionAttributeValues: marshall({
+          ":pk": `USER#${accountId}`,
+          ":prefix": "TASK#",
+        }),
+        ExclusiveStartKey: lastTaskKey ? marshall(lastTaskKey) : undefined,
+      }),
+    );
+
+    for (const item of response.Items ?? []) {
+      const task = parseTask(unmarshall(item));
+      if (!task.requestId) {
+        continue;
+      }
+
+      const existing = tasksByJobId.get(task.requestId);
+      if (existing) {
+        existing.push(task);
+      } else {
+        tasksByJobId.set(task.requestId, [task]);
+      }
+    }
+
+    lastTaskKey = response.LastEvaluatedKey ? unmarshall(response.LastEvaluatedKey) : undefined;
+  } while (lastTaskKey);
+
+  const derivedJobs = jobs.map((job) => applyDerivedJobStats(job, tasksByJobId.get(job.jobId) ?? []));
+
+  derivedJobs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  return derivedJobs;
 }
 
 export async function listDynamoTasksForJob(accountId: string, jobId: string) {

@@ -1,15 +1,23 @@
-"use client";
+import { DashboardPageShell, DashboardPanelShell } from "@/components/dashboard-page-shell";
 
-import { UnifiedStudio } from "./unified-studio";
+import { ActionFooter } from "./unified-studio/action-footer";
+import { ControlsPanel } from "./unified-studio/controls-panel";
+import { PreviewPanel } from "./unified-studio/preview-panel";
+import { StatusHeader } from "./unified-studio/status-header";
 
-type StudioPageContentProps = {
-  userId: string;
-};
-
-export function StudioPageContent({ userId }: StudioPageContentProps) {
+export function StudioPageContent() {
   return (
-    <main className="mx-auto flex h-[calc(100svh-61px)] min-h-[calc(100svh-61px)] w-full max-w-[1320px] flex-col overflow-hidden box-border px-3 py-3 sm:px-6 sm:py-4">
-      <UnifiedStudio userId={userId} />
-    </main>
+    <DashboardPageShell className="h-full min-h-0 max-w-300 overflow-hidden py-3 sm:py-4">
+      <DashboardPanelShell className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl">
+        <StatusHeader />
+
+        <div className="grid min-h-0 flex-1 xl:grid-cols-[320px_minmax(0,1fr)]">
+          <ControlsPanel />
+          <PreviewPanel />
+        </div>
+
+        <ActionFooter />
+      </DashboardPanelShell>
+    </DashboardPageShell>
   );
 }

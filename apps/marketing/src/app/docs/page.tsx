@@ -27,13 +27,11 @@ const segmentResponse = `{
   "masks": [
     {
       "key": "outputs/demo-account/job_demo_001/mask_0.png",
-      "score": 0.6171875,
-      "box": [378.41269841269843, 232.38095238095238, 761.9047619047619, 538.4126984126984]
+      "score": 0.6171875
     },
     {
       "key": "outputs/demo-account/job_demo_001/mask_1.png",
-      "score": 0.89453125,
-      "box": [300.95238095238096, 162.53968253968253, 838.0952380952381, 612.063492063492]
+      "score": 0.89453125
     }
   ]
 }`;
@@ -42,6 +40,9 @@ const presignCurl = `curl -X POST \\
   https://api.segmentationapi.com/v1/uploads/presign \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: YOUR_SEGMENTATION_API_KEY" \\
+  -d '{
+    "contentType": "image/png"
+  }'
   `;
 
 const presignResponse = `{

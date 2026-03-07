@@ -4,8 +4,6 @@ import { env } from "@segmentation/env/dashboard";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { jwt } from "better-auth/plugins"
-
 import { initializeDynamoTokenBalance } from "./dynamo-balance";
 
 function extractUserId(value: unknown) {
@@ -47,5 +45,5 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  plugins: [nextCookies(), jwt()],
+  plugins: [nextCookies()],
 });

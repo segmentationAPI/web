@@ -1,306 +1,123 @@
-export type BinaryData = Blob | File | Uint8Array;
+export type JobType = "image" | "video";
 
-export type FetchFunction = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+export type JobQueueStatus = "queued";
 
-type ApiKeyAuth = {
-  apiKey: string;
-  jwt?: never;
-};
+export type JobTaskStatus = "queued" | "running" | "success" | "failed";
 
-type JwtAuth = {
-  jwt: string;
-  apiKey?: never;
-};
+export type JobSummaryStatus =
+  | "queued"
+  | "processing"
+  | "completed"
+  | "completed_with_errors"
+  | "failed";
 
-export type SegmentationClientOptions = (ApiKeyAuth | JwtAuth) & {
-  fetch?: FetchFunction;
-};
-
-export interface CreatePresignedUploadRequest {
-  contentType: string;
-  signal?: AbortSignal;
+export interface JobRequest {
+  readonly type: JobType;
+  readonly items: string[];
+  readonly prompts?: string[];
+  readonly generatePreview?: boolean;
+  readonly threshold?: number;
+  readonly maskThreshold?: number;
 }
 
-export type VideoOutputMode = "frames_only" | "frames_and_video";
-
-export type SegmentVideoPrompts = {
-  prompts: string[];
-};
-
-export type SegmentVideoSamplingByFps = {
-  fps: number;
-  numFrames?: never;
-};
-
-export type SegmentVideoSamplingByFrameCount = {
-  fps?: never;
-  numFrames: number;
-};
-
-export type SegmentVideoSamplingDefault = {
-  fps?: never;
-  numFrames?: never;
-};
-
-export type SegmentVideoRequest = SegmentVideoPrompts &
-  (SegmentVideoSamplingByFps | SegmentVideoSamplingByFrameCount | SegmentVideoSamplingDefault) & {
-    file: BinaryData;
-    maxFrames?: number;
-    frameIdx?: number;
-    videoOutputMode?: VideoOutputMode;
-    signal?: AbortSignal;
-  };
-
-export interface BatchSegmentItemInput {
-  taskId: string;
+export interface JobResponse {
+  readonly jobId: string;
+  readonly type: JobType;
+  readonly status: JobQueueStatus;
+  readonly totalItems: number;
 }
 
-export interface ImageBoxPrompt {
-  coordinates: [number, number, number, number];
-  isPositive: boolean;
-  objectId?: string;
+export interface AccountResponse {
+  readonly accountId: string;
 }
 
-export type JobType = "image_batch" | "video";
-
-export interface CreateImageBatchJobRequest {
-  type: "image_batch";
-  prompts?: string[];
-  boxes?: ImageBoxPrompt[];
-  threshold?: number;
-  maskThreshold?: number;
-  items: BatchSegmentItemInput[];
-  signal?: AbortSignal;
+export interface JobTaskResult {
+  readonly taskId: string;
+  readonly status: JobTaskStatus;
+  readonly error?: string;
 }
 
-export interface CreateVideoJobRequest {
-  type: "video";
-  prompts: string[];
-  videoOutputMode?: VideoOutputMode;
-  boxes?: never;
-  threshold?: number;
-  maskThreshold?: number;
-  items: BatchSegmentItemInput[];
-  signal?: AbortSignal;
+export interface JobStatusResponse {
+  readonly userId: string;
+  readonly jobId: string;
+  readonly type: JobType;
+  readonly items: JobTaskResult[];
 }
 
-export type CreateJobRequest = CreateImageBatchJobRequest | CreateVideoJobRequest;
-
-export interface GetSegmentJobRequest {
-  jobId: string;
-  signal?: AbortSignal;
+export interface TaskStatus extends JobTaskResult {
+  readonly url: string;
 }
 
-export interface DownloadJobArtifactsRequest {
-  jobId: string;
-  accountId: string;
-  signal?: AbortSignal;
+export interface JobStatus {
+  readonly userId: string;
+  readonly jobId: string;
+  readonly type: JobType;
+  readonly items: TaskStatus[];
 }
 
-export type DownloadJobArtifactsKind =
-  | "image_masks_zip"
-  | "video_frames_ndjson"
-  | "video_frames_zip";
-
-export interface UploadImageRequest {
-  uploadUrl: string;
-  data: BinaryData;
-  contentType?: string;
-  signal?: AbortSignal;
+export interface ListJobsParams {
+  readonly limit?: number;
+  readonly nextToken?: string;
 }
 
-export interface UploadAndCreateImageBatchJobRequest {
-  type: "image_batch";
-  prompts?: string[];
-  boxes?: ImageBoxPrompt[];
-  files: Array<{
-    data: BinaryData;
-    contentType: string;
-  }>;
-  threshold?: number;
-  maskThreshold?: number;
-  signal?: AbortSignal;
+export interface ImageOutputMask {
+  readonly maskIndex: number;
+  readonly score?: number | null;
+  readonly confidence?: number | null;
+  readonly url: string;
 }
 
-export interface UploadAndCreateVideoJobRequest {
-  type: "video";
-  prompts: string[];
-  videoOutputMode?: VideoOutputMode;
-  boxes?: never;
-  files: Array<{
-    data: BinaryData;
-    contentType: string;
-  }>;
-  threshold?: number;
-  maskThreshold?: number;
-  signal?: AbortSignal;
+export interface BaseOutputManifestItem {
+  readonly taskId: string;
+  readonly inputId: string;
+  readonly units: number;
+  readonly generatedAt: string;
+  readonly previewUrl?: string | null;
 }
 
-export type UploadAndCreateJobRequest =
-  | UploadAndCreateImageBatchJobRequest
-  | UploadAndCreateVideoJobRequest;
-
-export interface PresignedUploadRaw {
-  uploadUrl: string;
-  taskId: string;
-  bucket: string;
-  expiresIn: number;
+export interface ImageOutputManifestItem extends BaseOutputManifestItem {
+  readonly masks: ImageOutputMask[];
 }
 
-export type JobAcceptedType = "image_batch" | "video";
-
-export enum JobRequestStatus {
-  Queued = "queued",
-  Processing = "processing",
-  Completed = "completed",
-  CompletedWithErrors = "completed_with_errors",
-  Failed = "failed",
+export interface BaseOutputManifest {
+  readonly accountId: string;
+  readonly jobId: string;
+  readonly prompts: string[];
 }
 
-export enum JobTaskStatus {
-  Queued = "queued",
-  Running = "running",
-  Success = "success",
-  Failed = "failed",
+export interface ImageOutputManifest extends BaseOutputManifest {
+  readonly type: "image";
+  readonly items: ImageOutputManifestItem[];
 }
 
-export interface JobAcceptedRaw {
-  requestId?: string;
-  jobId: string;
-  type: JobAcceptedType;
-  status: "queued";
-  totalItems: number;
+export interface VideoOutputCounts {
+  readonly [key: string]: number;
 }
 
-export interface MaskResultRaw {
-  key: string;
-  score?: number | null;
-  box?: number[] | null;
+export interface VideoOutputManifestItem extends BaseOutputManifestItem {
+  readonly fps?: number;
+  readonly numFrames?: number;
+  readonly maxFrames?: number;
+  readonly scoreThreshold?: number;
+  readonly counts?: VideoOutputCounts;
+  readonly masks: string;
 }
 
-export interface MaskArtifactContext {
-  userId: string;
-  jobId: string;
-  taskId: string;
+export interface VideoOutputManifest extends BaseOutputManifest {
+  readonly type: "video";
+  readonly items: VideoOutputManifestItem[];
 }
 
-export interface CocoRle {
-  size: [number, number];
-  counts: string | number[];
+export type OutputManifest = ImageOutputManifest | VideoOutputManifest;
+
+export type PresignContentType = "image/jpeg" | "image/png" | "image/webp" | "video/mp4";
+
+export interface PresignRequest {
+  readonly contentType: PresignContentType;
 }
 
-export interface MaskArtifactResult {
-  maskIndex: number;
-  key: string;
-  url: string;
-  score: number | null;
-  box: [number, number, number, number] | null;
-  rle?: CocoRle;
+export interface PresignResponse {
+  readonly uploadUrl: string;
+  readonly taskId: string;
+  readonly expiresIn: number;
 }
-
-export interface VideoMaskTimelineFrame {
-  sampleIdx: number;
-  timeSec: number;
-  masks: MaskArtifactResult[];
-  frameIdx?: number;
-}
-
-export interface VideoMaskTimeline {
-  frames: VideoMaskTimelineFrame[];
-}
-
-export interface LoadVideoMaskTimelineOptions {
-  fetch?: FetchFunction;
-  signal?: AbortSignal;
-}
-
-export interface VideoOutputRaw {
-  requestId: string;
-  status: string;
-  submittedAt: string;
-  completedAt: string;
-  input: any;
-  counts: any;
-  summary: any;
-}
-
-export interface JobStatusItemRaw {
-  taskId: string;
-  status: JobTaskStatus;
-  error?: string | null;
-}
-
-export interface JobStatusRaw {
-  requestId?: string;
-  jobId: string;
-  type: JobType;
-  status: JobRequestStatus;
-  totalItems: number;
-  queuedItems: number;
-  processingItems: number;
-  successItems: number;
-  failedItems: number;
-  accountId?: string;
-  outputFolder?: string;
-  inputs?: string[];
-  items?: JobStatusItemRaw[];
-  error?: string;
-}
-
-export interface PresignedUploadResult {
-  uploadUrl: string;
-  taskId: string;
-  bucket: string;
-  expiresIn: number;
-  raw: PresignedUploadRaw;
-}
-
-export interface MaskResult {
-  key: string;
-  score?: number;
-  box?: number[];
-  url: string;
-}
-
-export interface JobAcceptedResult {
-  requestId: string;
-  jobId: string;
-  type: JobAcceptedType;
-  status: "queued";
-  totalItems: number;
-  raw: JobAcceptedRaw;
-}
-
-export interface JobStatusItem {
-  taskId: string;
-  status: JobTaskStatus;
-  error?: string;
-}
-
-export interface JobStatusResult {
-  requestId: string;
-  jobId: string;
-  type: JobType;
-  status: JobRequestStatus;
-  totalItems: number;
-  queuedItems: number;
-  processingItems: number;
-  successItems: number;
-  failedItems: number;
-  items?: JobStatusItem[];
-  error?: string;
-  raw: JobStatusRaw;
-}
-
-export interface DownloadJobArtifactsResult {
-  jobId: string;
-  type: JobType;
-  kind: DownloadJobArtifactsKind;
-  fileName: string;
-  mimeType: string;
-  blob: Blob;
-  taskCount: number;
-  fileCount: number;
-}
-
-export type ResponseBody = Record<string, unknown> | string | null;

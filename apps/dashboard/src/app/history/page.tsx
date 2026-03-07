@@ -1,12 +1,10 @@
 import { Suspense } from "react";
 
-import {
-  HistoryListPanelShell,
-  HistoryResultsSection,
-} from "./_components/history-list-panel";
+import { HistoryListPanelShell, HistoryResultsSection } from "./_components/history-list-panel";
 import { HistoryPageLoading } from "./_components/history-page-loading";
+import { HistoryPageShell } from "./_components/history-shared";
 import { normalizeHistoryListQuery, type HistoryListQuery } from "./_components/history-query";
-import { listJobsForUser } from "@/lib/server/dashboard-queries";
+import { listJobsForUser } from "@/lib/server/queries";
 import { requirePageSession } from "@/lib/server/page-auth";
 
 type HistoryRoutePageProps = {
@@ -18,21 +16,11 @@ type HistoryRoutePageProps = {
   }>;
 };
 
-async function HistoryResultsContent({
-  query,
-}: {
-  query: HistoryListQuery;
-}) {
+async function HistoryResultsContent({ query }: { query: HistoryListQuery }) {
   const session = await requirePageSession();
-  const limit = 25;
-  const offset = (query.page - 1) * limit;
-
   const jobs = await listJobsForUser({
-    limit,
-    offset,
-    query: query.q,
-    status: query.status,
-    mode: query.mode,
+    limit: 25,
+    query,
     userId: session.user.id,
   });
 
@@ -63,10 +51,10 @@ async function HistoryShellContent({ searchParams }: HistoryRoutePageProps) {
 
 export default function HistoryRoutePage(props: HistoryRoutePageProps) {
   return (
-    <main className="mx-auto flex w-full max-w-330 flex-col gap-4 px-3 pb-8 pt-3 sm:gap-5 sm:px-6 sm:pb-10 sm:pt-4">
+    <HistoryPageShell>
       <Suspense fallback={<HistoryPageLoading />}>
         <HistoryShellContent searchParams={props.searchParams} />
       </Suspense>
-    </main>
+    </HistoryPageShell>
   );
 }

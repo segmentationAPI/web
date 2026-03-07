@@ -78,101 +78,10 @@ export const creditPurchase = pgTable(
   ],
 );
 
-// ── Segmentation Asset ─────────────────────────────────────────────────────────
-
-export const segAsset = pgTable(
-  "seg_asset",
-  {
-    id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    assetType: segAssetTypeEnum("asset_type").notNull(),
-    s3Path: text("s3_path").notNull(),
-    mimeType: text("mime_type"),
-    sizeBytes: integer("size_bytes"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [
-    uniqueIndex("seg_asset_user_id_s3_path_uidx").on(table.userId, table.s3Path),
-    index("seg_asset_user_id_idx").on(table.userId),
-    index("seg_asset_type_idx").on(table.assetType),
-  ],
-);
-export type SegAsset = InferSelectModel<typeof segAsset>;
-
-// ── Auto-Label Project ──────────────────────────────────────────────────────────
-
-export const autoLabelProject = pgTable(
-  "auto_label_project",
-  {
-    id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    apiKeyId: text("api_key_id").references(() => apiKey.id, { onDelete: "set null" }),
-    prompts: text("prompts").array().notNull(),
-    threshold: doublePrecision("threshold").default(0.5).notNull(),
-    maskThreshold: doublePrecision("mask_threshold").default(0.5).notNull(),
-    latestRequestId: text("latest_request_id"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
-  },
-  (table) => [
-    index("auto_label_project_user_id_idx").on(table.userId),
-    index("auto_label_project_user_id_created_at_idx").on(table.userId, table.createdAt.desc()),
-    index("auto_label_project_latest_request_id_idx").on(table.latestRequestId),
-  ],
-);
-export type AutoLabelProject = InferSelectModel<typeof autoLabelProject>;
-
-// ── Auto-Label Project ↔ Asset (junction) ─────────────────────────────────────
-
-export const autoLabelProjectImage = pgTable(
-  "auto_label_project_image",
-  {
-    projectId: text("project_id")
-      .notNull()
-      .references(() => autoLabelProject.id, { onDelete: "cascade" }),
-    imageId: text("image_id")
-      .notNull()
-      .references(() => segAsset.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.projectId, table.imageId], name: "auto_label_project_image_pk" }),
-  ],
-);
-
-// ── Relations ───────────────────────────────────────────────────────────────────
-
 export const apiKeyRelations = relations(apiKey, ({ one }) => ({
   user: one(user, { fields: [apiKey.userId], references: [user.id] }),
 }));
 
 export const creditPurchaseRelations = relations(creditPurchase, ({ one }) => ({
   user: one(user, { fields: [creditPurchase.userId], references: [user.id] }),
-}));
-
-export const segAssetRelations = relations(segAsset, ({ one, many }) => ({
-  user: one(user, { fields: [segAsset.userId], references: [user.id] }),
-  projectLinks: many(autoLabelProjectImage),
-}));
-
-export const autoLabelProjectRelations = relations(autoLabelProject, ({ one, many }) => ({
-  user: one(user, { fields: [autoLabelProject.userId], references: [user.id] }),
-  apiKey: one(apiKey, { fields: [autoLabelProject.apiKeyId], references: [apiKey.id] }),
-  imageLinks: many(autoLabelProjectImage),
-}));
-
-export const autoLabelProjectImageRelations = relations(autoLabelProjectImage, ({ one }) => ({
-  project: one(autoLabelProject, {
-    fields: [autoLabelProjectImage.projectId],
-    references: [autoLabelProject.id],
-  }),
-  asset: one(segAsset, { fields: [autoLabelProjectImage.imageId], references: [segAsset.id] }),
 }));

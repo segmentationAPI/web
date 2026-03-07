@@ -23,23 +23,14 @@ export type JobDetail = JobListItem & {
   apiKeyPrefix: string | null;
   inputImageUrl: string | null;
   inputVideoUrl: string | null;
-  outputs: Array<{
-    maskIndex: number;
-    url: string | null;
-    score: number | null;
-    box: [number, number, number, number] | null;
-  }>;
+  previewUrl: string | null;
   imageGroups: Array<{
     id: string;
+    taskId: string;
     status: "queued" | "processing" | "success" | "failed";
     createdAt: Date;
     inputImageUrl: string | null;
-    outputs: Array<{
-      maskIndex: number;
-      url: string | null;
-      score: number | null;
-      box: [number, number, number, number] | null;
-    }>;
+    previewUrl: string | null;
   }>;
   videoOutput: {
     manifestUrl: string;
@@ -48,13 +39,10 @@ export type JobDetail = JobListItem & {
     framesProcessed: number;
     framesWithMasks: number;
     totalMasks: number;
+    previewUrl: string | null;
   } | null;
   requestConfig: {
     prompts: string[];
-    boxes: Array<{
-      coordinates: [number, number, number, number];
-      isPositive: boolean;
-    }> | null;
     points: Array<{
       coordinates: [number, number];
       isPositive: boolean;
@@ -63,6 +51,6 @@ export type JobDetail = JobListItem & {
     maskThreshold: number | null;
     frameIdx: number | null;
     fps: number | null;
-    videoOutputMode: string | null;
+    generatePreview: boolean | null;
   };
 };

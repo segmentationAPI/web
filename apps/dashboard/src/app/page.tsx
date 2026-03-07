@@ -7,7 +7,7 @@ import { ApiKeysPageLoading } from "./api-keys/_components/api-keys-page-loading
 import { BillingPageContent } from "./billing/_components/billing-page";
 import { BillingPageLoading } from "./billing/_components/billing-page-loading";
 import { requirePageSession } from "@/lib/server/page-auth";
-import { getBalanceForUser, listApiKeysForUser } from "@/lib/server/dashboard-queries";
+import { getBalanceForUser, listApiKeysForUser } from "@/lib/server/queries";
 
 async function HomeProtectedContent() {
   const session = await requirePageSession();
