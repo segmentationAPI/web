@@ -60,13 +60,7 @@ function ItemPreview({
     );
   }
 
-  return (
-    <div className="mx-auto w-fit max-w-full overflow-hidden rounded-[1.15rem] border border-border/70 bg-background/85">
-      <div className="max-h-96">
-        <MediaPreview assetUrl={previewUrl} mediaType={kind} />
-      </div>
-    </div>
-  );
+  return <MediaPreview assetUrl={previewUrl} mediaType={kind} className="h-64 sm:h-80 lg:h-96" />;
 }
 
 
