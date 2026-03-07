@@ -1,6 +1,5 @@
-export type BalanceData = {
+export type OverviewData = {
   tokenUsageLast24h: number;
-  tokensRemaining: number;
 };
 
 export type JobListItem = {

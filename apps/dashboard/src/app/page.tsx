@@ -7,18 +7,18 @@ import { ApiKeysPageLoading } from "./api-keys/_components/api-keys-page-loading
 import { BillingPageContent } from "./billing/_components/billing-page";
 import { BillingPageLoading } from "./billing/_components/billing-page-loading";
 import { requirePageSession } from "@/lib/server/page-auth";
-import { getBalanceForUser, listApiKeysForUser } from "@/lib/server/queries";
+import { getOverviewForUser, listApiKeysForUser } from "@/lib/server/queries";
 
 async function HomeProtectedContent() {
   const session = await requirePageSession();
-  const [balance, keys] = await Promise.all([
-    getBalanceForUser(session.user.id),
+  const [overview, keys] = await Promise.all([
+    getOverviewForUser(session.user.id),
     listApiKeysForUser(session.user.id),
   ]);
 
   return (
     <>
-      <OverviewPageContent balance={balance} userName={session.user.name} />
+      <OverviewPageContent overview={overview} userName={session.user.name} />
       <ApiKeysPageContent initialKeys={keys} />
       <BillingPageContent />
     </>

@@ -4,7 +4,6 @@ import { env } from "@segmentation/env/dashboard";
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { incrementDynamoTokenBalance } from "@/lib/server/aws/dynamo";
 import { getStripeClient } from "@/lib/server/stripe";
 
 export async function POST(request: Request) {
@@ -65,8 +64,6 @@ export async function POST(request: Request) {
         .where(eq(creditPurchase.id, purchase.id));
     }
 
-    await incrementDynamoTokenBalance(purchase.userId, purchase.tokensGranted);
-
     await db
       .update(creditPurchase)
       .set({
@@ -80,18 +77,18 @@ export async function POST(request: Request) {
         ),
       );
   } catch (error) {
-    console.error("Failed to apply Stripe credits", error);
+    console.error("Failed to finalize Stripe checkout", error);
 
     await db
       .update(creditPurchase)
       .set({
-        failureReason: "Failed to apply credits",
+        failureReason: "Failed to finalize checkout",
         status: "failed",
       })
       .where(eq(creditPurchase.id, purchase.id))
       .catch(() => undefined);
 
-    return NextResponse.json({ error: "Failed to apply credits" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to finalize checkout" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

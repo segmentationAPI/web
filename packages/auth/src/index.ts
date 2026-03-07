@@ -4,21 +4,6 @@ import { env } from "@segmentation/env/dashboard";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { initializeDynamoTokenBalance } from "./dynamo-balance";
-
-function extractUserId(value: unknown) {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-
-  const id = (value as { id?: unknown }).id;
-
-  if (typeof id !== "string" || id.length === 0) {
-    return null;
-  }
-
-  return id;
-}
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -26,21 +11,6 @@ export const auth = betterAuth({
 
     schema: schema,
   }),
-  databaseHooks: {
-    user: {
-      create: {
-        after: async (createdUser) => {
-          const userId = extractUserId(createdUser);
-
-          if (!userId) {
-            return;
-          }
-
-          await initializeDynamoTokenBalance(userId);
-        },
-      },
-    },
-  },
   trustedOrigins: [env.CORS_ORIGIN],
   emailAndPassword: {
     enabled: true,

@@ -4,8 +4,8 @@ import { SegmentationClient, type JobListItemResponse } from "@segmentationapi/s
 import { db } from "@segmentation/db";
 import { apiKey } from "@segmentation/db/schema/app";
 import { desc, eq } from "drizzle-orm";
-import type { BalanceData, JobListItem } from "@/lib/dashboard-types";
-import { getDynamoTokenBalance, listDynamoJobsForAccount } from "@/lib/server/aws/dynamo";
+import type { JobListItem, OverviewData } from "@/lib/dashboard-types";
+import { listDynamoJobsForAccount } from "@/lib/server/aws/dynamo";
 import { DEFAULT_PAGE_SIZE } from "@/lib/server/constants";
 import { user } from "@segmentation/db/schema/auth";
 
@@ -82,18 +82,14 @@ async function listAllSdkJobs(segmentationClient: SegmentationClient | null) {
   return jobs;
 }
 
-export async function getBalanceForUser(userId: string): Promise<BalanceData> {
-  const [balance, jobs] = await Promise.all([
-    getDynamoTokenBalance(userId),
-    listDynamoJobsForAccount(userId),
-  ]);
+export async function getOverviewForUser(userId: string): Promise<OverviewData> {
+  const jobs = await listDynamoJobsForAccount(userId);
 
   const cutoff = Date.now() - LAST_24_HOURS_MS;
   const requestCountLast24h = jobs.filter((job) => job.createdAt.getTime() >= cutoff).length;
 
   return {
     tokenUsageLast24h: requestCountLast24h * 2,
-    tokensRemaining: balance,
   };
 }
 
