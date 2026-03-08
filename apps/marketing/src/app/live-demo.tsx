@@ -87,7 +87,7 @@ export function LiveDemo() {
         <span>Live Demo</span>
         {isProcessing && (
           <span className="text-foreground inline-flex items-center gap-2">
-            <span className="demo-spinner" />
+            <span className="border-secondary/30 border-t-secondary inline-block h-2.5 w-2.5 animate-spin rounded-full border-[1.5px]" />
             segmenting&hellip;
           </span>
         )}
@@ -117,7 +117,7 @@ export function LiveDemo() {
 
         {isProcessing && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
-            <div className="demo-pulse-ring" />
+            <div className="border-secondary/60 h-14 w-14 animate-ping rounded-full border-2" />
           </div>
         )}
       </div>
@@ -129,7 +129,9 @@ export function LiveDemo() {
           </span>
           <span className="text-foreground font-mono text-[11px]">
             {displayedText}
-            {(phase === "typing" || phase === "idle") && <span className="demo-cursor" />}
+            {(phase === "typing" || phase === "idle") && (
+              <span className="bg-primary ml-px inline-block h-[1em] w-[1.5px] animate-[blink_720ms_step-end_infinite] align-text-bottom" />
+            )}
           </span>
         </div>
       </div>

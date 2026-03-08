@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, Menu } from "lucide-react";
 
+import { MarketingButton } from "@/components/marketing-primitives";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "./ui/button";
@@ -53,10 +54,10 @@ export default function MarketingMobileNav({ appUrl }: { appUrl: string }) {
             ))}
           </nav>
           <Separator className="bg-border/40 my-3" />
-          <a href={appUrl} className="cta-primary mt-1 w-full rounded-xl">
+          <MarketingButton href={appUrl} className="mt-1 w-full rounded-xl">
             Start Building
             <ArrowRight className="h-4 w-4" />
-          </a>
+          </MarketingButton>
         </div>
       </SheetContent>
     </Sheet>

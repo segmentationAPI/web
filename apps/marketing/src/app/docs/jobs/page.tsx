@@ -11,6 +11,15 @@ import {
 import { DocsCodeBlock } from "@/components/docs-code-block";
 import { DocsPageNav } from "@/components/docs-page-nav";
 import { DocsPageHeader } from "@/components/docs-page-header";
+import {
+  DocsCallout,
+  DocsH2,
+  DocsH3,
+  DocsInlineCode,
+  DocsMethodBadge,
+  DocsProse,
+  DocsSection,
+} from "@/components/docs-primitives";
 
 export const metadata: Metadata = {
   title: "Jobs | SegmentationAPI Docs",
@@ -98,306 +107,314 @@ export default function JobsPage() {
       />
 
       {/* Create Job */}
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">Create a Job</h2>
-        <div className="mb-3 flex items-center gap-2.5">
-          <span className="docs-method-badge" data-method="POST">
-            POST
-          </span>
-          <span className="text-foreground font-mono text-sm">/v1/jobs</span>
-        </div>
-        <p>
-          Submit a <code>type</code> (<code>&quot;image&quot;</code> or{" "}
-          <code>&quot;video&quot;</code>), an <code>items</code> array of task IDs from the upload
-          flow, and a <code>prompts</code> array with at least one non-empty text phrase.
-        </p>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Create a Job</DocsH2>
+          <div className="mb-3 flex items-center gap-2.5">
+            <DocsMethodBadge method="POST" />
+            <span className="text-foreground font-mono text-sm">/v1/jobs</span>
+          </div>
+          <p>
+            Submit a <DocsInlineCode>type</DocsInlineCode> (
+            <DocsInlineCode>&quot;image&quot;</DocsInlineCode> or{" "}
+            <DocsInlineCode>&quot;video&quot;</DocsInlineCode>), an{" "}
+            <DocsInlineCode>items</DocsInlineCode> array of task IDs from the upload flow, and a{" "}
+            <DocsInlineCode>prompts</DocsInlineCode> array with at least one non-empty text phrase.
+          </p>
 
-        <h3 className="docs-h3">Request Body</h3>
-        <Table className="my-4">
-          <TableHeader>
-            <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Field
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Type
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Required
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Description
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  type
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  string
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">Yes</TableCell>
-              <TableCell className="text-muted-foreground">
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  &quot;image&quot;
-                </code>{" "}
-                or{" "}
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  &quot;video&quot;
-                </code>
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  items
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  string[]
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">Yes</TableCell>
-              <TableCell className="text-muted-foreground">
-                1–100 task IDs from presign uploads
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  prompts
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  string[]
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">Yes</TableCell>
-              <TableCell className="text-muted-foreground">
-                Text prompts for segmentation targets
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  threshold
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  number
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">No</TableCell>
-              <TableCell className="text-muted-foreground">
-                Detection confidence threshold (0–1, image only)
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  maskThreshold
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  number
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">No</TableCell>
-              <TableCell className="text-muted-foreground">
-                Mask binarization threshold (0–1, image only)
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  generatePreview
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  boolean
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">No</TableCell>
-              <TableCell className="text-muted-foreground">
-                Generate overlay preview image/video
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+          <DocsH3>Request Body</DocsH3>
+          <Table className="my-4">
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Field
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Type
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Required
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Description
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    type
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    string
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">Yes</TableCell>
+                <TableCell className="text-muted-foreground">
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    &quot;image&quot;
+                  </code>{" "}
+                  or{" "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    &quot;video&quot;
+                  </code>
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    items
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    string[]
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">Yes</TableCell>
+                <TableCell className="text-muted-foreground">
+                  1–100 task IDs from presign uploads
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    prompts
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    string[]
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">Yes</TableCell>
+                <TableCell className="text-muted-foreground">
+                  Text prompts for segmentation targets
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    threshold
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    number
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">No</TableCell>
+                <TableCell className="text-muted-foreground">
+                  Detection confidence threshold (0–1, image only)
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    maskThreshold
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    number
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">No</TableCell>
+                <TableCell className="text-muted-foreground">
+                  Mask binarization threshold (0–1, image only)
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    generatePreview
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    boolean
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">No</TableCell>
+                <TableCell className="text-muted-foreground">
+                  Generate overlay preview image/video
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <DocsCodeBlock code={createImageJob} label="Image job" />
-          <DocsCodeBlock code={createVideoJob} label="Video job" />
-        </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <DocsCodeBlock code={createImageJob} label="Image job" />
+            <DocsCodeBlock code={createVideoJob} label="Video job" />
+          </div>
 
-        <h3 className="docs-h3">Response</h3>
-        <DocsCodeBlock code={createJobResponse} label="202 Accepted" />
-      </div>
+          <DocsH3>Response</DocsH3>
+          <DocsCodeBlock code={createJobResponse} label="202 Accepted" />
+        </DocsProse>
+      </DocsSection>
 
       {/* List Jobs */}
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">List Jobs</h2>
-        <div className="mb-3 flex items-center gap-2.5">
-          <span className="docs-method-badge" data-method="GET">
-            GET
-          </span>
-          <span className="text-foreground font-mono text-sm">/v1/jobs</span>
-        </div>
-        <p>
-          Retrieve a paginated list of jobs for your account. Pass <code>limit</code> (max 100) and{" "}
-          <code>nextToken</code> for cursor-based pagination.
-        </p>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>List Jobs</DocsH2>
+          <div className="mb-3 flex items-center gap-2.5">
+            <DocsMethodBadge method="GET" />
+            <span className="text-foreground font-mono text-sm">/v1/jobs</span>
+          </div>
+          <p>
+            Retrieve a paginated list of jobs for your account. Pass{" "}
+            <DocsInlineCode>limit</DocsInlineCode> (max 100) and{" "}
+            <DocsInlineCode>nextToken</DocsInlineCode> for cursor-based pagination.
+          </p>
 
-        <DocsCodeBlock code={listJobsRequest} label="Request" />
-        <DocsCodeBlock code={listJobsResponse} label="200 OK" />
+          <DocsCodeBlock code={listJobsRequest} label="Request" />
+          <DocsCodeBlock code={listJobsResponse} label="200 OK" />
 
-        <Table className="my-4">
-          <TableHeader>
-            <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Query Param
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Type
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Default
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Description
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  limit
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  number
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  20
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">Results per page (max 100)</TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  nextToken
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  string
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">—</TableCell>
-              <TableCell className="text-muted-foreground">Cursor from previous response</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
+          <Table className="my-4">
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Query Param
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Type
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Default
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Description
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    limit
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    number
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    20
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">Results per page (max 100)</TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    nextToken
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    string
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">—</TableCell>
+                <TableCell className="text-muted-foreground">
+                  Cursor from previous response
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </DocsProse>
+      </DocsSection>
 
       {/* Get Job */}
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">Get a Job</h2>
-        <div className="mb-3 flex items-center gap-2.5">
-          <span className="docs-method-badge" data-method="GET">
-            GET
-          </span>
-          <span className="text-foreground font-mono text-sm">/v1/jobs/{"{jobId}"}</span>
-        </div>
-        <p>
-          Fetch full details for a single job including per-item task status. Each item moves
-          through <code>queued</code> → <code>running</code> → <code>success</code> |{" "}
-          <code>failed</code>.
-        </p>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Get a Job</DocsH2>
+          <div className="mb-3 flex items-center gap-2.5">
+            <DocsMethodBadge method="GET" />
+            <span className="text-foreground font-mono text-sm">/v1/jobs/{"{jobId}"}</span>
+          </div>
+          <p>
+            Fetch full details for a single job including per-item task status. Each item moves
+            through <DocsInlineCode>queued</DocsInlineCode> →{" "}
+            <DocsInlineCode>running</DocsInlineCode> → <DocsInlineCode>success</DocsInlineCode> |{" "}
+            <DocsInlineCode>failed</DocsInlineCode>.
+          </p>
 
-        <DocsCodeBlock code={getJobRequest} label="Request" />
-        <DocsCodeBlock code={getJobResponse} label="200 OK" />
-      </div>
+          <DocsCodeBlock code={getJobRequest} label="Request" />
+          <DocsCodeBlock code={getJobResponse} label="200 OK" />
+        </DocsProse>
+      </DocsSection>
 
       {/* Status lifecycle */}
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">Job Status Lifecycle</h2>
-        <Table className="my-4">
-          <TableHeader>
-            <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Status
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Description
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  queued
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                Job is accepted and waiting for a processing slot
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  running
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                Segmentation is actively processing
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  success
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                All items completed — masks are available
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  failed
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                Processing failed — check item-level errors for details
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Job Status Lifecycle</DocsH2>
+          <Table className="my-4">
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Status
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Description
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    queued
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  Job is accepted and waiting for a processing slot
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    running
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  Segmentation is actively processing
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    success
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  All items completed — masks are available
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    failed
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  Processing failed — check item-level errors for details
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
 
-        <div className="docs-callout">
-          <strong>Polling tip:</strong> Start polling after 2–3 seconds. Use exponential backoff
-          with a max interval of 10 seconds. Most image jobs complete in under 30 seconds.
-        </div>
-      </div>
+          <DocsCallout>
+            <strong>Polling tip:</strong> Start polling after 2–3 seconds. Use exponential backoff
+            with a max interval of 10 seconds. Most image jobs complete in under 30 seconds.
+          </DocsCallout>
+        </DocsProse>
+      </DocsSection>
 
       <DocsPageNav
         prev={{ href: "/docs/upload", title: "Upload Flow" }}

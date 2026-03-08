@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { env } from "@segmentation/env/marketing";
 
+import { MarketingButton } from "@/components/marketing-primitives";
 import MarketingMobileNav from "./marketing-mobile-nav";
 
 export default function Header() {
@@ -40,12 +41,9 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-3 md:gap-0">
-          <a
-            href={env.NEXT_PUBLIC_APP_URL}
-            className="cta-primary px-4 py-2 text-sm whitespace-nowrap"
-          >
+          <MarketingButton href={env.NEXT_PUBLIC_APP_URL} className="px-4 py-2 md:inline-flex">
             Start Building
-          </a>
+          </MarketingButton>
           <div className="md:hidden">
             <MarketingMobileNav appUrl={env.NEXT_PUBLIC_APP_URL} />
           </div>

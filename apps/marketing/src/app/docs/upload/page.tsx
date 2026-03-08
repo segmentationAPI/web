@@ -11,6 +11,14 @@ import {
 import { DocsCodeBlock } from "@/components/docs-code-block";
 import { DocsPageNav } from "@/components/docs-page-nav";
 import { DocsPageHeader } from "@/components/docs-page-header";
+import {
+  DocsCallout,
+  DocsH2,
+  DocsH3,
+  DocsInlineCode,
+  DocsProse,
+  DocsSection,
+} from "@/components/docs-primitives";
 
 export const metadata: Metadata = {
   title: "Upload Flow | SegmentationAPI Docs",
@@ -54,167 +62,175 @@ export default function UploadFlowPage() {
         }
       />
 
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">Step 1 — Request a Presigned URL</h2>
-        <p>
-          Send a POST request with the <code>contentType</code> of the file you want to upload. The
-          API returns a signed URL valid for 5 minutes, along with the <code>taskId</code> that
-          identifies this upload in subsequent job requests.
-        </p>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Step 1 — Request a Presigned URL</DocsH2>
+          <p>
+            Send a POST request with the <DocsInlineCode>contentType</DocsInlineCode> of the file
+            you want to upload. The API returns a signed URL valid for 5 minutes, along with the{" "}
+            <DocsInlineCode>taskId</DocsInlineCode> that identifies this upload in subsequent job
+            requests.
+          </p>
 
-        <DocsCodeBlock code={presignRequest} label="Request" />
+          <DocsCodeBlock code={presignRequest} label="Request" />
 
-        <h3 className="docs-h3">Response</h3>
-        <DocsCodeBlock code={presignResponse} label="200 OK" />
+          <DocsH3>Response</DocsH3>
+          <DocsCodeBlock code={presignResponse} label="200 OK" />
 
-        <Table className="my-4">
-          <TableHeader>
-            <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Field
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Type
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Description
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  uploadUrl
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  string
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                Presigned S3 PUT URL — expires after{" "}
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  expiresIn
-                </code>{" "}
-                seconds
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  taskId
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  string
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                Unique identifier for this upload; use in{" "}
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  POST /v1/jobs
-                </code>
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  bucket
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  string
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                S3 bucket name (informational)
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  expiresIn
-                </code>
-              </TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  number
-                </code>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                URL validity in seconds (default 300)
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
+          <Table className="my-4">
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Field
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Type
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Description
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    uploadUrl
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    string
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  Presigned S3 PUT URL — expires after{" "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    expiresIn
+                  </code>{" "}
+                  seconds
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    taskId
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    string
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  Unique identifier for this upload; use in{" "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    POST /v1/jobs
+                  </code>
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    bucket
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    string
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  S3 bucket name (informational)
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    expiresIn
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    number
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  URL validity in seconds (default 300)
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </DocsProse>
+      </DocsSection>
 
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">Step 2 — Upload File to S3</h2>
-        <p>
-          Use the <code>uploadUrl</code> from the presign response to PUT the raw file bytes
-          directly to S3. Set the <code>Content-Type</code> header to match the{" "}
-          <code>contentType</code> you specified in the presign request.
-        </p>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Step 2 — Upload File to S3</DocsH2>
+          <p>
+            Use the <DocsInlineCode>uploadUrl</DocsInlineCode> from the presign response to PUT the
+            raw file bytes directly to S3. Set the <DocsInlineCode>Content-Type</DocsInlineCode>{" "}
+            header to match the <DocsInlineCode>contentType</DocsInlineCode> you specified in the
+            presign request.
+          </p>
 
-        <DocsCodeBlock code={uploadFile} label="PUT to S3" />
+          <DocsCodeBlock code={uploadFile} label="PUT to S3" />
 
-        <div className="docs-callout">
-          <strong>Content-Type must match.</strong> The Content-Type in your PUT request must match
-          the contentType from the presign request, or S3 will reject the upload with a{" "}
-          <code>403</code>.
-        </div>
-      </div>
+          <DocsCallout>
+            <strong>Content-Type must match.</strong> The Content-Type in your PUT request must
+            match the contentType from the presign request, or S3 will reject the upload with a{" "}
+            <DocsInlineCode>403</DocsInlineCode>.
+          </DocsCallout>
+        </DocsProse>
+      </DocsSection>
 
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">Supported Formats</h2>
-        <Table className="my-4">
-          <TableHeader>
-            <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Type
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Supported Formats
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow className="border-border/15">
-              <TableCell className="text-muted-foreground">Images</TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  image/png
-                </code>
-                {", "}
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  image/jpeg
-                </code>
-                {", "}
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  image/webp
-                </code>
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell className="text-muted-foreground">Video</TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  video/mp4
-                </code>
-                {", "}
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  video/webm
-                </code>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Supported Formats</DocsH2>
+          <Table className="my-4">
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Type
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Supported Formats
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="border-border/15">
+                <TableCell className="text-muted-foreground">Images</TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    image/png
+                  </code>
+                  {", "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    image/jpeg
+                  </code>
+                  {", "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    image/webp
+                  </code>
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell className="text-muted-foreground">Video</TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    video/mp4
+                  </code>
+                  {", "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    video/webm
+                  </code>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </DocsProse>
+      </DocsSection>
 
       <DocsPageNav
         prev={{ href: "/docs/authentication", title: "Authentication" }}

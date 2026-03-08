@@ -1,6 +1,7 @@
 import type { Route } from "next";
-import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { DocsNavCard } from "@/components/docs-primitives";
 
 interface NavLink {
   href: Route;
@@ -9,26 +10,36 @@ interface NavLink {
 
 export function DocsPageNav({ prev, next }: { prev?: NavLink; next?: NavLink }) {
   return (
-    <nav aria-label="Pagination" className="docs-nav-footer">
+    <nav
+      aria-label="Pagination"
+      className="border-primary/18 mt-16 grid grid-cols-1 gap-3 border-t pt-8 min-[480px]:grid-cols-2 min-[480px]:gap-4"
+    >
       {prev ? (
-        <Link href={prev.href} className="docs-nav-footer-link" data-dir="prev">
-          <span className="label">
-            <ChevronLeft className="mb-px inline h-3 w-3" /> Previous
-          </span>
-          <span className="title">{prev.title}</span>
-        </Link>
+        <DocsNavCard
+          href={prev.href}
+          label={
+            <>
+              <ChevronLeft className="mb-px inline h-3 w-3" /> Previous
+            </>
+          }
+          title={prev.title}
+        />
       ) : (
-        <span aria-hidden="true" className="docs-nav-footer-spacer" />
+        <span aria-hidden="true" className="hidden min-[480px]:block" />
       )}
       {next ? (
-        <Link href={next.href} className="docs-nav-footer-link" data-dir="next">
-          <span className="label">
-            Next <ChevronRight className="mb-px inline h-3 w-3" />
-          </span>
-          <span className="title">{next.title}</span>
-        </Link>
+        <DocsNavCard
+          href={next.href}
+          align="right"
+          label={
+            <>
+              Next <ChevronRight className="mb-px inline h-3 w-3" />
+            </>
+          }
+          title={next.title}
+        />
       ) : (
-        <span aria-hidden="true" className="docs-nav-footer-spacer" />
+        <span aria-hidden="true" className="hidden min-[480px]:block" />
       )}
     </nav>
   );

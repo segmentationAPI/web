@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
 
 import TokenPricingCard from "@/components/token-pricing-card";
-import {
-  Cpu,
-  Database,
-  Eye,
-  Gauge,
-  ScanSearch,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+import { FeatureStatCard, ToneChip } from "@/components/marketing-primitives";
+import { Card, CardContent } from "@/components/ui/card";
+import { Cpu, Database, Eye, Gauge, ScanSearch, ShieldCheck, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "SegmentationAPI Pricing | SAM 3 API",
@@ -63,24 +57,24 @@ export default function PricingPage() {
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 pt-6 pb-20 sm:gap-10 sm:px-8 sm:pt-8">
       <section className="reveal space-y-5 sm:space-y-6">
-        <p className="tone-chip">
+        <ToneChip>
           <Sparkles className="h-4 w-4" />
           Pricing
-        </p>
+        </ToneChip>
         <div className="space-y-3 sm:space-y-4">
           <h1 className="font-display text-3xl tracking-tight sm:text-5xl lg:text-6xl">
             Token pricing that stays predictable.
           </h1>
           <p className="text-muted-foreground max-w-3xl text-sm sm:text-base lg:text-lg">
-            1 token covers 1 processed image or 1 processed video frame. Each token costs $0.02.
-            Use the calculator and examples below to estimate your spend.
+            1 token covers 1 processed image or 1 processed video frame. Each token costs $0.02. Use
+            the calculator and examples below to estimate your spend.
           </p>
         </div>
       </section>
 
       <TokenPricingCard />
 
-      <section className="reveal overflow-hidden rounded-[2rem] border border-primary/40 bg-[radial-gradient(circle_at_top_right,rgba(57,213,201,0.12),transparent_28%),radial-gradient(circle_at_12%_18%,rgba(255,112,63,0.14),transparent_30%),linear-gradient(180deg,rgba(10,12,19,0.92),rgba(7,9,15,0.96))] shadow-[0_24px_70px_rgba(5,7,12,0.65),inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <section className="reveal border-primary/40 overflow-hidden rounded-[2rem] border bg-[radial-gradient(circle_at_top_right,rgba(57,213,201,0.12),transparent_28%),radial-gradient(circle_at_12%_18%,rgba(255,112,63,0.14),transparent_30%),linear-gradient(180deg,rgba(10,12,19,0.92),rgba(7,9,15,0.96))] shadow-[0_24px_70px_rgba(5,7,12,0.65),inset_0_1px_0_rgba(255,255,255,0.05)]">
         <div className="p-5 md:p-7">
           <p className="text-muted-foreground inline-flex items-center gap-2 font-mono text-[0.72rem] tracking-[0.18em] uppercase">
             <Cpu className="text-primary h-4 w-4" />
@@ -101,45 +95,27 @@ export default function PricingPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             {highlightFeatures.map((feature) => (
-              <article
-                key={feature.title}
-                className="relative overflow-hidden rounded-[1.6rem] border border-primary/30 bg-[linear-gradient(145deg,rgba(255,255,255,0.03),transparent_44%),linear-gradient(180deg,rgba(255,112,63,0.14),rgba(255,112,63,0.04)_40%,rgba(8,10,17,0.86))] p-5"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <p className="font-mono text-[0.68rem] tracking-[0.18em] uppercase text-[#ffd1ba]">
-                    {feature.kicker}
-                  </p>
-                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] border border-secondary/40 bg-[rgba(8,11,17,0.52)] text-secondary">
-                    <feature.icon className="h-5 w-5" />
-                  </div>
-                </div>
-                <p className="font-display mt-4 text-[clamp(1.45rem,3vw,2.25rem)] leading-[0.98] tracking-[-0.05em]">
-                  {feature.stat}
-                </p>
-                <h3 className="font-display mt-3 text-xl leading-[1.05]">{feature.title}</h3>
-                <p className="text-muted-foreground mt-3 text-[0.92rem] leading-[1.65]">
-                  {feature.description}
-                </p>
-                <div className="pointer-events-none absolute bottom-4 left-4 h-20 w-20 rounded-full bg-[radial-gradient(circle,rgba(57,213,201,0.12),transparent_72%)] blur-[10px]" />
-              </article>
+              <FeatureStatCard key={feature.title} {...feature} />
             ))}
           </div>
         </div>
 
         <div className="grid gap-3 px-5 pb-5 md:grid-cols-2 md:gap-x-6 md:gap-y-4 md:px-7 md:pb-7">
           {supportFeatures.map((feature) => (
-            <article
+            <Card
               key={feature.title}
-              className="grid grid-cols-[auto_1fr] items-start gap-3 border-t border-primary/20 pt-4"
+              className="border-primary/20 border-t bg-transparent py-0 shadow-none ring-0"
             >
-              <feature.icon className="text-secondary mt-0.5 h-4 w-4" />
-              <div>
-                <h3 className="font-display text-base leading-[1.1]">{feature.title}</h3>
-                <p className="text-muted-foreground mt-1.5 text-[0.88rem] leading-[1.55]">
-                  {feature.description}
-                </p>
-              </div>
-            </article>
+              <CardContent className="grid grid-cols-[auto_1fr] items-start gap-3 px-0 pt-4 pb-0">
+                <feature.icon className="text-secondary mt-0.5 h-4 w-4" />
+                <div>
+                  <h3 className="font-display text-base leading-[1.1]">{feature.title}</h3>
+                  <p className="text-muted-foreground mt-1.5 text-[0.88rem] leading-[1.55]">
+                    {feature.description}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </section>

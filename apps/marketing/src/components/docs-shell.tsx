@@ -1,6 +1,7 @@
 "use client";
 
 import { DocsMobileTrigger, DocsSidebar } from "@/components/docs-sidebar";
+import { DocsContent } from "@/components/docs-primitives";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export function DocsShell({ children }: { children: React.ReactNode }) {
@@ -16,7 +17,7 @@ export function DocsShell({ children }: { children: React.ReactNode }) {
     >
       <DocsSidebar />
       <SidebarInset className="bg-transparent">
-        <div className="docs-content">{children}</div>
+        <DocsContent>{children}</DocsContent>
       </SidebarInset>
       <DocsMobileTrigger />
     </SidebarProvider>

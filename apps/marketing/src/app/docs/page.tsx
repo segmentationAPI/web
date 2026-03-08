@@ -6,6 +6,13 @@ import { CloudUpload, Layers, ShieldCheck, FlaskConical, ArrowRight } from "luci
 import { docsPages } from "@/components/docs-config";
 import { DocsPageNav } from "@/components/docs-page-nav";
 import { DocsPageHeader } from "@/components/docs-page-header";
+import {
+  DocsEndpointCard,
+  DocsH2,
+  DocsMethodBadge,
+  DocsProse,
+  DocsSection,
+} from "@/components/docs-primitives";
 
 export const metadata: Metadata = {
   title: "Documentation | SegmentationAPI",
@@ -65,9 +72,9 @@ export default function DocsOverviewPage() {
         }
       />
 
-      <div className="reveal">
-        <h2 className="docs-h2">Quick Start</h2>
-        <div className="docs-prose">
+      <DocsSection>
+        <DocsH2>Quick Start</DocsH2>
+        <DocsProse>
           <p>The integration flow consists of three steps:</p>
           <ul>
             <li>
@@ -86,45 +93,41 @@ export default function DocsOverviewPage() {
               until processing completes, then download masks from the result URLs.
             </li>
           </ul>
-        </div>
-      </div>
+        </DocsProse>
+      </DocsSection>
 
-      <div className="reveal">
-        <h2 className="docs-h2">Endpoints</h2>
+      <DocsSection>
+        <DocsH2>Endpoints</DocsH2>
         <div className="grid gap-3 sm:grid-cols-2">
           {endpoints.map((ep) => (
-            <div key={`${ep.method}-${ep.path}`} className="docs-endpoint-card">
+            <DocsEndpointCard key={`${ep.method}-${ep.path}`}>
               <div className="mb-2 flex items-center gap-2.5">
-                <span className="docs-method-badge" data-method={ep.method}>
-                  {ep.method}
-                </span>
+                <DocsMethodBadge method={ep.method} />
                 <span className="text-foreground font-mono text-sm">{ep.path}</span>
               </div>
               <p className="text-muted-foreground text-sm">{ep.description}</p>
-            </div>
+            </DocsEndpointCard>
           ))}
         </div>
-      </div>
+      </DocsSection>
 
-      <div className="reveal">
-        <h2 className="docs-h2">Explore</h2>
+      <DocsSection>
+        <DocsH2>Explore</DocsH2>
         <div className="grid gap-3 sm:grid-cols-2">
           {sections.map((section) => (
-            <Link
-              key={section.href}
-              href={section.href}
-              className="docs-endpoint-card group flex flex-col"
-            >
-              <div className="mb-2 flex items-center gap-2.5">
-                <section.icon className="text-primary h-4 w-4 opacity-70" />
-                <span className="font-display text-base font-semibold">{section.title}</span>
-                <ArrowRight className="text-muted-foreground ml-auto h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
-              </div>
-              <p className="text-muted-foreground text-sm">{section.description}</p>
-            </Link>
+            <DocsEndpointCard key={section.href} className="group">
+              <Link href={section.href} className="flex flex-col">
+                <div className="mb-2 flex items-center gap-2.5">
+                  <section.icon className="text-primary h-4 w-4 opacity-70" />
+                  <span className="font-display text-base font-semibold">{section.title}</span>
+                  <ArrowRight className="text-muted-foreground ml-auto h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+                </div>
+                <p className="text-muted-foreground text-sm">{section.description}</p>
+              </Link>
+            </DocsEndpointCard>
           ))}
         </div>
-      </div>
+      </DocsSection>
 
       <DocsPageNav next={{ href: "/docs/authentication", title: "Authentication" }} />
     </>

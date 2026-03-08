@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { DocsPageNav } from "@/components/docs-page-nav";
 import { DocsPageHeader } from "@/components/docs-page-header";
+import { DocsH2, DocsProse, DocsSection } from "@/components/docs-primitives";
 
 type VllmRow = {
   benchmark: string;
@@ -309,202 +310,216 @@ export default function Sam3AlternativesPage() {
       />
 
       {/* Table 1: VLLM benchmarks */}
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">VLLM Benchmark Results</h2>
-        <p>
-          Counting and localisation on CountBench and PixMo-Count. MAE is lower-is-better; accuracy
-          is higher-is-better. Color reflects rank within each row — green is best, red is weakest.
-        </p>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>VLLM Benchmark Results</DocsH2>
+          <p>
+            Counting and localisation on CountBench and PixMo-Count. MAE is lower-is-better;
+            accuracy is higher-is-better. Color reflects rank within each row — green is best, red
+            is weakest.
+          </p>
 
-        <Table className="my-4">
-          <TableHeader>
-            <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Benchmark
-              </TableHead>
-              {vllmCols.map((col) => (
-                <TableHead key={col} className="font-mono text-[0.68rem] tracking-widest uppercase">
-                  {vllmColLabels[col]}
+          <Table className="my-4">
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Benchmark
                 </TableHead>
+                {vllmCols.map((col) => (
+                  <TableHead
+                    key={col}
+                    className="font-mono text-[0.68rem] tracking-widest uppercase"
+                  >
+                    {vllmColLabels[col]}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {benchmarkRows.map((row) => {
+                const rowVals = vllmCols.map((col) => row[col]);
+                return (
+                  <TableRow key={row.benchmark} className="border-border/15">
+                    <TableCell className="text-foreground font-medium">{row.benchmark}</TableCell>
+                    {vllmCols.map((col) => (
+                      <TableCell
+                        key={col}
+                        className="font-mono font-semibold tabular-nums"
+                        style={scoreStyle(row[col], rowVals, row.higherIsBetter)}
+                      >
+                        {row[col]}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </DocsProse>
+      </DocsSection>
+
+      {/* Table 2: Non-VLLM comparison */}
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>SAM 3 vs YOLO, FastSAM, and RF-DETR</DocsH2>
+          <p>
+            The models teams most commonly evaluate for segmentation pipelines — compared across
+            speed, accuracy, prompting approach, and deployment fit.
+          </p>
+
+          <Table className="my-4">
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Dimension
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  SAM 3
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  SAM 2
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  YOLO11-seg
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  FastSAM
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  RF-DETR Seg
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  YOLOv12-N
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {nonVllmComparisonRows.map((row) => (
+                <TableRow key={row.metric} className="border-border/15">
+                  <TableCell className="text-foreground font-medium">{row.metric}</TableCell>
+                  <TableCell className="text-muted-foreground">{row.sam3}</TableCell>
+                  <TableCell className="text-muted-foreground">{row.sam2}</TableCell>
+                  <TableCell className="text-muted-foreground">{row.yolo11Seg}</TableCell>
+                  <TableCell className="text-muted-foreground">{row.fastsam}</TableCell>
+                  <TableCell className="text-muted-foreground">{row.rfdetrSeg}</TableCell>
+                  <TableCell className="text-muted-foreground">{row.yolov12n}</TableCell>
+                </TableRow>
               ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {benchmarkRows.map((row) => {
-              const rowVals = vllmCols.map((col) => row[col]);
-              return (
-                <TableRow key={row.benchmark} className="border-border/15">
-                  <TableCell className="text-foreground font-medium">{row.benchmark}</TableCell>
-                  {vllmCols.map((col) => (
-                    <TableCell
-                      key={col}
-                      className="font-mono font-semibold tabular-nums"
-                      style={scoreStyle(row[col], rowVals, row.higherIsBetter)}
-                    >
+            </TableBody>
+          </Table>
+        </DocsProse>
+      </DocsSection>
+
+      {/* Table 3: Capability matrix */}
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Capability Matrix</DocsH2>
+          <p>
+            Feature availability at a glance — useful for identifying where a model natively covers
+            a workflow versus where custom engineering is needed.
+          </p>
+
+          <Table className="my-4">
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Capability
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  SAM 3
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  SAM 2
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  YOLO11-seg
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  FastSAM
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  RF-DETR
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Gemini 2.5
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {featureRows.map((row) => (
+                <TableRow key={row.feature} className="border-border/15">
+                  <TableCell className="text-foreground font-medium">{row.feature}</TableCell>
+                  {(
+                    ["sam3", "sam2", "yolo11Seg", "fastsam", "rfdetrSeg", "gemini25Pro"] as const
+                  ).map((col) => (
+                    <TableCell key={col} className="font-medium" style={capabilityStyle(row[col])}>
                       {row[col]}
                     </TableCell>
                   ))}
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Table 2: Non-VLLM comparison */}
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">SAM 3 vs YOLO, FastSAM, and RF-DETR</h2>
-        <p>
-          The models teams most commonly evaluate for segmentation pipelines — compared across
-          speed, accuracy, prompting approach, and deployment fit.
-        </p>
-
-        <Table className="my-4">
-          <TableHeader>
-            <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Dimension
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                SAM 3
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                SAM 2
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                YOLO11-seg
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                FastSAM
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                RF-DETR Seg
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                YOLOv12-N
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {nonVllmComparisonRows.map((row) => (
-              <TableRow key={row.metric} className="border-border/15">
-                <TableCell className="text-foreground font-medium">{row.metric}</TableCell>
-                <TableCell className="text-muted-foreground">{row.sam3}</TableCell>
-                <TableCell className="text-muted-foreground">{row.sam2}</TableCell>
-                <TableCell className="text-muted-foreground">{row.yolo11Seg}</TableCell>
-                <TableCell className="text-muted-foreground">{row.fastsam}</TableCell>
-                <TableCell className="text-muted-foreground">{row.rfdetrSeg}</TableCell>
-                <TableCell className="text-muted-foreground">{row.yolov12n}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Table 3: Capability matrix */}
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">Capability Matrix</h2>
-        <p>
-          Feature availability at a glance — useful for identifying where a model natively covers a
-          workflow versus where custom engineering is needed.
-        </p>
-
-        <Table className="my-4">
-          <TableHeader>
-            <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Capability
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                SAM 3
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                SAM 2
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                YOLO11-seg
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                FastSAM
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                RF-DETR
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Gemini 2.5
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {featureRows.map((row) => (
-              <TableRow key={row.feature} className="border-border/15">
-                <TableCell className="text-foreground font-medium">{row.feature}</TableCell>
-                {(
-                  ["sam3", "sam2", "yolo11Seg", "fastsam", "rfdetrSeg", "gemini25Pro"] as const
-                ).map((col) => (
-                  <TableCell key={col} className="font-medium" style={capabilityStyle(row[col])}>
-                    {row[col]}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </DocsProse>
+      </DocsSection>
 
       {/* When to use SAM 3 */}
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">When to Use SAM 3</h2>
-        <p>
-          SAM 3 is the strongest model for open-vocabulary perception tasks, built for accuracy
-          first. The right strategy depends on where in the pipeline the work happens:
-        </p>
-        <ul>
-          <li>
-            <strong>Dataset construction & auto-labelling</strong> — Zero-shot mask quality is high
-            enough to use directly as training labels without domain fine-tuning.
-          </li>
-          <li>
-            <strong>Interactive annotation</strong> — Point and box prompting with real-time mask
-            preview makes SAM 3 the best tool for human-in-the-loop labelling workflows.
-          </li>
-          <li>
-            <strong>Production edge inference</strong> — Use SAM 3 to generate labelled data, then
-            fine-tune YOLO or RF-DETR for sub-5ms edge serving.
-          </li>
-          <li>
-            <strong>Instruction-driven workflows</strong> — SAM 3 Agent decomposes complex queries
-            into prompts and calls SAM 3 iteratively, beating prior work on ReasonSeg and OmniLabel
-            out of the box.
-          </li>
-        </ul>
-      </div>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>When to Use SAM 3</DocsH2>
+          <p>
+            SAM 3 is the strongest model for open-vocabulary perception tasks, built for accuracy
+            first. The right strategy depends on where in the pipeline the work happens:
+          </p>
+          <ul>
+            <li>
+              <strong>Dataset construction & auto-labelling</strong> — Zero-shot mask quality is
+              high enough to use directly as training labels without domain fine-tuning.
+            </li>
+            <li>
+              <strong>Interactive annotation</strong> — Point and box prompting with real-time mask
+              preview makes SAM 3 the best tool for human-in-the-loop labelling workflows.
+            </li>
+            <li>
+              <strong>Production edge inference</strong> — Use SAM 3 to generate labelled data, then
+              fine-tune YOLO or RF-DETR for sub-5ms edge serving.
+            </li>
+            <li>
+              <strong>Instruction-driven workflows</strong> — SAM 3 Agent decomposes complex queries
+              into prompts and calls SAM 3 iteratively, beating prior work on ReasonSeg and
+              OmniLabel out of the box.
+            </li>
+          </ul>
+        </DocsProse>
+      </DocsSection>
 
       {/* Sources */}
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">Sources</h2>
-        <ol className="list-none! space-y-2 pl-0!">
-          {sources.map((source, i) => (
-            <li key={i} className="flex gap-3 pl-0! before:hidden!">
-              <span className="text-muted-foreground/50 shrink-0 pt-0.5 font-mono text-xs">
-                [{i + 1}]
-              </span>
-              <span>
-                <a
-                  href={source.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-foreground/80 hover:text-foreground underline underline-offset-4"
-                >
-                  {source.label}
-                </a>
-                {" — "}
-                {source.note}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </div>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Sources</DocsH2>
+          <ol className="list-none! space-y-2 pl-0!">
+            {sources.map((source, i) => (
+              <li key={i} className="flex gap-3 pl-0! before:hidden!">
+                <span className="text-muted-foreground/50 shrink-0 pt-0.5 font-mono text-xs">
+                  [{i + 1}]
+                </span>
+                <span>
+                  <a
+                    href={source.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-foreground/80 hover:text-foreground underline underline-offset-4"
+                  >
+                    {source.label}
+                  </a>
+                  {" — "}
+                  {source.note}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </DocsProse>
+      </DocsSection>
 
       <DocsPageNav prev={{ href: "/docs/jobs", title: "Jobs" }} />
     </>

@@ -3,6 +3,13 @@ import Link from "next/link";
 import { env } from "@segmentation/env/marketing";
 import { ArrowRight } from "lucide-react";
 
+import {
+  GlassCard,
+  MarketingButton,
+  MarketingButtonLink,
+  MetricCard,
+  ToneChip,
+} from "@/components/marketing-primitives";
 import { LiveDemo } from "./live-demo";
 import { VideoDemo } from "./video-demo";
 
@@ -22,28 +29,19 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <a href={env.NEXT_PUBLIC_APP_URL} className="cta-primary w-full sm:w-auto">
+            <MarketingButton href={env.NEXT_PUBLIC_APP_URL} className="w-full sm:w-auto">
               Start Building
               <ArrowRight className="h-4 w-4" />
-            </a>
-            <Link href="/docs" className="cta-ghost w-full sm:w-auto">
+            </MarketingButton>
+            <MarketingButtonLink href="/docs" variant="ghost" className="w-full sm:w-auto">
               View Docs
-            </Link>
+            </MarketingButtonLink>
           </div>
 
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <article className="metric-card">
-              <p className="metric-value">500ms</p>
-              <p className="metric-label">per image</p>
-            </article>
-            <article className="metric-card">
-              <p className="metric-value">2.4B+</p>
-              <p className="metric-label">masks generated</p>
-            </article>
-            <article className="metric-card">
-              <p className="metric-value">99.99%</p>
-              <p className="metric-label">uptime SLA</p>
-            </article>
+            <MetricCard value="500ms" label="per image" />
+            <MetricCard value="2.4B+" label="masks generated" />
+            <MetricCard value="99.99%" label="uptime SLA" />
           </div>
         </div>
 
@@ -52,12 +50,15 @@ export default function HomePage() {
 
       <section className="reveal mx-auto flex w-full max-w-4xl flex-col items-center gap-10">
         <div className="space-y-4 text-center">
-          <div className="tone-chip mx-auto">
+          <ToneChip className="mx-auto">
             <span className="bg-secondary h-1.5 w-1.5 rounded-full" />
             Video Segmentation
-          </div>
+          </ToneChip>
           <h2 className="font-display text-2xl tracking-tight sm:text-3xl md:text-5xl">
-            Frame-by-frame, <span className="signal-text">fully automatic.</span>
+            Frame-by-frame,{" "}
+            <span className="bg-[linear-gradient(108deg,#ffcb9e_4%,#39d5c9_52%,#ffeecc_94%)] bg-clip-text text-transparent">
+              fully automatic.
+            </span>
           </h2>
           <p className="text-muted-foreground mx-auto max-w-xl text-base leading-relaxed lg:text-lg">
             Track and segment objects across every frame of a video with a single text prompt — no
@@ -67,7 +68,7 @@ export default function HomePage() {
         <VideoDemo />
       </section>
 
-      <section className="glass-panel reveal rounded-2xl p-6 text-center sm:rounded-[2rem] sm:p-14">
+      <GlassCard className="reveal rounded-2xl p-6 text-center sm:rounded-[2rem] sm:p-14">
         <h2 className="font-display text-2xl sm:text-3xl md:text-5xl">
           Plug in once. Segment anything everywhere.
         </h2>
@@ -75,15 +76,15 @@ export default function HomePage() {
           Launch your first request in minutes and skip the GPU ops burden entirely.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
-          <a href={env.NEXT_PUBLIC_APP_URL} className="cta-primary w-full sm:w-auto">
+          <MarketingButton href={env.NEXT_PUBLIC_APP_URL} className="w-full sm:w-auto">
             Create Account
             <ArrowRight className="h-4 w-4" />
-          </a>
-          <Link href="/docs" className="cta-ghost w-full sm:w-auto">
+          </MarketingButton>
+          <MarketingButtonLink href="/docs" variant="ghost" className="w-full sm:w-auto">
             Explore Docs
-          </Link>
+          </MarketingButtonLink>
         </div>
-      </section>
+      </GlassCard>
     </main>
   );
 }

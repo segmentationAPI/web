@@ -12,6 +12,13 @@ import {
 import { DocsCodeBlock } from "@/components/docs-code-block";
 import { DocsPageNav } from "@/components/docs-page-nav";
 import { DocsPageHeader } from "@/components/docs-page-header";
+import {
+  DocsCallout,
+  DocsH2,
+  DocsInlineCode,
+  DocsProse,
+  DocsSection,
+} from "@/components/docs-primitives";
 
 export const metadata: Metadata = {
   title: "Authentication | SegmentationAPI Docs",
@@ -47,96 +54,103 @@ export default function AuthenticationPage() {
         }
       />
 
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">API Key Header</h2>
-        <p>
-          Include the <code>x-api-key</code> header on every request to{" "}
-          <code>/v1/uploads/presign</code> and <code>/v1/jobs</code> endpoints.
-        </p>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>API Key Header</DocsH2>
+          <p>
+            Include the <DocsInlineCode>x-api-key</DocsInlineCode> header on every request to{" "}
+            <DocsInlineCode>/v1/uploads/presign</DocsInlineCode> and{" "}
+            <DocsInlineCode>/v1/jobs</DocsInlineCode> endpoints.
+          </p>
 
-        <DocsCodeBlock code={exampleHeader} label="Example request" />
+          <DocsCodeBlock code={exampleHeader} label="Example request" />
 
-        <div className="docs-callout">
-          <strong>Keep keys secret.</strong> Never expose API keys in client-side code or public
-          repositories. Use environment variables or a secrets manager.
-        </div>
-      </div>
+          <DocsCallout>
+            <strong>Keep keys secret.</strong> Never expose API keys in client-side code or public
+            repositories. Use environment variables or a secrets manager.
+          </DocsCallout>
+        </DocsProse>
+      </DocsSection>
 
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">Error Responses</h2>
-        <p>
-          If the API key is missing, malformed, or revoked, the API returns a{" "}
-          <code>401 Unauthorized</code> response:
-        </p>
-        <DocsCodeBlock code={errorResponse} label="401 Unauthorized" />
-      </div>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Error Responses</DocsH2>
+          <p>
+            If the API key is missing, malformed, or revoked, the API returns a{" "}
+            <DocsInlineCode>401 Unauthorized</DocsInlineCode> response:
+          </p>
+          <DocsCodeBlock code={errorResponse} label="401 Unauthorized" />
+        </DocsProse>
+      </DocsSection>
 
-      <div className="docs-prose reveal">
-        <h2 className="docs-h2">Request Rules</h2>
-        <Table className="my-4">
-          <TableHeader>
-            <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Rule
-              </TableHead>
-              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
-                Detail
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow className="border-border/15">
-              <TableCell className="text-muted-foreground">Header name</TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  x-api-key
-                </code>
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell className="text-muted-foreground">Required on</TableCell>
-              <TableCell>
-                All{" "}
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  /v1/*
-                </code>{" "}
-                endpoints
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell className="text-muted-foreground">Job items limit</TableCell>
-              <TableCell>
-                1–100 task IDs per{" "}
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  POST /v1/jobs
-                </code>
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell className="text-muted-foreground">Prompts</TableCell>
-              <TableCell>
-                At least one non-empty string in the{" "}
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  prompts
-                </code>{" "}
-                array
-              </TableCell>
-            </TableRow>
-            <TableRow className="border-border/15">
-              <TableCell className="text-muted-foreground">Pagination</TableCell>
-              <TableCell>
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  limit
-                </code>{" "}
-                up to 100; cursor via{" "}
-                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                  nextToken
-                </code>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Request Rules</DocsH2>
+          <Table className="my-4">
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Rule
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Detail
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="border-border/15">
+                <TableCell className="text-muted-foreground">Header name</TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    x-api-key
+                  </code>
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell className="text-muted-foreground">Required on</TableCell>
+                <TableCell>
+                  All{" "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    /v1/*
+                  </code>{" "}
+                  endpoints
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell className="text-muted-foreground">Job items limit</TableCell>
+                <TableCell>
+                  1–100 task IDs per{" "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    POST /v1/jobs
+                  </code>
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell className="text-muted-foreground">Prompts</TableCell>
+                <TableCell>
+                  At least one non-empty string in the{" "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    prompts
+                  </code>{" "}
+                  array
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell className="text-muted-foreground">Pagination</TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    limit
+                  </code>{" "}
+                  up to 100; cursor via{" "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    nextToken
+                  </code>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </DocsProse>
+      </DocsSection>
 
       <DocsPageNav
         prev={{ href: "/docs", title: "Overview" }}
