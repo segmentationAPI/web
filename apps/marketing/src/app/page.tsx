@@ -73,6 +73,12 @@ export default function HomePage() {
             <Link href="/docs" className="cta-ghost w-full sm:w-auto">
               View API Docs
             </Link>
+            <Link
+              href="/sam3-aletrnatives"
+              className="inline-flex items-center justify-center rounded-md text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline sm:w-auto"
+            >
+              Compare SAM3 Alternatives
+            </Link>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
