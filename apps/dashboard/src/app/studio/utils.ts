@@ -50,11 +50,11 @@ export function getStudioStatusMeta(status: StudioRunStatus): {
 }
 
 export function summarizeJobStatus(jobStatus: JobStatus) {
-  const totalItems = jobStatus.items.length;
-  const queuedItems = jobStatus.items.filter((item) => item.status === "queued").length;
-  const runningItems = jobStatus.items.filter((item) => item.status === "running").length;
-  const failedItems = jobStatus.items.filter((item) => item.status === "failed").length;
-  const succeededItems = jobStatus.items.filter((item) => item.status === "success").length;
+  const totalItems = jobStatus.tasks.length;
+  const queuedItems = jobStatus.tasks.filter((item) => item.status === "queued").length;
+  const runningItems = jobStatus.tasks.filter((item) => item.status === "running").length;
+  const failedItems = jobStatus.tasks.filter((item) => item.status === "failed").length;
+  const succeededItems = jobStatus.tasks.filter((item) => item.status === "success").length;
 
   return {
     failedItems,
@@ -89,7 +89,7 @@ export function deriveStudioRunStatus(jobStatus: JobStatus): StudioRunStatus {
 }
 
 export function hasTerminalStudioItems(jobStatus: JobStatus) {
-  return jobStatus.items.every((item) => item.status === "success" || item.status === "failed");
+  return jobStatus.tasks.every((item) => item.status === "success" || item.status === "failed");
 }
 
 export function extractManifestPreviewUrls(previewUrls: Array<string | null | undefined>) {
@@ -139,7 +139,7 @@ export function buildStudioJobRequest(
 
     return {
       type: "video",
-      items: [tasks[0].taskId],
+      tasks: [tasks[0].taskId],
       prompts,
       generatePreview: true,
     };
@@ -148,7 +148,7 @@ export function buildStudioJobRequest(
   if (requestType === "image") {
     return {
       type: "image",
-      items: tasks.map((task) => task.taskId),
+      tasks: tasks.map((task) => task.taskId),
       prompts,
       generatePreview: true,
     };

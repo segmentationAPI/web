@@ -33,7 +33,7 @@ const createImageJob = `curl -X POST \\
   -H "x-api-key: YOUR_SEGMENTATION_API_KEY" \\
   -d '{
     "type": "image",
-    "items": ["0000_a1b2c3d4"],
+    "tasks": ["0000_a1b2c3d4"],
     "prompts": ["painting"],
     "threshold": 0.5,
     "maskThreshold": 0.5,
@@ -46,7 +46,7 @@ const createVideoJob = `curl -X POST \\
   -H "x-api-key: YOUR_SEGMENTATION_API_KEY" \\
   -d '{
     "type": "video",
-    "items": ["0001_e5f6g7h8"],
+    "tasks": ["0001_e5f6g7h8"],
     "prompts": ["person"],
     "generatePreview": true
   }'`;
@@ -84,7 +84,7 @@ const getJobResponse = `{
   "userId": "user-123",
   "jobId": "job-abc-987",
   "type": "image",
-  "items": [
+  "tasks": [
     {
       "taskId": "0000_a1b2c3d4",
       "status": "success"
@@ -117,8 +117,8 @@ export default function JobsPage() {
           <p>
             Submit a <DocsInlineCode>type</DocsInlineCode> (
             <DocsInlineCode>&quot;image&quot;</DocsInlineCode> or{" "}
-            <DocsInlineCode>&quot;video&quot;</DocsInlineCode>), an{" "}
-            <DocsInlineCode>items</DocsInlineCode> array of task IDs from the upload flow, and a{" "}
+            <DocsInlineCode>&quot;video&quot;</DocsInlineCode>), a{" "}
+            <DocsInlineCode>tasks</DocsInlineCode> array of task IDs from the upload flow, and a{" "}
             <DocsInlineCode>prompts</DocsInlineCode> array with at least one non-empty text phrase.
           </p>
 
@@ -166,7 +166,7 @@ export default function JobsPage() {
               <TableRow className="border-border/15">
                 <TableCell>
                   <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                    items
+                    tasks
                   </code>
                 </TableCell>
                 <TableCell>
@@ -339,7 +339,7 @@ export default function JobsPage() {
             <span className="text-foreground font-mono text-sm">/v1/jobs/{"{jobId}"}</span>
           </div>
           <p>
-            Fetch full details for a single job including per-item task status. Each item moves
+            Fetch full details for a single job including per-task status. Each task moves
             through <DocsInlineCode>queued</DocsInlineCode> →{" "}
             <DocsInlineCode>running</DocsInlineCode> → <DocsInlineCode>success</DocsInlineCode> |{" "}
             <DocsInlineCode>failed</DocsInlineCode>.
@@ -393,7 +393,7 @@ export default function JobsPage() {
                   </code>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  All items completed — masks are available
+                  All tasks completed — masks are available
                 </TableCell>
               </TableRow>
               <TableRow className="border-border/15">
@@ -403,7 +403,7 @@ export default function JobsPage() {
                   </code>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  Processing failed — check item-level errors for details
+                  Processing failed — check task-level errors for details
                 </TableCell>
               </TableRow>
             </TableBody>

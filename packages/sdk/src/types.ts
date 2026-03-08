@@ -13,7 +13,7 @@ export type JobSummaryStatus =
 
 export interface JobRequest {
   readonly type: JobType;
-  readonly items: string[];
+  readonly tasks: string[];
   readonly prompts?: string[];
   readonly generatePreview?: boolean;
   readonly threshold?: number;
@@ -41,7 +41,7 @@ export interface JobStatusResponse {
   readonly userId: string;
   readonly jobId: string;
   readonly type: JobType;
-  readonly items: JobTaskResult[];
+  readonly tasks: JobTaskResult[];
 }
 
 export interface TaskStatus extends JobTaskResult {
@@ -52,7 +52,7 @@ export interface JobStatus {
   readonly userId: string;
   readonly jobId: string;
   readonly type: JobType;
-  readonly items: TaskStatus[];
+  readonly tasks: TaskStatus[];
 }
 
 export interface ListJobsParams {

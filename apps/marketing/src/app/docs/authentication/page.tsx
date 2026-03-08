@@ -117,7 +117,7 @@ export default function AuthenticationPage() {
                 </TableCell>
               </TableRow>
               <TableRow className="border-border/15">
-                <TableCell className="text-muted-foreground">Job items limit</TableCell>
+                <TableCell className="text-muted-foreground">Job tasks limit</TableCell>
                 <TableCell>
                   1–100 task IDs per{" "}
                   <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">

@@ -6,7 +6,7 @@ export function toJobStatus(jobStatusResponse: JobStatusResponse): JobStatus {
     userId: jobStatusResponse.userId,
     jobId: jobStatusResponse.jobId,
     type: jobStatusResponse.type,
-    items: jobStatusResponse.items.map((item) => ({
+    tasks: jobStatusResponse.tasks.map((item) => ({
       taskId: item.taskId,
       status: item.status,
       error: item.error,

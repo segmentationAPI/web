@@ -21,7 +21,7 @@ export const JobSummaryStatusSchema = z.union([
 
 export const JobRequestSchema = z.object({
   type: JobTypeSchema,
-  items: z.array(z.string()),
+  tasks: z.array(z.string()),
   prompts: z.optional(z.array(z.string())),
   generatePreview: z.optional(z.boolean()),
   threshold: z.optional(z.number()),
@@ -43,7 +43,7 @@ export const JobStatusResponseSchema = z.object({
   userId: z.string(),
   jobId: z.string(),
   type: JobTypeSchema,
-  items: z.array(
+  tasks: z.array(
     z.object({
       taskId: z.string(),
       status: JobTaskStatusSchema,
