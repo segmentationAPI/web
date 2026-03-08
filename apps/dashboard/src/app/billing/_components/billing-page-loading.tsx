@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function BillingPageLoading() {
   return (
-    <Card className="glass-panel rounded-[1.6rem] border-border/70 bg-card/75 py-6">
+    <Card className="glass-panel border-border/70 bg-card/75 rounded-[1.6rem] py-6">
       <CardHeader className="space-y-4">
         <Skeleton className="h-3 w-20" />
         <Skeleton className="h-7 w-72 max-w-full" />

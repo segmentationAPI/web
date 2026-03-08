@@ -76,7 +76,7 @@ export default function UserMenu() {
   if (!session) {
     return (
       <Link href="/login">
-        <Button variant="outline" className="h-9 px-3 font-mono uppercase tracking-[0.12em]">
+        <Button variant="outline" className="h-9 px-3 font-mono tracking-[0.12em] uppercase">
           Sign In
         </Button>
       </Link>
@@ -97,12 +97,12 @@ export default function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-80 rounded-lg border border-border bg-popover p-2 text-popover-foreground shadow-md"
+        className="border-border bg-popover text-popover-foreground w-80 rounded-lg border p-2 shadow-md"
       >
         <div className="space-y-2">
-          <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
-            <p className="text-sm font-medium text-foreground">{session.user.name}</p>
-            <p className="break-all text-xs text-muted-foreground">{session.user.email}</p>
+          <div className="border-border bg-muted/30 rounded-md border px-3 py-2">
+            <p className="text-foreground text-sm font-medium">{session.user.name}</p>
+            <p className="text-muted-foreground text-xs break-all">{session.user.email}</p>
           </div>
           <div
             className="space-y-2 rounded-md px-1 py-1"
@@ -110,10 +110,7 @@ export default function UserMenu() {
             onKeyDown={(event) => event.stopPropagation()}
           >
             <div className="space-y-2">
-              <Label
-                htmlFor="active-api-key-input"
-                className="text-xs font-medium text-foreground"
-              >
+              <Label htmlFor="active-api-key-input" className="text-foreground text-xs font-medium">
                 Active API Key
               </Label>
               <Input
@@ -130,22 +127,22 @@ export default function UserMenu() {
                 }}
                 onKeyDown={(event) => event.stopPropagation()}
                 placeholder="Paste active API key"
-                className="rounded-md border-border bg-background"
+                className="border-border bg-background rounded-md"
               />
             </div>
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[11px] text-muted-foreground">Paste a valid sk_live_... key.</p>
+              <p className="text-muted-foreground text-[11px]">Paste a valid sk_live_... key.</p>
               {isSavingApiKey ? (
-                <p className="shrink-0 text-[11px] text-muted-foreground">Saving...</p>
+                <p className="text-muted-foreground shrink-0 text-[11px]">Saving...</p>
               ) : null}
             </div>
-            {error ? <p className="text-[11px] text-destructive">{error}</p> : null}
+            {error ? <p className="text-destructive text-[11px]">{error}</p> : null}
           </div>
-          <div className="border-t border-border pt-2">
+          <div className="border-border border-t pt-2">
             <Button
               type="button"
               variant="ghost"
-              className="w-full justify-start rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive w-full justify-start rounded-md"
               onClick={() => {
                 authClient.signOut({
                   fetchOptions: {

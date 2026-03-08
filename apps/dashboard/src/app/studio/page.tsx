@@ -11,8 +11,8 @@ export const metadata = {
 function StudioLoading() {
   return (
     <DashboardPageShell className="h-full min-h-0 max-w-[1320px] overflow-hidden py-3 sm:py-4">
-      <DashboardPanelShell className="rounded-[1.35rem] border-border/70 bg-card/75 p-6">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+      <DashboardPanelShell className="border-border/70 bg-card/75 rounded-[1.35rem] p-6">
+        <p className="text-muted-foreground font-mono text-[11px] tracking-[0.14em] uppercase">
           Loading studio...
         </p>
       </DashboardPanelShell>

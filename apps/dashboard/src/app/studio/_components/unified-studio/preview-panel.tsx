@@ -16,11 +16,11 @@ import { Button } from "@/components/ui/button";
 
 function EmptyPreview() {
   return (
-    <Empty className="flex-1 rounded-lg border border-dashed border-border/40 bg-muted/8">
+    <Empty className="border-border/40 bg-muted/8 flex-1 rounded-lg border border-dashed">
       <EmptyHeader>
         <EmptyMedia>
-          <div className="flex size-14 items-center justify-center rounded-xl bg-muted/30">
-            <Sparkles className="size-6 text-primary/60" />
+          <div className="bg-muted/30 flex size-14 items-center justify-center rounded-xl">
+            <Sparkles className="text-primary/60 size-6" />
           </div>
         </EmptyMedia>
         <EmptyTitle className="text-foreground/80">No preview yet</EmptyTitle>
@@ -53,13 +53,13 @@ export function PreviewPanel() {
         <EmptyPreview />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-3">
-          <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-muted/10 p-3 sm:p-4">
+          <div className="border-border/50 bg-muted/10 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl border p-3 sm:p-4">
             <MediaPreview assetUrl={outputLinks[selectedIndex]} mediaType={inputType ?? "image"} />
           </div>
 
           {hasMultipleOutputs ? (
-            <div className="flex items-center justify-between rounded-lg border border-border/50 bg-background/70 px-3 py-2">
-              <span className="text-xs text-muted-foreground">
+            <div className="border-border/50 bg-background/70 flex items-center justify-between rounded-lg border px-3 py-2">
+              <span className="text-muted-foreground text-xs">
                 Output {selectedIndex + 1} of {outputLinks.length}
               </span>
               <div className="flex items-center gap-2">

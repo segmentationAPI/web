@@ -95,9 +95,9 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
 
   return (
     <>
-      <Card className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 py-6">
+      <Card className="glass-panel border-border/70 bg-card/75 rounded-[1.35rem] py-6">
         <CardHeader>
-          <CardDescription className="font-mono uppercase tracking-[0.14em] text-muted-foreground">
+          <CardDescription className="text-muted-foreground font-mono tracking-[0.14em] uppercase">
             API Keys
           </CardDescription>
         </CardHeader>
@@ -112,7 +112,7 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
             <Button
               onClick={handleCreateApiKey}
               disabled={creatingKey}
-              className="w-full border border-primary/45 bg-primary/20 font-mono uppercase tracking-[0.14em] text-foreground hover:bg-primary/30 sm:w-auto"
+              className="border-primary/45 bg-primary/20 text-foreground hover:bg-primary/30 w-full border font-mono tracking-[0.14em] uppercase sm:w-auto"
             >
               {creatingKey ? (
                 <>
@@ -129,14 +129,14 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
           </div>
 
           {newlyCreatedSecret ? (
-            <div className="rounded-xl border border-secondary/45 bg-secondary/10 p-3">
+            <div className="border-secondary/45 bg-secondary/10 rounded-xl border p-3">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 size-4 text-secondary" aria-hidden />
+                <AlertTriangle className="text-secondary mt-0.5 size-4" aria-hidden />
                 <div>
-                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-secondary">
+                  <p className="text-secondary font-mono text-[11px] tracking-[0.14em] uppercase">
                     Copy this key now
                   </p>
-                  <p className="mt-1 break-all rounded-md bg-background/45 p-2 font-mono text-xs leading-relaxed text-foreground">
+                  <p className="bg-background/45 text-foreground mt-1 rounded-md p-2 font-mono text-xs leading-relaxed break-all">
                     {newlyCreatedSecret}
                   </p>
                 </div>
@@ -146,51 +146,53 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
 
           <div className="space-y-3 md:hidden">
             {keys.length === 0 ? (
-              <div className="rounded-xl border border-border/70 bg-card/55 px-3 py-6 text-center font-mono text-xs text-muted-foreground">
+              <div className="border-border/70 bg-card/55 text-muted-foreground rounded-xl border px-3 py-6 text-center font-mono text-xs">
                 No API keys yet.
               </div>
             ) : (
               keys.map((key) => (
-                <article key={key.id} className="rounded-xl border border-border/70 bg-card/55 p-3">
+                <article key={key.id} className="border-border/70 bg-card/55 rounded-xl border p-3">
                   <div className="space-y-1">
-                    <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                    <p className="text-muted-foreground font-mono text-[11px] tracking-[0.12em] uppercase">
                       Label
                     </p>
-                    <p className="text-sm text-foreground">{key.label}</p>
+                    <p className="text-foreground text-sm">{key.label}</p>
                   </div>
                   <div className="mt-3 space-y-1">
-                    <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                    <p className="text-muted-foreground font-mono text-[11px] tracking-[0.12em] uppercase">
                       Prefix
                     </p>
-                    <p className="break-all font-mono text-xs text-muted-foreground">{key.keyPrefix}</p>
+                    <p className="text-muted-foreground font-mono text-xs break-all">
+                      {key.keyPrefix}
+                    </p>
                   </div>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
                     <div className="space-y-1">
-                      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                      <p className="text-muted-foreground font-mono text-[11px] tracking-[0.12em] uppercase">
                         Status
                       </p>
                       {key.revoked ? (
-                        <span className="font-mono uppercase tracking-[0.12em] text-destructive">
+                        <span className="text-destructive font-mono tracking-[0.12em] uppercase">
                           revoked
                         </span>
                       ) : (
-                        <span className="font-mono uppercase tracking-[0.12em] text-secondary">
+                        <span className="text-secondary font-mono tracking-[0.12em] uppercase">
                           active
                         </span>
                       )}
                     </div>
                     <div className="space-y-1">
-                      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                      <p className="text-muted-foreground font-mono text-[11px] tracking-[0.12em] uppercase">
                         Created
                       </p>
-                      <p className="text-xs text-muted-foreground">{formatDate(key.createdAt)}</p>
+                      <p className="text-muted-foreground text-xs">{formatDate(key.createdAt)}</p>
                     </div>
                   </div>
                   <Button
                     disabled={key.revoked || revokingKeyId === key.id}
                     onClick={() => void handleRevokeApiKey(key.id)}
                     variant="outline"
-                    className="mt-3 w-full border-destructive/35 bg-destructive/10 font-mono uppercase tracking-[0.12em] text-destructive hover:bg-destructive/20"
+                    className="border-destructive/35 bg-destructive/10 text-destructive hover:bg-destructive/20 mt-3 w-full font-mono tracking-[0.12em] uppercase"
                   >
                     {revokingKeyId === key.id ? "Revoking" : "Revoke"}
                   </Button>
@@ -199,9 +201,9 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
             )}
           </div>
 
-          <div className="hidden overflow-x-auto rounded-xl border border-border/70 bg-card/55 md:block">
+          <div className="border-border/70 bg-card/55 hidden overflow-x-auto rounded-xl border md:block">
             <Table className="min-w-full text-left text-xs">
-              <TableHeader className="bg-muted/65 font-mono uppercase tracking-[0.12em] text-muted-foreground">
+              <TableHeader className="bg-muted/65 text-muted-foreground font-mono tracking-[0.12em] uppercase">
                 <TableRow>
                   <TableHead className="px-3 py-2">Label</TableHead>
                   <TableHead className="px-3 py-2">Prefix</TableHead>
@@ -215,30 +217,30 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
                   <TableRow>
                     <TableCell
                       colSpan={5}
-                      className="px-3 py-6 text-center font-mono text-xs text-muted-foreground"
+                      className="text-muted-foreground px-3 py-6 text-center font-mono text-xs"
                     >
                       No API keys yet.
                     </TableCell>
                   </TableRow>
                 ) : (
                   keys.map((key) => (
-                    <TableRow key={key.id} className="border-t border-border/60">
-                      <TableCell className="px-3 py-2 text-foreground">{key.label}</TableCell>
-                      <TableCell className="px-3 py-2 font-mono text-muted-foreground">
+                    <TableRow key={key.id} className="border-border/60 border-t">
+                      <TableCell className="text-foreground px-3 py-2">{key.label}</TableCell>
+                      <TableCell className="text-muted-foreground px-3 py-2 font-mono">
                         {key.keyPrefix}
                       </TableCell>
                       <TableCell className="px-3 py-2">
                         {key.revoked ? (
-                          <span className="font-mono uppercase tracking-[0.12em] text-destructive">
+                          <span className="text-destructive font-mono tracking-[0.12em] uppercase">
                             revoked
                           </span>
                         ) : (
-                          <span className="font-mono uppercase tracking-[0.12em] text-secondary">
+                          <span className="text-secondary font-mono tracking-[0.12em] uppercase">
                             active
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="px-3 py-2 text-muted-foreground">
+                      <TableCell className="text-muted-foreground px-3 py-2">
                         {formatDate(key.createdAt)}
                       </TableCell>
                       <TableCell className="px-3 py-2 text-right">
@@ -246,7 +248,7 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
                           disabled={key.revoked || revokingKeyId === key.id}
                           onClick={() => void handleRevokeApiKey(key.id)}
                           variant="outline"
-                          className="border-destructive/35 bg-destructive/10 font-mono uppercase tracking-[0.12em] text-destructive hover:bg-destructive/20"
+                          className="border-destructive/35 bg-destructive/10 text-destructive hover:bg-destructive/20 font-mono tracking-[0.12em] uppercase"
                         >
                           {revokingKeyId === key.id ? "Revoking" : "Revoke"}
                         </Button>
@@ -265,7 +267,7 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
 
 export default function ApiKeysPage({ initialKeys }: { initialKeys: ApiKey[] }) {
   return (
-    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-4 px-3 pb-8 pt-3 sm:gap-5 sm:px-6 sm:pb-10 sm:pt-4">
+    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-4 px-3 pt-3 pb-8 sm:gap-5 sm:px-6 sm:pt-4 sm:pb-10">
       <ApiKeysPageContent initialKeys={initialKeys} />
     </main>
   );

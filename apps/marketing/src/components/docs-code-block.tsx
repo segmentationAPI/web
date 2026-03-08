@@ -50,7 +50,7 @@ export function DocsCodeBlock({
         <button
           type="button"
           onClick={handleCopy}
-          className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-md border border-border/30 bg-background/60 text-muted-foreground opacity-0 transition-all focus-visible:opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-foreground"
+          className="border-border/30 bg-background/60 text-muted-foreground hover:text-foreground absolute top-3 right-3 grid h-7 w-7 place-items-center rounded-md border opacity-0 transition-all group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
           aria-label={copied ? "Code copied" : "Copy code"}
         >
           {copied ? (

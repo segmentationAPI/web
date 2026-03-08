@@ -88,7 +88,7 @@
 
   html,
   body {
-    @apply min-h-full bg-background text-foreground;
+    @apply bg-background text-foreground min-h-full;
   }
 
   body {

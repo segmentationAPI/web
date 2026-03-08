@@ -52,7 +52,7 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
   }
 
   return (
-    <div className="mx-auto w-full mt-10 max-w-md p-6">
+    <div className="mx-auto mt-10 w-full max-w-md p-6">
       <h1 className="mb-6 text-center text-3xl font-bold">Create Account</h1>
 
       <form
@@ -153,7 +153,7 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
         <Button
           variant="link"
           onClick={onSwitchToSignIn}
-          className="font-mono uppercase tracking-[0.12em] text-primary hover:text-secondary"
+          className="text-primary hover:text-secondary font-mono tracking-[0.12em] uppercase"
         >
           Already have an account? Sign In
         </Button>

@@ -5,10 +5,7 @@ import { db } from "@segmentation/db";
 import { apiKey } from "@segmentation/db/schema/app";
 import { desc, eq } from "drizzle-orm";
 import type { JobListItem, OverviewData } from "@/lib/dashboard-types";
-import {
-  getDynamoBillingState,
-  getDynamoUsageForLast24Hours,
-} from "@/lib/server/aws/dynamo";
+import { getDynamoBillingState, getDynamoUsageForLast24Hours } from "@/lib/server/aws/dynamo";
 import { DEFAULT_PAGE_SIZE } from "@/lib/server/constants";
 import { user } from "@segmentation/db/schema/auth";
 

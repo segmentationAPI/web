@@ -12,7 +12,8 @@ type MediaPreviewProps = {
   className?: string;
 };
 
-const mediaClassName = "h-auto max-h-full w-auto max-w-full rounded-lg object-contain transition-opacity duration-200";
+const mediaClassName =
+  "h-auto max-h-full w-auto max-w-full rounded-lg object-contain transition-opacity duration-200";
 
 export default function MediaPreview({ assetUrl, mediaType, className }: MediaPreviewProps) {
   return (
@@ -31,9 +32,19 @@ function MediaPreviewContent({ assetUrl, mediaType, className }: MediaPreviewPro
   const handleReady = () => setIsReady(true);
 
   return (
-    <div className={cn("relative flex h-full w-full items-center justify-center overflow-hidden", className)}>
+    <div
+      className={cn(
+        "relative flex h-full w-full items-center justify-center overflow-hidden",
+        className,
+      )}
+    >
       {!isReady ? <MediaPreviewSkeleton /> : null}
-      <MediaAsset assetUrl={assetUrl} mediaType={mediaType} isReady={isReady} onReady={handleReady} />
+      <MediaAsset
+        assetUrl={assetUrl}
+        mediaType={mediaType}
+        isReady={isReady}
+        onReady={handleReady}
+      />
     </div>
   );
 }

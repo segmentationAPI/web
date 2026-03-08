@@ -22,12 +22,60 @@ type VllmRow = {
 };
 
 const benchmarkRows: VllmRow[] = [
-  { benchmark: "CountBench MAE", higherIsBetter: false, sam3: "0.12", gemini25Pro: "0.24", qwen2vl72b: "0.28", molmo72b: "0.27", dinoX: "0.62" },
-  { benchmark: "CountBench Accuracy (%)", higherIsBetter: true, sam3: "93.8", gemini25Pro: "92.4", qwen2vl72b: "86.7", molmo72b: "92.4", dinoX: "82.9" },
-  { benchmark: "PixMo-Count MAE", higherIsBetter: false, sam3: "0.21", gemini25Pro: "0.38", qwen2vl72b: "0.61", molmo72b: "0.17", dinoX: "0.21" },
-  { benchmark: "PixMo-Count Accuracy (%)", higherIsBetter: true, sam3: "86.2", gemini25Pro: "78.2", qwen2vl72b: "63.7", molmo72b: "88.8", dinoX: "85.0" },
-  { benchmark: "Average Accuracy (%)", higherIsBetter: true, sam3: "90.0", gemini25Pro: "85.3", qwen2vl72b: "75.2", molmo72b: "90.6", dinoX: "84.0" },
-  { benchmark: "Average MAE", higherIsBetter: false, sam3: "0.165", gemini25Pro: "0.310", qwen2vl72b: "0.445", molmo72b: "0.220", dinoX: "0.415" },
+  {
+    benchmark: "CountBench MAE",
+    higherIsBetter: false,
+    sam3: "0.12",
+    gemini25Pro: "0.24",
+    qwen2vl72b: "0.28",
+    molmo72b: "0.27",
+    dinoX: "0.62",
+  },
+  {
+    benchmark: "CountBench Accuracy (%)",
+    higherIsBetter: true,
+    sam3: "93.8",
+    gemini25Pro: "92.4",
+    qwen2vl72b: "86.7",
+    molmo72b: "92.4",
+    dinoX: "82.9",
+  },
+  {
+    benchmark: "PixMo-Count MAE",
+    higherIsBetter: false,
+    sam3: "0.21",
+    gemini25Pro: "0.38",
+    qwen2vl72b: "0.61",
+    molmo72b: "0.17",
+    dinoX: "0.21",
+  },
+  {
+    benchmark: "PixMo-Count Accuracy (%)",
+    higherIsBetter: true,
+    sam3: "86.2",
+    gemini25Pro: "78.2",
+    qwen2vl72b: "63.7",
+    molmo72b: "88.8",
+    dinoX: "85.0",
+  },
+  {
+    benchmark: "Average Accuracy (%)",
+    higherIsBetter: true,
+    sam3: "90.0",
+    gemini25Pro: "85.3",
+    qwen2vl72b: "75.2",
+    molmo72b: "90.6",
+    dinoX: "84.0",
+  },
+  {
+    benchmark: "Average MAE",
+    higherIsBetter: false,
+    sam3: "0.165",
+    gemini25Pro: "0.310",
+    qwen2vl72b: "0.445",
+    molmo72b: "0.220",
+    dinoX: "0.415",
+  },
 ];
 
 const vllmCols = ["sam3", "gemini25Pro", "qwen2vl72b", "molmo72b", "dinoX"] as const;
@@ -41,7 +89,11 @@ const vllmColLabels: Record<VllmColKey, string> = {
   dinoX: "DINO-X",
 };
 
-function scoreStyle(value: string, allValues: string[], higherIsBetter: boolean): React.CSSProperties {
+function scoreStyle(
+  value: string,
+  allValues: string[],
+  higherIsBetter: boolean,
+): React.CSSProperties {
   const nums = allValues.map((v) => parseFloat(v)).filter((n) => !isNaN(n));
   const cur = parseFloat(value);
   if (isNaN(cur) || nums.length < 2) return {};
@@ -112,12 +164,60 @@ const nonVllmComparisonRows = [
 
 type CellValue = "Yes" | "No" | "Strong" | "Weak" | "Partial" | "Memory-bank tracker";
 
-const featureRows: { feature: string; sam3: CellValue; sam2: CellValue; yolo11Seg: CellValue; fastsam: CellValue; rfdetrSeg: CellValue; gemini25Pro: CellValue }[] = [
-  { feature: "Zero-shot concept segmentation from noun phrases", sam3: "Yes", sam2: "No", yolo11Seg: "No", fastsam: "Partial", rfdetrSeg: "No", gemini25Pro: "Partial" },
-  { feature: "Per-instance segmentation masks", sam3: "Yes", sam2: "Yes", yolo11Seg: "Yes", fastsam: "Yes", rfdetrSeg: "Yes", gemini25Pro: "No" },
-  { feature: "Unified image + video detector/tracker", sam3: "Yes", sam2: "Memory-bank tracker", yolo11Seg: "No", fastsam: "No", rfdetrSeg: "No", gemini25Pro: "No" },
-  { feature: "Interactive refinement (points/boxes)", sam3: "Yes", sam2: "Yes", yolo11Seg: "No", fastsam: "Yes", rfdetrSeg: "No", gemini25Pro: "No" },
-  { feature: "Long instruction reasoning (no external agent)", sam3: "Weak", sam2: "Weak", yolo11Seg: "No", fastsam: "No", rfdetrSeg: "No", gemini25Pro: "Strong" },
+const featureRows: {
+  feature: string;
+  sam3: CellValue;
+  sam2: CellValue;
+  yolo11Seg: CellValue;
+  fastsam: CellValue;
+  rfdetrSeg: CellValue;
+  gemini25Pro: CellValue;
+}[] = [
+  {
+    feature: "Zero-shot concept segmentation from noun phrases",
+    sam3: "Yes",
+    sam2: "No",
+    yolo11Seg: "No",
+    fastsam: "Partial",
+    rfdetrSeg: "No",
+    gemini25Pro: "Partial",
+  },
+  {
+    feature: "Per-instance segmentation masks",
+    sam3: "Yes",
+    sam2: "Yes",
+    yolo11Seg: "Yes",
+    fastsam: "Yes",
+    rfdetrSeg: "Yes",
+    gemini25Pro: "No",
+  },
+  {
+    feature: "Unified image + video detector/tracker",
+    sam3: "Yes",
+    sam2: "Memory-bank tracker",
+    yolo11Seg: "No",
+    fastsam: "No",
+    rfdetrSeg: "No",
+    gemini25Pro: "No",
+  },
+  {
+    feature: "Interactive refinement (points/boxes)",
+    sam3: "Yes",
+    sam2: "Yes",
+    yolo11Seg: "No",
+    fastsam: "Yes",
+    rfdetrSeg: "No",
+    gemini25Pro: "No",
+  },
+  {
+    feature: "Long instruction reasoning (no external agent)",
+    sam3: "Weak",
+    sam2: "Weak",
+    yolo11Seg: "No",
+    fastsam: "No",
+    rfdetrSeg: "No",
+    gemini25Pro: "Strong",
+  },
 ];
 
 function capabilityStyle(value: CellValue): React.CSSProperties {
@@ -128,7 +228,8 @@ function capabilityStyle(value: CellValue): React.CSSProperties {
 
 const sources = [
   {
-    label: "DINO-X: A Unified Vision Model for Open-World Object Detection and Understanding (arXiv:2411.14347)",
+    label:
+      "DINO-X: A Unified Vision Model for Open-World Object Detection and Understanding (arXiv:2411.14347)",
     note: "Reference for DINO-X model.",
     href: "https://arxiv.org/abs/2411.14347",
   },
@@ -143,12 +244,14 @@ const sources = [
     href: "https://ai.meta.com/blog/segment-anything-model-3/",
   },
   {
-    label: "Molmo and PixMo: Open Weights and Open Data for State-of-the-Art VLMs — Deitke et al. (arXiv:2409.17146)",
+    label:
+      "Molmo and PixMo: Open Weights and Open Data for State-of-the-Art VLMs — Deitke et al. (arXiv:2409.17146)",
     note: "Reference for Molmo-72B model. PixMo-Count benchmark originates from this work.",
     href: "https://arxiv.org/abs/2409.17146",
   },
   {
-    label: "Qwen2-VL: Enhancing Vision-Language Model's Perception of the World at Any Resolution — Wang et al. (arXiv:2409.12191)",
+    label:
+      "Qwen2-VL: Enhancing Vision-Language Model's Perception of the World at Any Resolution — Wang et al. (arXiv:2409.12191)",
     note: "Reference for Qwen2-VL-72B model.",
     href: "https://arxiv.org/abs/2409.12191",
   },
@@ -158,7 +261,8 @@ const sources = [
     href: "https://blog.roboflow.com/rf-detr-segmentation-preview/",
   },
   {
-    label: "SAM 3: Segment Anything with Concepts — Carion et al., Meta (arXiv:2511.16719, Nov 2025)",
+    label:
+      "SAM 3: Segment Anything with Concepts — Carion et al., Meta (arXiv:2511.16719, Nov 2025)",
     note: "LVIS zero-shot mask AP, CountBench / PixMo-Count benchmarks, H200 latency, SAM 3 Agent results on ReasonSeg and OmniLabel.",
     href: "https://arxiv.org/abs/2511.16719",
   },
@@ -196,10 +300,9 @@ export default function Sam3AlternativesPage() {
         title="SAM3 Alternatives"
         description={
           <>
-            SAM 3 leads in open-vocabulary segmentation quality, but it&apos;s not
-            the only option and not always the right one. This page compares SAM 3
-            against frontier VLLMs and popular non-VLLM models across benchmarks,
-            latency, capabilities, and deployment fit.
+            SAM 3 leads in open-vocabulary segmentation quality, but it&apos;s not the only option
+            and not always the right one. This page compares SAM 3 against frontier VLLMs and
+            popular non-VLLM models across benchmarks, latency, capabilities, and deployment fit.
           </>
         }
         eyebrow="Last updated: March 3, 2026"
@@ -209,17 +312,20 @@ export default function Sam3AlternativesPage() {
       <div className="docs-prose reveal">
         <h2 className="docs-h2">VLLM Benchmark Results</h2>
         <p>
-          Counting and localisation on CountBench and PixMo-Count. MAE is
-          lower-is-better; accuracy is higher-is-better. Color reflects rank
-          within each row — green is best, red is weakest.
+          Counting and localisation on CountBench and PixMo-Count. MAE is lower-is-better; accuracy
+          is higher-is-better. Color reflects rank within each row — green is best, red is weakest.
         </p>
 
         <Table className="my-4">
           <TableHeader>
             <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">Benchmark</TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                Benchmark
+              </TableHead>
               {vllmCols.map((col) => (
-                <TableHead key={col} className="font-mono text-[0.68rem] uppercase tracking-widest">{vllmColLabels[col]}</TableHead>
+                <TableHead key={col} className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  {vllmColLabels[col]}
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -228,7 +334,7 @@ export default function Sam3AlternativesPage() {
               const rowVals = vllmCols.map((col) => row[col]);
               return (
                 <TableRow key={row.benchmark} className="border-border/15">
-                  <TableCell className="font-medium text-foreground">{row.benchmark}</TableCell>
+                  <TableCell className="text-foreground font-medium">{row.benchmark}</TableCell>
                   {vllmCols.map((col) => (
                     <TableCell
                       key={col}
@@ -249,26 +355,40 @@ export default function Sam3AlternativesPage() {
       <div className="docs-prose reveal">
         <h2 className="docs-h2">SAM 3 vs YOLO, FastSAM, and RF-DETR</h2>
         <p>
-          The models teams most commonly evaluate for segmentation pipelines —
-          compared across speed, accuracy, prompting approach, and deployment fit.
+          The models teams most commonly evaluate for segmentation pipelines — compared across
+          speed, accuracy, prompting approach, and deployment fit.
         </p>
 
         <Table className="my-4">
           <TableHeader>
             <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">Dimension</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">SAM 3</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">SAM 2</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">YOLO11-seg</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">FastSAM</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">RF-DETR Seg</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">YOLOv12-N</TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                Dimension
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                SAM 3
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                SAM 2
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                YOLO11-seg
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                FastSAM
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                RF-DETR Seg
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                YOLOv12-N
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {nonVllmComparisonRows.map((row) => (
               <TableRow key={row.metric} className="border-border/15">
-                <TableCell className="font-medium text-foreground">{row.metric}</TableCell>
+                <TableCell className="text-foreground font-medium">{row.metric}</TableCell>
                 <TableCell className="text-muted-foreground">{row.sam3}</TableCell>
                 <TableCell className="text-muted-foreground">{row.sam2}</TableCell>
                 <TableCell className="text-muted-foreground">{row.yolo11Seg}</TableCell>
@@ -285,37 +405,47 @@ export default function Sam3AlternativesPage() {
       <div className="docs-prose reveal">
         <h2 className="docs-h2">Capability Matrix</h2>
         <p>
-          Feature availability at a glance — useful for identifying where a model
-          natively covers a workflow versus where custom engineering is needed.
+          Feature availability at a glance — useful for identifying where a model natively covers a
+          workflow versus where custom engineering is needed.
         </p>
 
         <Table className="my-4">
           <TableHeader>
             <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">Capability</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">SAM 3</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">SAM 2</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">YOLO11-seg</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">FastSAM</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">RF-DETR</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">Gemini 2.5</TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                Capability
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                SAM 3
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                SAM 2
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                YOLO11-seg
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                FastSAM
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                RF-DETR
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                Gemini 2.5
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {featureRows.map((row) => (
               <TableRow key={row.feature} className="border-border/15">
-                <TableCell className="font-medium text-foreground">{row.feature}</TableCell>
-                {(["sam3", "sam2", "yolo11Seg", "fastsam", "rfdetrSeg", "gemini25Pro"] as const).map(
-                  (col) => (
-                    <TableCell
-                      key={col}
-                      className="font-medium"
-                      style={capabilityStyle(row[col])}
-                    >
-                      {row[col]}
-                    </TableCell>
-                  ),
-                )}
+                <TableCell className="text-foreground font-medium">{row.feature}</TableCell>
+                {(
+                  ["sam3", "sam2", "yolo11Seg", "fastsam", "rfdetrSeg", "gemini25Pro"] as const
+                ).map((col) => (
+                  <TableCell key={col} className="font-medium" style={capabilityStyle(row[col])}>
+                    {row[col]}
+                  </TableCell>
+                ))}
               </TableRow>
             ))}
           </TableBody>
@@ -326,29 +456,26 @@ export default function Sam3AlternativesPage() {
       <div className="docs-prose reveal">
         <h2 className="docs-h2">When to Use SAM 3</h2>
         <p>
-          SAM 3 is the strongest model for open-vocabulary perception tasks, built
-          for accuracy first. The right strategy depends on where in the pipeline
-          the work happens:
+          SAM 3 is the strongest model for open-vocabulary perception tasks, built for accuracy
+          first. The right strategy depends on where in the pipeline the work happens:
         </p>
         <ul>
           <li>
-            <strong>Dataset construction & auto-labelling</strong> — Zero-shot mask
-            quality is high enough to use directly as training labels without
-            domain fine-tuning.
+            <strong>Dataset construction & auto-labelling</strong> — Zero-shot mask quality is high
+            enough to use directly as training labels without domain fine-tuning.
           </li>
           <li>
-            <strong>Interactive annotation</strong> — Point and box prompting with
-            real-time mask preview makes SAM 3 the best tool for human-in-the-loop
-            labelling workflows.
+            <strong>Interactive annotation</strong> — Point and box prompting with real-time mask
+            preview makes SAM 3 the best tool for human-in-the-loop labelling workflows.
           </li>
           <li>
-            <strong>Production edge inference</strong> — Use SAM 3 to generate
-            labelled data, then fine-tune YOLO or RF-DETR for sub-5ms edge serving.
+            <strong>Production edge inference</strong> — Use SAM 3 to generate labelled data, then
+            fine-tune YOLO or RF-DETR for sub-5ms edge serving.
           </li>
           <li>
-            <strong>Instruction-driven workflows</strong> — SAM 3 Agent decomposes
-            complex queries into prompts and calls SAM 3 iteratively, beating prior
-            work on ReasonSeg and OmniLabel out of the box.
+            <strong>Instruction-driven workflows</strong> — SAM 3 Agent decomposes complex queries
+            into prompts and calls SAM 3 iteratively, beating prior work on ReasonSeg and OmniLabel
+            out of the box.
           </li>
         </ul>
       </div>
@@ -356,10 +483,10 @@ export default function Sam3AlternativesPage() {
       {/* Sources */}
       <div className="docs-prose reveal">
         <h2 className="docs-h2">Sources</h2>
-        <ol className="list-none! pl-0! space-y-2">
+        <ol className="list-none! space-y-2 pl-0!">
           {sources.map((source, i) => (
             <li key={i} className="flex gap-3 pl-0! before:hidden!">
-              <span className="shrink-0 pt-0.5 font-mono text-xs text-muted-foreground/50">
+              <span className="text-muted-foreground/50 shrink-0 pt-0.5 font-mono text-xs">
                 [{i + 1}]
               </span>
               <span>
@@ -367,7 +494,7 @@ export default function Sam3AlternativesPage() {
                   href={source.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-foreground/80 underline underline-offset-4 hover:text-foreground"
+                  className="text-foreground/80 hover:text-foreground underline underline-offset-4"
                 >
                   {source.label}
                 </a>

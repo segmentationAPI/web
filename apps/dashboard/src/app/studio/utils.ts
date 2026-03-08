@@ -66,7 +66,8 @@ export function summarizeJobStatus(jobStatus: JobStatus) {
 }
 
 export function deriveStudioRunStatus(jobStatus: JobStatus): StudioRunStatus {
-  const { failedItems, queuedItems, runningItems, succeededItems, totalItems } = summarizeJobStatus(jobStatus);
+  const { failedItems, queuedItems, runningItems, succeededItems, totalItems } =
+    summarizeJobStatus(jobStatus);
 
   if (totalItems === 0) {
     return "queued";
@@ -125,7 +126,10 @@ export function ensurePreparedTasks(tasks: readonly SubmitInputTask[]): Prepared
   });
 }
 
-export function buildStudioJobRequest(tasks: readonly PreparedTask[], prompts: string[]): JobRequest {
+export function buildStudioJobRequest(
+  tasks: readonly PreparedTask[],
+  prompts: string[],
+): JobRequest {
   const requestType = deriveStudioInputType(tasks);
 
   if (requestType === "video") {

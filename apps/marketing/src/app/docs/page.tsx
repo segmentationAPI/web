@@ -58,9 +58,9 @@ export default function DocsOverviewPage() {
         title="Documentation"
         description={
           <>
-            SegmentationAPI provides a simple upload-then-segment workflow powered by
-            Meta&apos;s SAM 3. Upload media, submit segmentation jobs with text prompts,
-            and retrieve high-quality masks through four REST endpoints.
+            SegmentationAPI provides a simple upload-then-segment workflow powered by Meta&apos;s
+            SAM 3. Upload media, submit segmentation jobs with text prompts, and retrieve
+            high-quality masks through four REST endpoints.
           </>
         }
       />
@@ -72,17 +72,17 @@ export default function DocsOverviewPage() {
           <ul>
             <li>
               <strong>Upload</strong> — Request a presigned URL from{" "}
-              <code className="font-mono text-sm text-secondary">POST /v1/uploads/presign</code>,
+              <code className="text-secondary font-mono text-sm">POST /v1/uploads/presign</code>,
               then PUT your file directly to S3.
             </li>
             <li>
               <strong>Segment</strong> — Submit the returned task ID(s) with text prompts to{" "}
-              <code className="font-mono text-sm text-secondary">POST /v1/jobs</code> to
-              queue a segmentation job.
+              <code className="text-secondary font-mono text-sm">POST /v1/jobs</code> to queue a
+              segmentation job.
             </li>
             <li>
               <strong>Retrieve</strong> — Poll{" "}
-              <code className="font-mono text-sm text-secondary">GET /v1/jobs/{"{jobId}"}</code>{" "}
+              <code className="text-secondary font-mono text-sm">GET /v1/jobs/{"{jobId}"}</code>{" "}
               until processing completes, then download masks from the result URLs.
             </li>
           </ul>
@@ -98,9 +98,9 @@ export default function DocsOverviewPage() {
                 <span className="docs-method-badge" data-method={ep.method}>
                   {ep.method}
                 </span>
-                <span className="font-mono text-sm text-foreground">{ep.path}</span>
+                <span className="text-foreground font-mono text-sm">{ep.path}</span>
               </div>
-              <p className="text-sm text-muted-foreground">{ep.description}</p>
+              <p className="text-muted-foreground text-sm">{ep.description}</p>
             </div>
           ))}
         </div>
@@ -116,11 +116,11 @@ export default function DocsOverviewPage() {
               className="docs-endpoint-card group flex flex-col"
             >
               <div className="mb-2 flex items-center gap-2.5">
-                <section.icon className="h-4 w-4 text-primary opacity-70" />
+                <section.icon className="text-primary h-4 w-4 opacity-70" />
                 <span className="font-display text-base font-semibold">{section.title}</span>
-                <ArrowRight className="ml-auto h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                <ArrowRight className="text-muted-foreground ml-auto h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
               </div>
-              <p className="text-sm text-muted-foreground">{section.description}</p>
+              <p className="text-muted-foreground text-sm">{section.description}</p>
             </Link>
           ))}
         </div>

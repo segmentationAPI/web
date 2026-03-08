@@ -37,9 +37,8 @@ export default function AuthenticationPage() {
         title="Authentication"
         description={
           <>
-            All SegmentationAPI requests are authenticated using API keys passed in
-            the request header. Keys are scoped to your account and can be managed
-            from the{" "}
+            All SegmentationAPI requests are authenticated using API keys passed in the request
+            header. Keys are scoped to your account and can be managed from the{" "}
             <Link href="/" className="text-primary underline underline-offset-3">
               dashboard
             </Link>
@@ -58,9 +57,8 @@ export default function AuthenticationPage() {
         <DocsCodeBlock code={exampleHeader} label="Example request" />
 
         <div className="docs-callout">
-          <strong>Keep keys secret.</strong> Never expose API keys in client-side
-          code or public repositories. Use environment variables or a secrets
-          manager.
+          <strong>Keep keys secret.</strong> Never expose API keys in client-side code or public
+          repositories. Use environment variables or a secrets manager.
         </div>
       </div>
 
@@ -78,30 +76,63 @@ export default function AuthenticationPage() {
         <Table className="my-4">
           <TableHeader>
             <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">Rule</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">Detail</TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                Rule
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                Detail
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow className="border-border/15">
               <TableCell className="text-muted-foreground">Header name</TableCell>
-              <TableCell><code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">x-api-key</code></TableCell>
+              <TableCell>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  x-api-key
+                </code>
+              </TableCell>
             </TableRow>
             <TableRow className="border-border/15">
               <TableCell className="text-muted-foreground">Required on</TableCell>
-              <TableCell>All <code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">/v1/*</code> endpoints</TableCell>
+              <TableCell>
+                All{" "}
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  /v1/*
+                </code>{" "}
+                endpoints
+              </TableCell>
             </TableRow>
             <TableRow className="border-border/15">
               <TableCell className="text-muted-foreground">Job items limit</TableCell>
-              <TableCell>1–100 task IDs per <code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">POST /v1/jobs</code></TableCell>
+              <TableCell>
+                1–100 task IDs per{" "}
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  POST /v1/jobs
+                </code>
+              </TableCell>
             </TableRow>
             <TableRow className="border-border/15">
               <TableCell className="text-muted-foreground">Prompts</TableCell>
-              <TableCell>At least one non-empty string in the <code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">prompts</code> array</TableCell>
+              <TableCell>
+                At least one non-empty string in the{" "}
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  prompts
+                </code>{" "}
+                array
+              </TableCell>
             </TableRow>
             <TableRow className="border-border/15">
               <TableCell className="text-muted-foreground">Pagination</TableCell>
-              <TableCell><code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">limit</code> up to 100; cursor via <code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">nextToken</code></TableCell>
+              <TableCell>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  limit
+                </code>{" "}
+                up to 100; cursor via{" "}
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  nextToken
+                </code>
+              </TableCell>
             </TableRow>
           </TableBody>
         </Table>

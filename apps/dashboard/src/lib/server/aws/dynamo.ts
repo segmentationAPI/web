@@ -30,11 +30,6 @@ export type DynamoJob = {
   updatedAt: Date;
 };
 
-type DerivedJobStats = Pick<
-  DynamoJob,
-  "status" | "totalTasks" | "queuedTasks" | "processingTasks" | "successTasks" | "failedTasks"
->;
-
 export type DynamoTask = {
   accountId: string;
   id: string;
@@ -85,14 +80,6 @@ function toNullableString(value: unknown) {
   }
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : null;
-}
-
-function parsePrefixedKey(value: unknown, prefix: string) {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  return value.startsWith(prefix) ? value.slice(prefix.length) : null;
 }
 
 function toNullableDate(value: unknown) {

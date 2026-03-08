@@ -113,7 +113,8 @@ export const useInputTasks = () => studioRequestStore((state) => state.inputTask
 export const useAddFiles = () => studioRequestStore((state) => state.addFiles);
 export const useRemoveFile = () => studioRequestStore((state) => state.removeFile);
 
-export const useInputType = () => studioRequestStore((state) => deriveStudioInputType(state.inputTasks));
+export const useInputType = () =>
+  studioRequestStore((state) => deriveStudioInputType(state.inputTasks));
 
 export const useFps = () => studioRequestStore((state) => state.fps);
 export const useMaxFps = () => studioRequestStore((state) => state.maxFps);

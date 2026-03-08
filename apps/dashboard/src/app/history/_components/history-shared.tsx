@@ -86,7 +86,9 @@ export function HistoryFilterGroup<TFilter extends HistoryStatusFilter | History
 }) {
   return (
     <div className="space-y-2">
-      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+      <p className="text-muted-foreground font-mono text-[11px] tracking-[0.12em] uppercase">
+        {label}
+      </p>
       <div className="flex flex-wrap gap-1.5">
         {filters.map((filter) => (
           <Button
@@ -96,7 +98,7 @@ export function HistoryFilterGroup<TFilter extends HistoryStatusFilter | History
             size="sm"
             onClick={() => onSelect(filter.value)}
             disabled={disabled}
-            className="h-7 rounded-full font-mono text-[10px] uppercase tracking-[0.12em]"
+            className="h-7 rounded-full font-mono text-[10px] tracking-[0.12em] uppercase"
           >
             {filter.label}
           </Button>
@@ -139,7 +141,7 @@ export function HistoryPagination({
 }) {
   return (
     <>
-      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+      <p className="text-muted-foreground font-mono text-[11px] tracking-[0.12em] uppercase">
         Page {currentPage} · {totalCount} total
       </p>
       <div className="flex items-center gap-2">
@@ -147,7 +149,7 @@ export function HistoryPagination({
           variant="outline"
           disabled={!hasPreviousPage || disabled}
           onClick={() => onPageChange(currentPage - 1)}
-          className="rounded-full font-mono uppercase tracking-[0.12em]"
+          className="rounded-full font-mono tracking-[0.12em] uppercase"
         >
           Previous
         </Button>
@@ -155,7 +157,7 @@ export function HistoryPagination({
           variant="outline"
           disabled={!hasNextPage || disabled}
           onClick={() => onPageChange(currentPage + 1)}
-          className="rounded-full font-mono uppercase tracking-[0.12em]"
+          className="rounded-full font-mono tracking-[0.12em] uppercase"
         >
           Next
         </Button>

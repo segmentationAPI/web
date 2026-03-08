@@ -1,5 +1,4 @@
 import * as z from "zod/mini";
-import { ASSETS_BASE_URL } from "./constants";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 

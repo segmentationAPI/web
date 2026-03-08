@@ -7,12 +7,7 @@ type DocsPageHeaderProps = {
   eyebrow?: React.ReactNode;
 };
 
-export function DocsPageHeader({
-  title,
-  description,
-  current,
-  eyebrow,
-}: DocsPageHeaderProps) {
+export function DocsPageHeader({ title, description, current, eyebrow }: DocsPageHeaderProps) {
   return (
     <>
       <nav aria-label="Breadcrumb" className="docs-breadcrumb reveal">

@@ -12,24 +12,24 @@ export function OverviewPageContent({
   userName: string;
 }) {
   return (
-    <Card className="glass-panel rounded-[1.25rem] border-border/70 bg-card/80 py-3">
+    <Card className="glass-panel border-border/70 bg-card/80 rounded-[1.25rem] py-3">
       <CardHeader className="pb-2">
-        <CardDescription className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+        <CardDescription className="text-muted-foreground font-mono text-[10px] tracking-[0.16em] uppercase">
           Account Overview
         </CardDescription>
-        <CardTitle className="font-display text-lg tracking-[0.03em] text-foreground sm:text-xl">
+        <CardTitle className="font-display text-foreground text-lg tracking-[0.03em] sm:text-xl">
           {userName}
         </CardTitle>
       </CardHeader>
-      <CardContent className="border-t border-border/50 pt-3">
+      <CardContent className="border-border/50 border-t pt-3">
         <div className="space-y-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="text-muted-foreground font-mono text-[10px] tracking-[0.14em] uppercase">
             Last 24h Usage
           </p>
-          <p className="font-display text-2xl leading-none text-primary sm:text-[2rem]">
+          <p className="font-display text-primary text-2xl leading-none sm:text-[2rem]">
             {formatNumber(overview.tokenUsageLast24h)}
           </p>
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="text-muted-foreground font-mono text-[10px] tracking-[0.14em] uppercase">
             Metered usage from completed worker tasks.
           </p>
         </div>
@@ -46,7 +46,7 @@ export default function OverviewPage({
   userName: string;
 }) {
   return (
-    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pb-10 pt-4 sm:px-6">
+    <main className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 pt-4 pb-10 sm:px-6">
       <OverviewPageContent overview={overview} userName={userName} />
     </main>
   );

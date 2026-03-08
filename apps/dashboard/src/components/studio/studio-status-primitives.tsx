@@ -17,7 +17,9 @@ function StatusDot({ tone }: { tone: StatusTone }) {
   return (
     <span className="relative flex size-2">
       {(tone === "success" || tone === "warning") && (
-        <span className={`absolute inline-flex size-full animate-ping rounded-full opacity-40 ${color}`} />
+        <span
+          className={`absolute inline-flex size-full animate-ping rounded-full opacity-40 ${color}`}
+        />
       )}
       <span className={`relative inline-flex size-2 rounded-full ${color}`} />
     </span>
@@ -37,7 +39,7 @@ export function ToneBadge({ tone, children }: { tone: StatusTone; children: stri
   return (
     <Badge
       variant="outline"
-      className={`h-6 gap-1.5 rounded-md px-2.5 font-mono text-[10px] uppercase tracking-[0.12em] ${className}`}
+      className={`h-6 gap-1.5 rounded-md px-2.5 font-mono text-[10px] tracking-[0.12em] uppercase ${className}`}
     >
       <StatusDot tone={tone} />
       {children}
@@ -59,14 +61,16 @@ export function ErrorBanner({ message }: { message: string }) {
 
 export function SectionLabel({ children }: { children: string }) {
   return (
-    <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+    <h3 className="text-muted-foreground font-mono text-[10px] tracking-[0.14em] uppercase">
       {children}
     </h3>
   );
 }
 
 export function SectionDivider() {
-  return <div className="mx-4 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent sm:mx-5" />;
+  return (
+    <div className="via-border/40 mx-4 h-px bg-gradient-to-r from-transparent to-transparent sm:mx-5" />
+  );
 }
 
 export function formatTimestamp(value: number | null) {

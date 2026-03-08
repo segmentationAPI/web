@@ -49,7 +49,7 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
   }
 
   return (
-    <div className="mx-auto w-full mt-10 max-w-md p-6">
+    <div className="mx-auto mt-10 w-full max-w-md p-6">
       <h1 className="mb-6 text-center text-3xl font-bold">Welcome Back</h1>
 
       <form
@@ -128,7 +128,7 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
         <Button
           variant="link"
           onClick={onSwitchToSignUp}
-          className="font-mono uppercase tracking-[0.12em] text-primary hover:text-secondary"
+          className="text-primary hover:text-secondary font-mono tracking-[0.12em] uppercase"
         >
           Need an account? Sign Up
         </Button>

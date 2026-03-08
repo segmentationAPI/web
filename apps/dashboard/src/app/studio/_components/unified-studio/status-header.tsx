@@ -36,7 +36,9 @@ export function StatusHeader() {
 
     if (hasTerminalStudioItems(status)) {
       const outputManifest = await getOutputManifest(jobId);
-      const previewUrls = extractManifestPreviewUrls(outputManifest.items.map((item) => item.previewUrl));
+      const previewUrls = extractManifestPreviewUrls(
+        outputManifest.items.map((item) => item.previewUrl),
+      );
       setOutputLinks(previewUrls);
     }
   };

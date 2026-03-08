@@ -116,10 +116,7 @@ export const VideoOutputManifestSchema = z.object({
   items: z.array(VideoOutputManifestItemSchema),
 });
 
-export const OutputManifestSchema = z.union([
-  ImageOutputManifestSchema,
-  VideoOutputManifestSchema,
-]);
+export const OutputManifestSchema = z.union([ImageOutputManifestSchema, VideoOutputManifestSchema]);
 
 export const PresignRequestSchema = z.object({
   contentType: z.union([

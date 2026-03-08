@@ -28,31 +28,31 @@ export default function TokenPricingCard() {
       className="glass-panel reveal rounded-[1.6rem] p-6 sm:p-8"
       style={{ animationDelay: "560ms" }}
     >
-      <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        <Calculator className="h-4 w-4 text-secondary" />
+      <p className="text-muted-foreground inline-flex items-center gap-2 font-mono text-xs tracking-[0.18em] uppercase">
+        <Calculator className="text-secondary h-4 w-4" />
         Token Calculator
       </p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border/70 bg-background/55 p-4">
-          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Price</p>
-          <p className="mt-2 font-display text-4xl">{usdFormatter.format(price)}</p>
-          <p className="mt-2 text-xs text-muted-foreground">
+        <div className="border-border/70 bg-background/55 rounded-2xl border p-4">
+          <p className="text-muted-foreground text-xs tracking-[0.14em] uppercase">Price</p>
+          <p className="font-display mt-2 text-4xl">{usdFormatter.format(price)}</p>
+          <p className="text-muted-foreground mt-2 text-xs">
             Move the slider to estimate token balance.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-border/70 bg-background/55 p-4">
-          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Tokens</p>
-          <p className="mt-2 font-display text-4xl">{integerFormatter.format(tokens)}</p>
-          <p className="mt-2 text-xs text-muted-foreground">
+        <div className="border-border/70 bg-background/55 rounded-2xl border p-4">
+          <p className="text-muted-foreground text-xs tracking-[0.14em] uppercase">Tokens</p>
+          <p className="font-display mt-2 text-4xl">{integerFormatter.format(tokens)}</p>
+          <p className="text-muted-foreground mt-2 text-xs">
             At this balance you can run up to {integerFormatter.format(fullRuns)} full upload +
             segmentation cycles.
           </p>
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-border/70 bg-background/45 p-4">
+      <div className="border-border/70 bg-background/45 mt-6 rounded-2xl border p-4">
         <input
           type="range"
           min={minCents}
@@ -66,7 +66,7 @@ export default function TokenPricingCard() {
             background: `linear-gradient(90deg, color-mix(in srgb, var(--primary) 92%, white) ${sliderProgress}%, color-mix(in srgb, var(--primary) 22%, transparent) ${sliderProgress}%)`,
           }}
         />
-        <div className="mt-2 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+        <div className="text-muted-foreground mt-2 flex items-center justify-between font-mono text-[11px] tracking-[0.14em] uppercase">
           <span>{usdFormatter.format(minCents / 100)}</span>
           <span>{usdFormatter.format(maxCents / 100)}</span>
         </div>

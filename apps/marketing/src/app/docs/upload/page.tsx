@@ -46,10 +46,10 @@ export default function UploadFlowPage() {
         description={
           <>
             Media uploads use presigned S3 URLs. Request one with{" "}
-            <code className="font-mono text-sm text-secondary">POST /v1/uploads/presign</code>
-            , upload directly to S3, then use the returned{" "}
-            <code className="font-mono text-sm text-secondary">taskId</code> when
-            creating segmentation jobs.
+            <code className="text-secondary font-mono text-sm">POST /v1/uploads/presign</code>,
+            upload directly to S3, then use the returned{" "}
+            <code className="text-secondary font-mono text-sm">taskId</code> when creating
+            segmentation jobs.
           </>
         }
       />
@@ -57,9 +57,9 @@ export default function UploadFlowPage() {
       <div className="docs-prose reveal">
         <h2 className="docs-h2">Step 1 — Request a Presigned URL</h2>
         <p>
-          Send a POST request with the <code>contentType</code> of the file you want
-          to upload. The API returns a signed URL valid for 5 minutes, along with the{" "}
-          <code>taskId</code> that identifies this upload in subsequent job requests.
+          Send a POST request with the <code>contentType</code> of the file you want to upload. The
+          API returns a signed URL valid for 5 minutes, along with the <code>taskId</code> that
+          identifies this upload in subsequent job requests.
         </p>
 
         <DocsCodeBlock code={presignRequest} label="Request" />
@@ -70,31 +70,84 @@ export default function UploadFlowPage() {
         <Table className="my-4">
           <TableHeader>
             <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">Field</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">Type</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">Description</TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                Field
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                Type
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                Description
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow className="border-border/15">
-              <TableCell><code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">uploadUrl</code></TableCell>
-              <TableCell><code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">string</code></TableCell>
-              <TableCell className="text-muted-foreground">Presigned S3 PUT URL — expires after <code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">expiresIn</code> seconds</TableCell>
+              <TableCell>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  uploadUrl
+                </code>
+              </TableCell>
+              <TableCell>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  string
+                </code>
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                Presigned S3 PUT URL — expires after{" "}
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  expiresIn
+                </code>{" "}
+                seconds
+              </TableCell>
             </TableRow>
             <TableRow className="border-border/15">
-              <TableCell><code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">taskId</code></TableCell>
-              <TableCell><code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">string</code></TableCell>
-              <TableCell className="text-muted-foreground">Unique identifier for this upload; use in <code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">POST /v1/jobs</code></TableCell>
+              <TableCell>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  taskId
+                </code>
+              </TableCell>
+              <TableCell>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  string
+                </code>
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                Unique identifier for this upload; use in{" "}
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  POST /v1/jobs
+                </code>
+              </TableCell>
             </TableRow>
             <TableRow className="border-border/15">
-              <TableCell><code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">bucket</code></TableCell>
-              <TableCell><code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">string</code></TableCell>
-              <TableCell className="text-muted-foreground">S3 bucket name (informational)</TableCell>
+              <TableCell>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  bucket
+                </code>
+              </TableCell>
+              <TableCell>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  string
+                </code>
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                S3 bucket name (informational)
+              </TableCell>
             </TableRow>
             <TableRow className="border-border/15">
-              <TableCell><code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">expiresIn</code></TableCell>
-              <TableCell><code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">number</code></TableCell>
-              <TableCell className="text-muted-foreground">URL validity in seconds (default 300)</TableCell>
+              <TableCell>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  expiresIn
+                </code>
+              </TableCell>
+              <TableCell>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  number
+                </code>
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                URL validity in seconds (default 300)
+              </TableCell>
             </TableRow>
           </TableBody>
         </Table>
@@ -103,17 +156,17 @@ export default function UploadFlowPage() {
       <div className="docs-prose reveal">
         <h2 className="docs-h2">Step 2 — Upload File to S3</h2>
         <p>
-          Use the <code>uploadUrl</code> from the presign response to PUT the
-          raw file bytes directly to S3. Set the <code>Content-Type</code> header
-          to match the <code>contentType</code> you specified in the presign request.
+          Use the <code>uploadUrl</code> from the presign response to PUT the raw file bytes
+          directly to S3. Set the <code>Content-Type</code> header to match the{" "}
+          <code>contentType</code> you specified in the presign request.
         </p>
 
         <DocsCodeBlock code={uploadFile} label="PUT to S3" />
 
         <div className="docs-callout">
-          <strong>Content-Type must match.</strong> The Content-Type in your PUT
-          request must match the contentType from the presign request, or S3
-          will reject the upload with a <code>403</code>.
+          <strong>Content-Type must match.</strong> The Content-Type in your PUT request must match
+          the contentType from the presign request, or S3 will reject the upload with a{" "}
+          <code>403</code>.
         </div>
       </div>
 
@@ -122,24 +175,41 @@ export default function UploadFlowPage() {
         <Table className="my-4">
           <TableHeader>
             <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">Type</TableHead>
-              <TableHead className="font-mono text-[0.68rem] uppercase tracking-widest">Supported Formats</TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                Type
+              </TableHead>
+              <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                Supported Formats
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow className="border-border/15">
               <TableCell className="text-muted-foreground">Images</TableCell>
               <TableCell>
-                <code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">image/png</code>{", "}
-                <code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">image/jpeg</code>{", "}
-                <code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">image/webp</code>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  image/png
+                </code>
+                {", "}
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  image/jpeg
+                </code>
+                {", "}
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  image/webp
+                </code>
               </TableCell>
             </TableRow>
             <TableRow className="border-border/15">
               <TableCell className="text-muted-foreground">Video</TableCell>
               <TableCell>
-                <code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">video/mp4</code>{", "}
-                <code className="rounded bg-secondary/10 px-1.5 py-0.5 font-mono text-xs text-secondary">video/webm</code>
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  video/mp4
+                </code>
+                {", "}
+                <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                  video/webm
+                </code>
               </TableCell>
             </TableRow>
           </TableBody>
