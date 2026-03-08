@@ -161,14 +161,6 @@
   text-transform: uppercase;
 }
 
-.logo-chip {
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
-  background: rgba(5, 7, 12, 0.72);
-  padding: 0.36rem 0.72rem;
-  color: var(--foreground);
-}
-
 .metric-card {
   border-radius: 1.05rem;
   border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
@@ -243,18 +235,6 @@
   border-color: color-mix(in srgb, var(--secondary) 70%, transparent);
 }
 
-.soft-divider {
-  height: 1px;
-  width: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--primary) 72%, transparent) 20%,
-    color-mix(in srgb, var(--secondary) 72%, transparent) 80%,
-    transparent 100%
-  );
-}
-
 .signal-text {
   background: linear-gradient(108deg, #ffcb9e 4%, #39d5c9 52%, #ffeecc 94%);
   -webkit-background-clip: text;
@@ -318,6 +298,66 @@
 
   100% {
     top: 116%;
+  }
+}
+
+/* ─── Live demo animations ───────────────────────────────────────────── */
+
+.demo-cursor {
+  display: inline-block;
+  width: 1.5px;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background: var(--primary);
+  animation: blink 720ms step-end infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.demo-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(57, 213, 201, 0.3);
+  border-top-color: var(--secondary);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.demo-pulse-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--secondary);
+  opacity: 0.6;
+  animation: pulse-ring 1.2s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
   }
 }
 
