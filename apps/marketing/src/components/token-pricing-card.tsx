@@ -3,7 +3,7 @@
 import { Calculator } from "lucide-react";
 import { useMemo, useState } from "react";
 
-const minCents = 1;
+const minCents = 2;
 const maxCents = 10000;
 
 const usdFormatter = new Intl.NumberFormat("en-US", {
@@ -19,8 +19,7 @@ export default function TokenPricingCard() {
   const [cents, setCents] = useState(500);
 
   const price = cents / 100;
-  const tokens = useMemo(() => cents * 2, [cents]);
-  const fullRuns = useMemo(() => Math.floor(tokens / 2), [tokens]);
+  const tokens = useMemo(() => cents / 2, [cents]);
   const sliderProgress = ((cents - minCents) / (maxCents - minCents)) * 100;
 
   return (
@@ -46,8 +45,8 @@ export default function TokenPricingCard() {
           <p className="text-muted-foreground text-xs tracking-[0.14em] uppercase">Tokens</p>
           <p className="font-display mt-2 text-4xl">{integerFormatter.format(tokens)}</p>
           <p className="text-muted-foreground mt-2 text-xs">
-            At this balance you can run up to {integerFormatter.format(fullRuns)} full upload +
-            segmentation cycles.
+            At this balance you can process {integerFormatter.format(tokens)} images, or{" "}
+            {integerFormatter.format(tokens)} video frames.
           </p>
         </div>
       </div>
@@ -57,7 +56,7 @@ export default function TokenPricingCard() {
           type="range"
           min={minCents}
           max={maxCents}
-          step={1}
+          step={2}
           value={cents}
           onChange={(event) => setCents(Number(event.target.value))}
           aria-label="Pricing slider"
