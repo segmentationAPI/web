@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next"
 
 import { Public_Sans, Space_Mono, Syne } from "next/font/google";
 
@@ -44,6 +45,7 @@ export default function RootLayout({
           <div className="marketing-shell grid min-h-svh grid-rows-[auto_1fr]">
             <Header />
             {children}
+            <Analytics />
           </div>
         </Providers>
       </body>
