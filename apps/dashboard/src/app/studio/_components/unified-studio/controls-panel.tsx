@@ -178,7 +178,7 @@ export function ControlsPanel() {
               className="text-muted-foreground w-full"
             >
               <Plus className="size-3" />
-              Replace files
+              Add files
             </Button>
           </div>
         )}

@@ -40,8 +40,10 @@ interface StudioActions {
   setOutputLinks: (outputLinks: string[]) => void;
 }
 
+const DEFAULT_PROMPTS = [""];
+
 export const studioRequestStore = create<StudioState & StudioActions>()((set, get) => ({
-  prompts: [],
+  prompts: [...DEFAULT_PROMPTS],
   inputTasks: [],
   fps: 0,
   maxFps: 0,
@@ -59,7 +61,13 @@ export const studioRequestStore = create<StudioState & StudioActions>()((set, ge
   setPrompt: (index: number, value: string) =>
     set((state) => ({ prompts: state.prompts.map((prompt, i) => (i === index ? value : prompt)) })),
   removePrompt: (index: number) =>
-    set((state) => ({ prompts: state.prompts.filter((_, i) => i !== index) })),
+    set((state) => {
+      if (state.prompts.length <= 1) {
+        return { prompts: state.prompts };
+      }
+
+      return { prompts: state.prompts.filter((_, i) => i !== index) };
+    }),
   addFiles: async (files: FileList) => {
     let nextTasks = get().inputTasks;
 
