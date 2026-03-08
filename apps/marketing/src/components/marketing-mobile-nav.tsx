@@ -13,7 +13,6 @@ import { Button } from "./ui/button";
 
 const marketingLinks = [
   { href: "/#features", label: "Features" },
-  { href: "/sam3-aletrnatives", label: "SAM3 Alternatives" },
   { href: "/docs", label: "Docs" },
   { href: "/pricing", label: "Pricing" },
 ] as const;

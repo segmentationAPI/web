@@ -24,9 +24,6 @@ export default function Header() {
           <Link href="/#features" className="transition-colors hover:text-foreground">
             Features
           </Link>
-          <Link href="/sam3-aletrnatives" className="transition-colors hover:text-foreground">
-            SAM3 Alternatives
-          </Link>
           <Link href="/docs" className="transition-colors hover:text-foreground">
             Docs
           </Link>
