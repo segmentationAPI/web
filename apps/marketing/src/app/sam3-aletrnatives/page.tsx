@@ -172,7 +172,7 @@ export default function Sam3AlternativesPage() {
           <h2 className="font-display text-2xl sm:text-3xl">VLLM benchmark results</h2>
           <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
             Counting and localisation on CountBench and PixMo-Count. MAE is lower-is-better;
-            accuracy is higher-is-better. Colour reflects rank within each row — green is best,
+            accuracy is higher-is-better. Color reflects rank within each row — green is best,
             red is weakest.
           </p>
         </div>
@@ -343,6 +343,70 @@ export default function Sam3AlternativesPage() {
             View Pricing
           </Link>
         </div>
+      </section>
+
+      {/* ── Sources ──────────────────────────────────────────────────────── */}
+      <section className="space-y-4 reveal">
+        <h2 className="font-display text-2xl sm:text-3xl">Sources</h2>
+        <ol className="list-none space-y-2 text-sm text-muted-foreground sm:text-base">
+          {[
+            {
+              label: "DINO-X: A Unified Vision Model for Open-World Object Detection and Understanding (arXiv:2411.14347)",
+              note: "Reference for DINO-X model.",
+              href: "https://arxiv.org/abs/2411.14347",
+            },
+            {
+              label: "Gemini 2.5 Technical Report — Google DeepMind",
+              note: "Reference for Gemini 2.5 Pro model. CountBench and PixMo-Count scores are from the SAM 3 paper.",
+              href: "https://storage.googleapis.com/deepmind-media/gemini/gemini_v2_5_report.pdf",
+            },
+            {
+              label: "Introducing SAM 3 — Meta AI Blog",
+              note: "30 ms per-image latency on H200 with 100+ objects.",
+              href: "https://ai.meta.com/blog/segment-anything-model-3/",
+            },
+            {
+              label: "Molmo and PixMo: Open Weights and Open Data for State-of-the-Art VLMs — Deitke et al. (arXiv:2409.17146)",
+              note: "Reference for Molmo-72B model. PixMo-Count benchmark originates from this work.",
+              href: "https://arxiv.org/abs/2409.17146",
+            },
+            {
+              label: "Qwen2-VL: Enhancing Vision-Language Model's Perception of the World at Any Resolution — Wang et al. (arXiv:2409.12191)",
+              note: "Reference for Qwen2-VL-72B model.",
+              href: "https://arxiv.org/abs/2409.12191",
+            },
+            {
+              label: "RF-DETR Segmentation — Roboflow Blog",
+              note: "RF-DETR Seg COCO mask mAP 50-95 and 4.4 ms latency figures.",
+              href: "https://blog.roboflow.com/rf-detr-segmentation-preview/",
+            },
+            {
+              label: "SAM 3: Segment Anything with Concepts — Carion et al., Meta (arXiv:2511.16719, Nov 2025)",
+              note: "LVIS zero-shot mask AP, CountBench / PixMo-Count benchmarks, H200 latency, SAM 3 Agent results on ReasonSeg and OmniLabel.",
+              href: "https://arxiv.org/abs/2511.16719",
+            },
+            {
+              label: "YOLO11 Documentation — Ultralytics",
+              note: "YOLO11n-seg: 1.8 ms latency on T4 TensorRT10, 32.0 COCO mask mAP 50-95.",
+              href: "https://docs.ultralytics.com/models/yolo11/",
+            },
+            {
+              label: "YOLOv12 GitHub Repository — sunsmarterjie",
+              note: "YOLOv12-N: 1.64 ms latency, 40.6 COCO box mAP 50-95.",
+              href: "https://github.com/sunsmarterjie/yolov12",
+            },
+          ].map((source, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="shrink-0 pt-0.5 font-mono text-xs text-muted-foreground/50">[{i + 1}]</span>
+              <span>
+                <a href={source.href} target="_blank" rel="noreferrer" className="text-foreground/80 underline underline-offset-4 hover:text-foreground">
+                  {source.label}
+                </a>
+                {" — "}{source.note}
+              </span>
+            </li>
+          ))}
+        </ol>
       </section>
 
     </main>
