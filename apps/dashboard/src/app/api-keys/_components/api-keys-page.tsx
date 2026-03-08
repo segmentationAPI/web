@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { createApiKeyAction, revokeApiKeyAction } from "@/app/api-keys/actions";
 import { formatDate } from "@/components/dashboard-format";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -100,9 +100,6 @@ export function ApiKeysPageContent({ initialKeys }: { initialKeys: ApiKey[] }) {
           <CardDescription className="font-mono uppercase tracking-[0.14em] text-muted-foreground">
             API Keys
           </CardDescription>
-          <CardTitle className="font-display tracking-[0.03em] text-foreground">
-            Key Management
-          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2 sm:grid-cols-[1fr_auto]">

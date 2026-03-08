@@ -3,15 +3,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function BillingPageLoading() {
   return (
-    <Card className="glass-panel rounded-[1.35rem] border-border/70 bg-card/75 py-6">
-      <CardHeader className="space-y-2">
+    <Card className="glass-panel rounded-[1.6rem] border-border/70 bg-card/75 py-6">
+      <CardHeader className="space-y-4">
         <Skeleton className="h-3 w-20" />
-        <Skeleton className="h-7 w-64" />
+        <Skeleton className="h-7 w-72 max-w-full" />
+        <Skeleton className="h-5 w-full max-w-xl" />
       </CardHeader>
-      <CardContent className="space-y-3">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-9 w-full" />
-        <Skeleton className="h-11 w-full" />
+      <CardContent className="space-y-4">
+        <Skeleton className="h-24 w-full rounded-[1.35rem]" />
+        <Skeleton className="h-12 w-full rounded-[1rem]" />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+        </div>
       </CardContent>
     </Card>
   );
