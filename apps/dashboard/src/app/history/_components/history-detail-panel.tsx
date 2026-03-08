@@ -302,9 +302,7 @@ function ImageItemDetail({ item }: { item: ImageOutputManifest["items"][number] 
               className="border-border/50 bg-background/40 text-muted-foreground hover:border-border hover:text-foreground inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs transition-colors"
             >
               <span className="text-foreground font-mono">#{mask.maskIndex}</span>
-              <span className="text-muted-foreground/70">
-                {formatDecimal(mask.score)} / {formatDecimal(mask.confidence)}
-              </span>
+              <span className="text-muted-foreground/70">{formatDecimal(mask.confidence)}</span>
               <ExternalLink className="size-3" aria-hidden />
             </a>
           ))}

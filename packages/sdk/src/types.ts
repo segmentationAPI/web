@@ -62,7 +62,6 @@ export interface ListJobsParams {
 
 export interface ImageOutputMask {
   readonly maskIndex: number;
-  readonly score?: number | null;
   readonly confidence?: number | null;
   readonly url: string;
 }

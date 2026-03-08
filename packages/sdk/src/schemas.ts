@@ -72,7 +72,6 @@ const NullableStringSchema = z.union([z.string(), z.null()]);
 
 export const ImageOutputMaskSchema = z.object({
   maskIndex: z.number(),
-  score: z.optional(z.union([z.number(), z.null()])),
   confidence: z.optional(z.union([z.number(), z.null()])),
   url: z.string(),
 });
