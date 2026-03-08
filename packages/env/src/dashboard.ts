@@ -20,7 +20,6 @@ export const env = createEnv({
     AWS_DYNAMO_USAGE_LEDGER_TABLE: z.string().min(1),
     AWS_DYNAMO_TASKS_BY_REQUEST_INDEX: z.string().min(1).default("GSI1"),
     API_KEY_HMAC_SECRET: z.string().min(32),
-    AWS_CLOUDFRONT_BASE_URL: z.url(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   },
   client: {
@@ -47,7 +46,6 @@ export const env = createEnv({
     AWS_DYNAMO_USAGE_LEDGER_TABLE: process.env.AWS_DYNAMO_USAGE_LEDGER_TABLE,
     AWS_DYNAMO_TASKS_BY_REQUEST_INDEX: process.env.AWS_DYNAMO_TASKS_BY_REQUEST_INDEX,
     API_KEY_HMAC_SECRET: process.env.API_KEY_HMAC_SECRET,
-    AWS_CLOUDFRONT_BASE_URL: process.env.AWS_CLOUDFRONT_BASE_URL,
     NODE_ENV: process.env.NODE_ENV,
   },
   emptyStringAsUndefined: true,
