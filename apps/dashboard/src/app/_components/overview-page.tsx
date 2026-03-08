@@ -30,7 +30,7 @@ export function OverviewPageContent({
             {formatNumber(overview.tokenUsageLast24h)}
           </p>
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-            Metered usage while Stripe billing is being reworked.
+            Metered usage from completed worker tasks.
           </p>
         </div>
       </CardContent>

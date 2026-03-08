@@ -26,7 +26,7 @@ const monoFont = Space_Mono({
 
 export const metadata: Metadata = {
   title: "Segmentation API Dashboard",
-  description: "SAM3 usage, request history, API keys, and credit purchases.",
+  description: "SAM3 usage, request history, API keys, and Stripe metered billing.",
 };
 
 export default function RootLayout({

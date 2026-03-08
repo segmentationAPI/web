@@ -1,32 +1,27 @@
 "use server";
 
 import { db } from "@segmentation/db";
-import { creditPurchase } from "@segmentation/db/schema/app";
 import { user } from "@segmentation/db/schema/auth";
 import { env } from "@segmentation/env/dashboard";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { MAX_PURCHASE_USD, MIN_PURCHASE_USD, TOKENS_PER_USD } from "@/lib/server/constants";
+import { getDynamoBillingState } from "@/lib/server/aws/dynamo";
 import { requirePageSession } from "@/lib/server/page-auth";
 import { getStripeClient } from "@/lib/server/stripe";
 
-const checkoutPayloadSchema = z.object({
-  amountUsd: z.number().finite(),
-});
-
-const PAYMENTS_ENABLED = process.env.ENABLE_PAYMENTS === "true";
-const PAYMENTS_DISABLED_MESSAGE = "Payments are currently under construction. Please try again later.";
-
-type CheckoutActionResult =
+type BillingActionResult =
   | {
-      checkoutUrl: string;
       ok: true;
+      url: string;
     }
   | {
       error: string;
       ok: false;
     };
+
+const emptyInputSchema = z.object({});
 
 async function getOrCreateStripeCustomer(params: {
   email: string;
@@ -57,40 +52,7 @@ async function getOrCreateStripeCustomer(params: {
   return customer.id;
 }
 
-export async function createCheckoutSessionAction(
-  input: z.input<typeof checkoutPayloadSchema>,
-): Promise<CheckoutActionResult> {
-  if (!PAYMENTS_ENABLED) {
-    return {
-      error: PAYMENTS_DISABLED_MESSAGE,
-      ok: false,
-    };
-  }
-
-  const session = await requirePageSession();
-
-  const parsed = checkoutPayloadSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return {
-      error: "Invalid request body",
-      ok: false,
-    };
-  }
-
-  const amountUsd = Math.round(parsed.data.amountUsd * 100) / 100;
-
-  if (amountUsd < MIN_PURCHASE_USD || amountUsd > MAX_PURCHASE_USD) {
-    return {
-      error: `Amount must be between $${MIN_PURCHASE_USD} and $${MAX_PURCHASE_USD}`,
-      ok: false,
-    };
-  }
-
-  const userId = session.user.id;
-  const amountUsdCents = Math.round(amountUsd * 100);
-  const tokensGranted = Math.floor((amountUsdCents * TOKENS_PER_USD) / 100);
-
+async function loadCurrentUser(userId: string) {
   const [currentUser] = await db
     .select({
       id: user.id,
@@ -100,6 +62,22 @@ export async function createCheckoutSessionAction(
     .where(eq(user.id, userId))
     .limit(1);
 
+  return currentUser ?? null;
+}
+
+export async function createSubscriptionCheckoutSessionAction(
+  input: z.input<typeof emptyInputSchema>,
+): Promise<BillingActionResult> {
+  const parsed = emptyInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      error: "Invalid request body",
+      ok: false,
+    };
+  }
+
+  const session = await requirePageSession();
+  const currentUser = await loadCurrentUser(session.user.id);
   if (!currentUser) {
     return {
       error: "User not found",
@@ -107,50 +85,45 @@ export async function createCheckoutSessionAction(
     };
   }
 
-  let stripeCustomerId: string;
+  const billingState = await getDynamoBillingState(session.user.id);
+  if (
+    billingState?.stripeSubscriptionStatus &&
+    ["active", "trialing", "past_due"].includes(billingState.stripeSubscriptionStatus)
+  ) {
+    return {
+      error: "An active subscription already exists. Manage it in the billing portal.",
+      ok: false,
+    };
+  }
 
   try {
-    stripeCustomerId = await getOrCreateStripeCustomer({
+    const stripeCustomerId = await getOrCreateStripeCustomer({
       email: session.user.email,
       existingStripeCustomerId: currentUser.stripeCustomerId,
       userId: currentUser.id,
       userName: session.user.name,
     });
-  } catch (error) {
-    console.error("Failed to initialize Stripe customer", error);
-    return {
-      error: "Failed to initialize billing customer",
-      ok: false,
-    };
-  }
 
-  const stripe = getStripeClient();
-
-  let checkoutSessionId = "";
-
-  try {
+    const stripe = getStripeClient();
     const checkoutSession = await stripe.checkout.sessions.create({
+      allow_promotion_codes: true,
       cancel_url: env.NEXT_PUBLIC_STRIPE_CANCEL_URL,
       customer: stripeCustomerId,
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              description: `${tokensGranted.toLocaleString()} SAM3 tokens`,
-              name: "SAM3 API Credits",
-            },
-            unit_amount: amountUsdCents,
-          },
+          price: env.STRIPE_SUBSCRIPTION_PRICE_ID,
           quantity: 1,
         },
       ],
       metadata: {
-        accountId: userId,
-        amountUsdCents: String(amountUsdCents),
-        tokensGranted: String(tokensGranted),
+        accountId: currentUser.id,
       },
-      mode: "payment",
+      mode: "subscription",
+      subscription_data: {
+        metadata: {
+          accountId: currentUser.id,
+        },
+      },
       success_url: env.NEXT_PUBLIC_STRIPE_SUCCESS_URL,
     });
 
@@ -161,42 +134,65 @@ export async function createCheckoutSessionAction(
       };
     }
 
-    checkoutSessionId = checkoutSession.id;
-
-    await db.insert(creditPurchase).values({
-      amountUsdCents,
-      id: `purchase_${crypto.randomUUID()}`,
-      status: "pending",
-      stripeCheckoutSessionId: checkoutSession.id,
-      tokensGranted,
-      userId,
-    });
+    revalidatePath("/");
 
     return {
-      checkoutUrl: checkoutSession.url,
       ok: true,
+      url: checkoutSession.url,
     };
   } catch (error) {
-    if (checkoutSessionId) {
-      await db
-        .update(creditPurchase)
-        .set({
-          failureReason: "Failed to persist checkout state",
-          status: "failed",
-        })
-        .where(
-          and(
-            eq(creditPurchase.userId, userId),
-            eq(creditPurchase.stripeCheckoutSessionId, checkoutSessionId),
-          ),
-        )
-        .catch(() => undefined);
-    }
+    console.error("Failed to create Stripe subscription checkout", error);
+    return {
+      error: "Failed to create Stripe subscription checkout",
+      ok: false,
+    };
+  }
+}
 
-    console.error("Failed to create Stripe checkout", error);
+export async function createBillingPortalSessionAction(
+  input: z.input<typeof emptyInputSchema>,
+): Promise<BillingActionResult> {
+  const parsed = emptyInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      error: "Invalid request body",
+      ok: false,
+    };
+  }
+
+  const session = await requirePageSession();
+  const currentUser = await loadCurrentUser(session.user.id);
+  if (!currentUser) {
+    return {
+      error: "User not found",
+      ok: false,
+    };
+  }
+
+  try {
+    const stripeCustomerId = await getOrCreateStripeCustomer({
+      email: session.user.email,
+      existingStripeCustomerId: currentUser.stripeCustomerId,
+      userId: currentUser.id,
+      userName: session.user.name,
+    });
+
+    const stripe = getStripeClient();
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: env.STRIPE_BILLING_PORTAL_RETURN_URL,
+    });
+
+    revalidatePath("/");
 
     return {
-      error: "Failed to create Stripe checkout",
+      ok: true,
+      url: portalSession.url,
+    };
+  } catch (error) {
+    console.error("Failed to create Stripe billing portal session", error);
+    return {
+      error: "Failed to create Stripe billing portal session",
       ok: false,
     };
   }

@@ -5,11 +5,12 @@ import { db } from "@segmentation/db";
 import { apiKey } from "@segmentation/db/schema/app";
 import { desc, eq } from "drizzle-orm";
 import type { JobListItem, OverviewData } from "@/lib/dashboard-types";
-import { listDynamoJobsForAccount } from "@/lib/server/aws/dynamo";
+import {
+  getDynamoBillingState,
+  getDynamoUsageForLast24Hours,
+} from "@/lib/server/aws/dynamo";
 import { DEFAULT_PAGE_SIZE } from "@/lib/server/constants";
 import { user } from "@segmentation/db/schema/auth";
-
-const LAST_24_HOURS_MS = 24 * 60 * 60 * 1000;
 
 type ListedJobSummary = {
   createdAt: Date;
@@ -83,18 +84,17 @@ async function listAllSdkJobs(segmentationClient: SegmentationClient | null) {
 }
 
 export async function getOverviewForUser(userId: string): Promise<OverviewData> {
-  const jobs = await listDynamoJobsForAccount(userId);
-
-  const cutoff = Date.now() - LAST_24_HOURS_MS;
-  const requestCountLast24h = jobs.filter((job) => job.createdAt.getTime() >= cutoff).length;
-
   return {
-    tokenUsageLast24h: requestCountLast24h * 2,
+    tokenUsageLast24h: await getDynamoUsageForLast24Hours(userId),
   };
 }
 
 export async function listApiKeysForUser(userId: string) {
   return db.select().from(apiKey).where(eq(apiKey.userId, userId)).orderBy(desc(apiKey.createdAt));
+}
+
+export async function getBillingSummaryForUser(userId: string) {
+  return getDynamoBillingState(userId);
 }
 
 export async function listJobsForUser(params: {
