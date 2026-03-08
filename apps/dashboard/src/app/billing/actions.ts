@@ -112,7 +112,6 @@ export async function createSubscriptionCheckoutSessionAction(
       line_items: [
         {
           price: env.STRIPE_SUBSCRIPTION_PRICE_ID,
-          quantity: 1,
         },
       ],
       metadata: {
