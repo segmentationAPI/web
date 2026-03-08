@@ -106,7 +106,12 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
           </form.Field>
         </div>
 
-        <form.Subscribe>
+        <form.Subscribe
+          selector={(state) => ({
+            canSubmit: state.canSubmit,
+            isSubmitting: state.isSubmitting,
+          })}
+        >
           {(state) => (
             <Button
               type="submit"
