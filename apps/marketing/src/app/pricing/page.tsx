@@ -66,8 +66,8 @@ export default function PricingPage() {
             <p className="mt-2 text-xs text-muted-foreground md:mt-0">{uploadToken.detail}</p>
           </article>
 
-          <div className="hidden md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3 md:px-1 md:py-4">
-            <p className="row-start-2 text-center font-display text-3xl leading-8 text-muted-foreground">
+          <div className="flex items-center justify-center py-1 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3 md:px-1 md:py-4">
+            <p className="text-center font-display text-2xl leading-8 text-muted-foreground md:row-start-2 md:text-3xl">
               +
             </p>
           </div>
@@ -83,8 +83,8 @@ export default function PricingPage() {
             <p className="mt-2 text-xs text-muted-foreground md:mt-0">{segmentationToken.detail}</p>
           </article>
 
-          <div className="hidden md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3 md:px-1 md:py-4">
-            <p className="row-start-2 text-center font-display text-3xl leading-8 text-muted-foreground">
+          <div className="flex items-center justify-center py-1 md:grid md:grid-rows-[1.25rem_2rem_1fr] md:gap-y-3 md:px-1 md:py-4">
+            <p className="text-center font-display text-2xl leading-8 text-muted-foreground md:row-start-2 md:text-3xl">
               =
             </p>
           </div>

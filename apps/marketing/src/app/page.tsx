@@ -9,10 +9,10 @@ import { VideoDemo } from './video-demo';
 export default function HomePage() {
 	return (
 		<main className="mx-auto flex w-full max-w-300 flex-col gap-20 px-4 pb-24 pt-8 sm:gap-28 sm:px-8 lg:gap-36">
-			<section className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
-				<div className="space-y-8 reveal" style={{ animationDelay: '120ms' }}>
-					<div className="space-y-5">
-						<h1 className="font-display text-[2rem] leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+		<section className="grid gap-8 sm:gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+			<div className="space-y-8 reveal" style={{ animationDelay: '120ms' }}>
+				<div className="space-y-5">
+					<h1 className="font-display text-[1.75rem] leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
 							Ship pixel-perfect segmentation at machine speed.
 						</h1>
 						<p className="max-w-xl text-base leading-relaxed text-muted-foreground lg:text-lg">
@@ -34,7 +34,7 @@ export default function HomePage() {
 						</Link>
 					</div>
 
-					<div className="grid gap-3 sm:grid-cols-3">
+					<div className="grid grid-cols-3 gap-2 sm:gap-3">
 						<article className="metric-card">
 							<p className="metric-value">500ms</p>
 							<p className="metric-label">per image</p>
@@ -59,10 +59,10 @@ export default function HomePage() {
 						<span className="h-1.5 w-1.5 rounded-full bg-secondary" />
 						Video Segmentation
 					</div>
-					<h2 className="font-display text-3xl tracking-tight sm:text-5xl">
-						Frame-by-frame,{' '}
-						<span className="signal-text">fully automatic.</span>
-					</h2>
+				<h2 className="font-display text-2xl tracking-tight sm:text-3xl md:text-5xl">
+					Frame-by-frame,{' '}
+					<span className="signal-text">fully automatic.</span>
+				</h2>
 					<p className="mx-auto max-w-xl text-base leading-relaxed text-muted-foreground lg:text-lg">
 						Track and segment objects across every frame of a video
 						with a single text prompt — no manual annotation required.
@@ -71,10 +71,10 @@ export default function HomePage() {
 				<VideoDemo />
 			</section>
 
-			<section className="glass-panel reveal rounded-[2rem] p-6 text-center sm:p-14">
-				<h2 className="font-display text-3xl sm:text-5xl">
-					Plug in once. Segment anything everywhere.
-				</h2>
+			<section className="glass-panel reveal rounded-2xl p-6 text-center sm:rounded-[2rem] sm:p-14">
+			<h2 className="font-display text-2xl sm:text-3xl md:text-5xl">
+				Plug in once. Segment anything everywhere.
+			</h2>
 				<p className="mx-auto mt-4 max-w-xl text-muted-foreground">
 					Launch your first request in minutes and skip the GPU ops burden
 					entirely.
