@@ -130,7 +130,6 @@ export function FeatureStatCard({
         </p>
         <h3 className="font-display mt-3 text-xl leading-[1.05]">{title}</h3>
         <p className="text-muted-foreground mt-3 text-[0.92rem] leading-[1.65]">{description}</p>
-        <div className="pointer-events-none absolute bottom-4 left-4 h-20 w-20 rounded-full bg-[radial-gradient(circle,rgba(57,213,201,0.12),transparent_72%)] blur-[10px]" />
       </CardContent>
     </Card>
   );
