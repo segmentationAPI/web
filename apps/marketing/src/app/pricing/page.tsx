@@ -74,7 +74,10 @@ export default function PricingPage() {
 
       <TokenPricingCard />
 
-      <section className="reveal border-primary/40 overflow-hidden rounded-[2rem] border bg-[radial-gradient(circle_at_top_right,rgba(57,213,201,0.12),transparent_28%),radial-gradient(circle_at_12%_18%,rgba(255,112,63,0.14),transparent_30%),linear-gradient(180deg,rgba(10,12,19,0.92),rgba(7,9,15,0.96))] shadow-[0_24px_70px_rgba(5,7,12,0.65),inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <section
+        className="reveal border-primary/40 overflow-hidden rounded-[2rem] border bg-[radial-gradient(circle_at_top_right,rgba(57,213,201,0.12),transparent_28%),radial-gradient(circle_at_12%_18%,rgba(255,112,63,0.14),transparent_30%),linear-gradient(180deg,rgba(10,12,19,0.92),rgba(7,9,15,0.96))] shadow-[0_24px_70px_rgba(5,7,12,0.65),inset_0_1px_0_rgba(255,255,255,0.05)]"
+        style={{ animationDelay: "680ms" }}
+      >
         <div className="p-5 md:p-7">
           <p className="text-muted-foreground inline-flex items-center gap-2 font-mono text-[0.72rem] tracking-[0.18em] uppercase">
             <Cpu className="text-primary h-4 w-4" />
