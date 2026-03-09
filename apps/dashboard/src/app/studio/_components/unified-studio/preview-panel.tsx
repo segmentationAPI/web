@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   Empty,
@@ -10,11 +10,43 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { SectionLabel } from "@/components/studio/studio-status-primitives";
-import { useInputType, useOutputLinks } from "../../_store/studio.store";
+import {
+  useInputType,
+  useJobId,
+  useOutputLinks,
+  useRefreshOutput,
+  useSetOutputLinks,
+} from "../../_store/studio.store";
 import MediaPreview from "@/components/studio/media-preview";
 import { Button } from "@/components/ui/button";
+import { getJobStatus, getOutputManifest } from "../../actions";
+import {
+  extractManifestPreviewUrls,
+  hasTerminalStudioItems,
+} from "../../utils";
 
 function EmptyPreview() {
+  const jobId = useJobId();
+  const refreshOutput = useRefreshOutput();
+  const setOutputLinks = useSetOutputLinks();
+
+  const handleRefreshOutput = async () => {
+    if (!jobId) {
+      return;
+    }
+
+    const latestStatus = await getJobStatus(jobId);
+    refreshOutput(latestStatus);
+
+    if (hasTerminalStudioItems(latestStatus)) {
+      const outputManifest = await getOutputManifest(jobId);
+      const previewUrls = extractManifestPreviewUrls(
+        outputManifest.items.map((item) => item.previewUrl),
+      );
+      setOutputLinks(previewUrls);
+    }
+  };
+
   return (
     <Empty className="border-border/40 bg-muted/8 flex-1 rounded-lg border border-dashed">
       <EmptyHeader>
@@ -23,7 +55,21 @@ function EmptyPreview() {
             <Sparkles className="text-primary/60 size-6" />
           </div>
         </EmptyMedia>
-        <EmptyTitle className="text-foreground/80">No preview yet</EmptyTitle>
+        {jobId ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshOutput}
+            className="mt-1 gap-2"
+            aria-label="Refresh job status"
+          >
+            <RefreshCw className="size-3.5" />
+            Refresh preview
+          </Button>
+        ) : (
+          <EmptyTitle className="text-foreground/80">No preview yet</EmptyTitle>
+        )}
         <EmptyDescription>Upload media and add prompts to get started.</EmptyDescription>
       </EmptyHeader>
     </Empty>

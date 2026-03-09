@@ -2,6 +2,7 @@
 
 import { Download, Loader2, Sparkles } from "lucide-react";
 import type { PresignRequest } from "@segmentationapi/sdk";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -44,30 +45,36 @@ export function ActionFooter() {
   const handleRunJob = async () => {
     if (!inputTasks.length || !prompts.length) return;
 
-    const uploadedTasks: SubmitInputTask[] = [...inputTasks];
+    try {
+      const uploadedTasks: SubmitInputTask[] = [...inputTasks];
 
-    for (const [index, inputTask] of inputTasks.entries()) {
-      if (!inputTask.taskId || !inputTask.uploadUrl) {
-        const request: PresignRequest = { contentType: toSupportedContentType(inputTask.file) };
-        const response = await createPresignRequest(request);
-        await putToPresignedS3(response.uploadUrl, inputTask.file);
+      for (const [index, inputTask] of inputTasks.entries()) {
+        if (!inputTask.taskId || !inputTask.uploadUrl) {
+          const request: PresignRequest = { contentType: toSupportedContentType(inputTask.file) };
+          const response = await createPresignRequest(request);
+          await putToPresignedS3(response.uploadUrl, inputTask.file);
 
-        updateInputTask(index, response.taskId, response.uploadUrl);
-        uploadedTasks[index] = {
-          ...uploadedTasks[index],
-          taskId: response.taskId,
-          uploadUrl: response.uploadUrl,
-        };
+          updateInputTask(index, response.taskId, response.uploadUrl);
+          uploadedTasks[index] = {
+            ...uploadedTasks[index],
+            taskId: response.taskId,
+            uploadUrl: response.uploadUrl,
+          };
+        }
       }
+
+      const preparedTasks = ensurePreparedTasks(uploadedTasks);
+      const jobRequest = buildStudioJobRequest(preparedTasks, prompts);
+      const jobResponse = await createJob(jobRequest);
+
+      setJobId(jobResponse.jobId);
+      setJobStatus(jobResponse.status);
+      setTotalItems(jobResponse.totalItems);
+      toast.success("Job submitted");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to submit job");
     }
-
-    const preparedTasks = ensurePreparedTasks(uploadedTasks);
-    const jobRequest = buildStudioJobRequest(preparedTasks, prompts);
-    const jobResponse = await createJob(jobRequest);
-
-    setJobId(jobResponse.jobId);
-    setJobStatus(jobResponse.status);
-    setTotalItems(jobResponse.totalItems);
   };
 
   return (
