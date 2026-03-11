@@ -1,16 +1,26 @@
-"use client";
+import { auth } from "@segmentation/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import AuthForm from "@/components/auth-form";
 
-import { useState } from "react";
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackURL?: string; error?: string }>;
+}) {
+  const [requestHeaders, resolvedSearchParams] = await Promise.all([headers(), searchParams]);
+  const session = await auth.api.getSession({
+    headers: requestHeaders,
+  });
 
-import SignInForm from "@/components/sign-in-form";
-import SignUpForm from "@/components/sign-up-form";
+  if (session?.user) {
+    redirect("/");
+  }
 
-export default function LoginPage() {
-  const [showSignIn, setShowSignIn] = useState(true);
-
-  return showSignIn ? (
-    <SignInForm onSwitchToSignUp={() => setShowSignIn(false)} />
-  ) : (
-    <SignUpForm onSwitchToSignIn={() => setShowSignIn(true)} />
+  return (
+    <AuthForm
+      callbackURL={resolvedSearchParams.callbackURL || "/"}
+      authError={resolvedSearchParams.error}
+    />
   );
 }
