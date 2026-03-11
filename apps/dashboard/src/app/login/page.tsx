@@ -1,12 +1,31 @@
+import { Suspense } from "react";
+
 import { auth } from "@segmentation/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import AuthForm from "@/components/auth-form";
 
-export default async function LoginPage({
+type LoginSearchParams = {
+  callbackURL?: string;
+  error?: string;
+};
+
+export default function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackURL?: string; error?: string }>;
+  searchParams: Promise<LoginSearchParams>;
+}) {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function LoginContent({
+  searchParams,
+}: {
+  searchParams: Promise<LoginSearchParams>;
 }) {
   const [requestHeaders, resolvedSearchParams] = await Promise.all([headers(), searchParams]);
   const session = await auth.api.getSession({
@@ -23,4 +42,8 @@ export default async function LoginPage({
       authError={resolvedSearchParams.error}
     />
   );
+}
+
+function LoginFallback() {
+  return <AuthForm callbackURL="/" />;
 }
