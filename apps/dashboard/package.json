@@ -8,9 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.1004.0",
-    "@aws-sdk/client-s3": "^3.1004.0",
-    "@aws-sdk/s3-request-presigner": "^3.1004.0",
+    "@aws-sdk/client-dynamodb": "^3.1006.0",
+    "@aws-sdk/client-s3": "^3.1006.0",
+    "@aws-sdk/s3-request-presigner": "^3.1006.0",
     "@aws-sdk/util-dynamodb": "^3.996.2",
     "@base-ui/react": "^1.2.0",
     "@segmentation/auth": "workspace:*",
@@ -32,7 +32,7 @@
     "next-themes": "^0.4.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "shadcn": "^4.0.0",
+    "shadcn": "^4.0.3",
     "sonner": "^2.0.7",
     "stripe": "^20.4.1",
     "tailwind-merge": "^3.5.0",
@@ -43,7 +43,7 @@
   "devDependencies": {
     "@segmentation/config": "workspace:*",
     "@tailwindcss/postcss": "^4.2.1",
-    "@types/node": "^25.3.5",
+    "@types/node": "^25.4.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "tailwindcss": "^4.2.1",

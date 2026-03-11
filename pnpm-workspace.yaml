@@ -9,7 +9,10 @@ catalog:
   zod: ^4.3.6
 
 onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@prisma/engines'
   - esbuild
   - lefthook
   - msw
+  - prisma
   - sharp
