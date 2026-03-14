@@ -1,1 +1,1 @@
-export type StudioRunStatus = "idle" | "queued" | "running" | "completed" | "failed";
+export type StudioRunStatus = "idle" | "queued" | "processing" | "completed" | "failed";

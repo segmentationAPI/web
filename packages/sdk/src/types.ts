@@ -1,15 +1,14 @@
+import type * as z from "zod/mini";
+import type {
+  JobListItemResponseSchema,
+  JobListResponseSchema,
+  JobSummaryStatusSchema,
+} from "./schemas";
+
 export type JobType = "image" | "video";
 
-export type JobQueueStatus = "queued";
-
-export type JobTaskStatus = "queued" | "running" | "success" | "failed";
-
-export type JobSummaryStatus =
-  | "queued"
-  | "processing"
-  | "completed"
-  | "completed_with_errors"
-  | "failed";
+export type JobTaskStatus = "queued" | "processing" | "success" | "failed";
+export type JobSummaryStatus = z.infer<typeof JobSummaryStatusSchema>;
 
 export interface JobRequest {
   readonly type: JobType;
@@ -23,7 +22,6 @@ export interface JobRequest {
 export interface JobResponse {
   readonly jobId: string;
   readonly type: JobType;
-  readonly status: JobQueueStatus;
   readonly totalItems: number;
 }
 
@@ -59,6 +57,10 @@ export interface ListJobsParams {
   readonly limit?: number;
   readonly nextToken?: string;
 }
+
+export type JobListItemResponse = z.infer<typeof JobListItemResponseSchema>;
+
+export type JobListResponse = z.infer<typeof JobListResponseSchema>;
 
 export interface ImageOutputMask {
   readonly maskIndex: number;

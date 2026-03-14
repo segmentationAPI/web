@@ -100,7 +100,7 @@ export const studioRequestStore = create<StudioState & StudioActions>()((set, ge
 
     set((_) => ({
       ...summary,
-      status: deriveStudioRunStatus(jobStatus),
+      status: summary.status,
     }));
   },
   updateInputTask: (index: number, taskId: string, uploadUrl: string) =>

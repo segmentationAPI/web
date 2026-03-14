@@ -341,7 +341,7 @@ export default function JobsPage() {
           <p>
             Fetch full details for a single job including per-task status. Each task moves
             through <DocsInlineCode>queued</DocsInlineCode> →{" "}
-            <DocsInlineCode>running</DocsInlineCode> → <DocsInlineCode>success</DocsInlineCode> |{" "}
+            <DocsInlineCode>processing</DocsInlineCode> → <DocsInlineCode>success</DocsInlineCode> |{" "}
             <DocsInlineCode>failed</DocsInlineCode>.
           </p>
 
@@ -379,7 +379,7 @@ export default function JobsPage() {
               <TableRow className="border-border/15">
                 <TableCell>
                   <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                    running
+                    processing
                   </code>
                 </TableCell>
                 <TableCell className="text-muted-foreground">

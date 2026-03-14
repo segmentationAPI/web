@@ -5,7 +5,6 @@ export {
   JobListResponseSchema,
   JobSummaryStatusSchema,
   JobTypeSchema,
-  JobQueueStatusSchema,
   JobTaskStatusSchema,
   JobRequestSchema,
   JobResponseSchema,
@@ -19,17 +18,17 @@ export {
   PresignRequestSchema,
   PresignResponseSchema,
 } from "./schemas";
-export type { JobListItemResponse, JobListResponse } from "./schemas";
 export type {
   AccountResponse,
   JobRequest,
   JobResponse,
+  JobListItemResponse,
+  JobListResponse,
   JobStatus,
   JobStatusResponse,
   ListJobsParams,
-  JobType,
-  JobQueueStatus,
   JobSummaryStatus,
+  JobType,
   JobTaskStatus,
   JobTaskResult,
   TaskStatus,

@@ -2,11 +2,9 @@ import * as z from "zod/mini";
 
 export const JobTypeSchema = z.union([z.literal("image"), z.literal("video")]);
 
-export const JobQueueStatusSchema = z.literal("queued");
-
 export const JobTaskStatusSchema = z.union([
   z.literal("queued"),
-  z.literal("running"),
+  z.literal("processing"),
   z.literal("success"),
   z.literal("failed"),
 ]);
@@ -14,8 +12,7 @@ export const JobTaskStatusSchema = z.union([
 export const JobSummaryStatusSchema = z.union([
   z.literal("queued"),
   z.literal("processing"),
-  z.literal("completed"),
-  z.literal("completed_with_errors"),
+  z.literal("success"),
   z.literal("failed"),
 ]);
 
@@ -31,7 +28,6 @@ export const JobRequestSchema = z.object({
 export const JobResponseSchema = z.object({
   jobId: z.string(),
   type: JobTypeSchema,
-  status: JobQueueStatusSchema,
   totalItems: z.number(),
 });
 
@@ -55,18 +51,16 @@ export const JobStatusResponseSchema = z.object({
 export const JobListItemResponseSchema = z.object({
   jobId: z.string(),
   type: JobTypeSchema,
-  status: JobSummaryStatusSchema,
   totalItems: z.number(),
+  status: JobSummaryStatusSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
 });
-export type JobListItemResponse = z.infer<typeof JobListItemResponseSchema>;
 
 export const JobListResponseSchema = z.object({
   items: z.array(JobListItemResponseSchema),
   nextToken: z.union([z.string(), z.null()]),
 });
-export type JobListResponse = z.infer<typeof JobListResponseSchema>;
 
 const NullableStringSchema = z.union([z.string(), z.null()]);
 

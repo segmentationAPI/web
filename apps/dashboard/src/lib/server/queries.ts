@@ -1,6 +1,9 @@
 import "server-only";
 
-import { SegmentationClient, type JobListItemResponse } from "@segmentationapi/sdk";
+import {
+  SegmentationClient,
+  type JobListItemResponse,
+} from "@segmentationapi/sdk";
 import { db } from "@segmentation/db";
 import { apiKey } from "@segmentation/db/schema/app";
 import { desc, eq } from "drizzle-orm";
@@ -24,24 +27,14 @@ function parseSdkDate(value: string) {
   return Number.isNaN(parsed.getTime()) ? new Date(0) : parsed;
 }
 
-function toUiStatus(status: JobListItemResponse["status"]): JobListItem["status"] {
-  if (status === "queued" || status === "processing") {
-    return status;
-  }
-
-  if (status === "completed") {
-    return "success";
-  }
-
-  return "failed";
-}
-
-function toListedJobSummary(job: JobListItemResponse): ListedJobSummary {
+function toListedJobSummary(
+  job: JobListItemResponse,
+): ListedJobSummary {
   return {
     id: job.jobId,
     modality: job.type === "video" ? "video" : "image",
     processingMode: job.type === "video" ? "video" : job.totalItems > 1 ? "batch" : "single",
-    status: toUiStatus(job.status),
+    status: job.status,
     totalTasks: Math.max(job.totalItems, 0),
     createdAt: parseSdkDate(job.createdAt),
     updatedAt: parseSdkDate(job.updatedAt),
@@ -72,7 +65,9 @@ async function listAllSdkJobs(segmentationClient: SegmentationClient | null) {
       nextToken,
     });
 
-    jobs.push(...response.items.map(toListedJobSummary));
+    const pageJobs = response.items.map((job) => toListedJobSummary(job));
+
+    jobs.push(...pageJobs);
     nextToken = response.nextToken ?? undefined;
   } while (nextToken);
 

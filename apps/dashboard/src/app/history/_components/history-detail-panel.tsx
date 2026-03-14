@@ -392,7 +392,7 @@ function ManifestUnavailableState({ selectedJob }: { selectedJob: JobListItem })
       ? "This job did not finish successfully, so no output manifest is available."
       : selectedJob.status === "success"
         ? "The job completed, but the output manifest could not be loaded."
-        : "This job is still running. The output manifest will appear after processing finishes.";
+        : "This job is still processing. The output manifest will appear after processing finishes.";
 
   return (
     <Card className="border-border/70 bg-card/70 rounded-[1.5rem]">

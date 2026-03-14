@@ -2,7 +2,6 @@ import { API_BASE_URL, ASSETS_BASE_URL } from "./constants";
 import { toJobStatus } from "./mappers/job-status.mapper";
 import {
   AccountResponseSchema,
-  type JobListResponse,
   JobListResponseSchema,
   JobRequestSchema,
   JobResponseSchema,
@@ -14,6 +13,7 @@ import {
 import type {
   AccountResponse,
   JobRequest,
+  JobListResponse,
   JobResponse,
   JobStatus,
   JobStatusResponse,

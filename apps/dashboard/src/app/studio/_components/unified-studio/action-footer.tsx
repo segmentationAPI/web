@@ -68,7 +68,7 @@ export function ActionFooter() {
       const jobResponse = await createJob(jobRequest);
 
       setJobId(jobResponse.jobId);
-      setJobStatus(jobResponse.status);
+      setJobStatus("queued");
       setTotalItems(jobResponse.totalItems);
       toast.success("Job submitted");
     } catch (error) {

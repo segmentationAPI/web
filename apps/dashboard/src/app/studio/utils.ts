@@ -14,6 +14,15 @@ type PreparedTask = {
   taskId: string;
 };
 
+type StudioTaskSummary = {
+  failedItems: number;
+  queuedItems: number;
+  runningItems: number;
+  status: StudioRunStatus;
+  succeededItems: number;
+  totalItems: number;
+};
+
 export function deriveStudioInputType(tasks: readonly Pick<SubmitInputTask, "file">[]) {
   if (tasks.length === 0) {
     return null;
@@ -23,7 +32,7 @@ export function deriveStudioInputType(tasks: readonly Pick<SubmitInputTask, "fil
 }
 
 export function isStudioJobRunning(status: StudioRunStatus) {
-  return status === "queued" || status === "running";
+  return status === "queued" || status === "processing";
 }
 
 export function getStudioStatusMeta(status: StudioRunStatus): {
@@ -42,50 +51,49 @@ export function getStudioStatusMeta(status: StudioRunStatus): {
     return { label: "Queued", tone: "neutral" };
   }
 
-  if (status === "running") {
-    return { label: "Running", tone: "neutral" };
+  if (status === "processing") {
+    return { label: "Processing", tone: "neutral" };
   }
 
   return { label: "Ready", tone: "neutral" };
 }
 
-export function summarizeJobStatus(jobStatus: JobStatus) {
-  const totalItems = jobStatus.tasks.length;
-  const queuedItems = jobStatus.tasks.filter((item) => item.status === "queued").length;
-  const runningItems = jobStatus.tasks.filter((item) => item.status === "running").length;
-  const failedItems = jobStatus.tasks.filter((item) => item.status === "failed").length;
-  const succeededItems = jobStatus.tasks.filter((item) => item.status === "success").length;
+function summarizeTaskStatuses(tasks: JobStatus["tasks"]): StudioTaskSummary {
+  const totalItems = tasks.length;
+  const queuedItems = tasks.filter((task) => task.status === "queued").length;
+  const runningItems = tasks.filter((task) => task.status === "processing").length;
+  const failedItems = tasks.filter((task) => task.status === "failed").length;
+  const succeededItems = tasks.filter((task) => task.status === "success").length;
+
+  let status: StudioRunStatus;
+  if (totalItems === 0) {
+    status = "queued";
+  } else if (failedItems === totalItems) {
+    status = "failed";
+  } else if (succeededItems + failedItems === totalItems) {
+    status = "completed";
+  } else if (runningItems > 0) {
+    status = "processing";
+  } else {
+    status = queuedItems === totalItems ? "queued" : "processing";
+  }
 
   return {
     failedItems,
     queuedItems,
     runningItems,
+    status,
     succeededItems,
     totalItems,
   };
 }
 
+export function summarizeJobStatus(jobStatus: JobStatus) {
+  return summarizeTaskStatuses(jobStatus.tasks);
+}
+
 export function deriveStudioRunStatus(jobStatus: JobStatus): StudioRunStatus {
-  const { failedItems, queuedItems, runningItems, succeededItems, totalItems } =
-    summarizeJobStatus(jobStatus);
-
-  if (totalItems === 0) {
-    return "queued";
-  }
-
-  if (failedItems === totalItems) {
-    return "failed";
-  }
-
-  if (succeededItems + failedItems === totalItems) {
-    return "completed";
-  }
-
-  if (runningItems > 0) {
-    return "running";
-  }
-
-  return queuedItems === totalItems ? "queued" : "running";
+  return summarizeTaskStatuses(jobStatus.tasks).status;
 }
 
 export function hasTerminalStudioItems(jobStatus: JobStatus) {

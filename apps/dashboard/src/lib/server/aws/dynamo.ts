@@ -36,7 +36,7 @@ export type DynamoTask = {
   taskId: string;
   requestId: string;
   taskType: "image" | "video";
-  status: "queued" | "running" | "processing" | "success" | "failed";
+  status: "queued" | "processing" | "success" | "failed";
   inputS3Key: string | null;
   errorCode: string | null;
   errorMessage: string | null;
