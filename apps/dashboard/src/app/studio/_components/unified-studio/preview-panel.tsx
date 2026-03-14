@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, RefreshCw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   Empty,
   EmptyDescription,
@@ -35,15 +36,20 @@ function EmptyPreview() {
       return;
     }
 
-    const latestStatus = await getJobStatus(jobId);
-    refreshOutput(latestStatus);
+    try {
+      const latestStatus = await getJobStatus(jobId);
+      refreshOutput(latestStatus);
 
-    if (hasTerminalStudioItems(latestStatus)) {
-      const outputManifest = await getOutputManifest(jobId);
-      const previewUrls = extractManifestPreviewUrls(
-        outputManifest.items.map((item) => item.previewUrl),
-      );
-      setOutputLinks(previewUrls);
+      if (hasTerminalStudioItems(latestStatus)) {
+        const outputManifest = await getOutputManifest(jobId);
+        const previewUrls = extractManifestPreviewUrls(
+          outputManifest.items.map((item) => item.previewUrl),
+        );
+        setOutputLinks(previewUrls);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to refresh preview");
     }
   };
 
@@ -112,6 +118,7 @@ export function PreviewPanel() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Show previous output"
                   onClick={() =>
                     setSelectedIndex((selectedIndex - 1 + outputLinks.length) % outputLinks.length)
                   }
@@ -121,6 +128,7 @@ export function PreviewPanel() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Show next output"
                   onClick={() => setSelectedIndex((selectedIndex + 1) % outputLinks.length)}
                 >
                   <ChevronRight className="size-4" />

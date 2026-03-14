@@ -21,6 +21,7 @@ export const JobRequestSchema = z.object({
   tasks: z.array(z.string()),
   prompts: z.optional(z.array(z.string())),
   generatePreview: z.optional(z.boolean()),
+  fps: z.optional(z.number()),
   threshold: z.optional(z.number()),
   maskThreshold: z.optional(z.number()),
 });

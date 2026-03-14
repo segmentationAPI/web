@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUpRight, CreditCard, Loader2, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -9,47 +10,15 @@ import {
   createSubscriptionCheckoutSessionAction,
 } from "@/app/billing/actions";
 import { formatDate } from "@/components/dashboard-format";
+import { getBillingGateState } from "@/lib/billing-presentation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import type { DynamoBillingState } from "@/lib/server/aws/dynamo";
 
-function getBillingPresentation(billingState: DynamoBillingState | null) {
-  const hasBillingSetup = Boolean(
-    billingState?.stripeCustomerId ||
-    billingState?.stripeSubscriptionId ||
-    billingState?.stripeSubscriptionStatus,
-  );
-
-  if (!hasBillingSetup) {
-    return {
-      ctaLabel: "Attach a credit card to get started",
-      detail: "Add a card once. Billing will only apply to completed worker usage.",
-      inlineDetail: "Secure checkout opens in Stripe.",
-      isReady: false,
-    };
-  }
-
-  const usageEnabled = billingState?.accessStatus === "allowed";
-  const rawStatus =
-    billingState?.stripeSubscriptionStatus ??
-    billingState?.latestInvoiceStatus ??
-    "customer_created";
-
-  return {
-    ctaLabel: "Manage billing",
-    detail: "",
-    inlineDetail: usageEnabled
-      ? "Your payment method is on file. Open Stripe to update card details or invoices."
-      : "Review the current subscription state and resolve any billing issues in Stripe.",
-    isReady: usageEnabled,
-    subscriptionState: rawStatus.replaceAll("_", " "),
-  };
-}
-
 export function BillingPageContent({ billingState }: { billingState: DynamoBillingState | null }) {
   const [startingCheckout, setStartingCheckout] = useState(false);
   const [openingPortal, setOpeningPortal] = useState(false);
-  const presentation = getBillingPresentation(billingState);
+  const presentation = getBillingGateState(billingState);
   const isWorking = startingCheckout || openingPortal;
 
   async function handleStartSubscription() {
@@ -109,9 +78,9 @@ export function BillingPageContent({ billingState }: { billingState: DynamoBilli
         <CardDescription className="text-muted-foreground font-mono tracking-[0.18em] uppercase">
           Billing
         </CardDescription>
-        {presentation.detail ? (
+        {presentation.description ? (
           <p className="text-muted-foreground max-w-2xl text-sm leading-6 sm:text-[15px]">
-            {presentation.detail}
+            {presentation.description}
           </p>
         ) : null}
       </CardHeader>
@@ -125,11 +94,7 @@ export function BillingPageContent({ billingState }: { billingState: DynamoBilli
             )}
           </div>
           <div className="space-y-1">
-            <p className="font-display text-foreground text-lg">
-              {presentation.isReady
-                ? "Payment method attached"
-                : "Attach a credit card to get started"}
-            </p>
+            <p className="font-display text-foreground text-lg">{presentation.title}</p>
             <p className="text-muted-foreground text-sm leading-6">{presentation.inlineDetail}</p>
           </div>
         </div>
@@ -173,6 +138,15 @@ export function BillingPageContent({ billingState }: { billingState: DynamoBilli
             </p>
           </div>
         </div>
+        {!presentation.isReady ? (
+          <p className="text-muted-foreground text-xs leading-6">
+            Studio remains locked until billing is ready. Manage this from{" "}
+            <Link href={presentation.ctaHref} className="text-foreground underline underline-offset-4">
+              Billing
+            </Link>
+            .
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );

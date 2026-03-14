@@ -15,6 +15,7 @@ export interface JobRequest {
   readonly tasks: string[];
   readonly prompts?: string[];
   readonly generatePreview?: boolean;
+  readonly fps?: number;
   readonly threshold?: number;
   readonly maskThreshold?: number;
 }

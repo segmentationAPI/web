@@ -137,6 +137,7 @@ export function ensurePreparedTasks(tasks: readonly SubmitInputTask[]): Prepared
 export function buildStudioJobRequest(
   tasks: readonly PreparedTask[],
   prompts: string[],
+  fps?: number,
 ): JobRequest {
   const requestType = deriveStudioInputType(tasks);
 
@@ -150,6 +151,7 @@ export function buildStudioJobRequest(
       tasks: [tasks[0].taskId],
       prompts,
       generatePreview: true,
+      fps,
     };
   }
 

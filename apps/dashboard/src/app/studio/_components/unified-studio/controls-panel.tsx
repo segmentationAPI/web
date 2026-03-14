@@ -43,6 +43,8 @@ export function ControlsPanel() {
   const isRunning = isStudioJobRunning(status);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoFpsInputId = "video-fps";
+  const videoFpsHintId = "video-fps-hint";
 
   return (
     <div className="border-border/30 flex flex-col overflow-y-auto border-b xl:border-r xl:border-b-0">
@@ -189,11 +191,13 @@ export function ControlsPanel() {
           <SectionDivider />
           <div className="space-y-3 p-4 sm:p-5">
             <SectionLabel>Video Processing</SectionLabel>
-            <p className="text-muted-foreground text-[11px] leading-relaxed">{fps}</p>
+            <p id={videoFpsHintId} className="text-muted-foreground text-[11px] leading-relaxed">
+              Sample {fps} frame{fps === 1 ? "" : "s"} per second.
+            </p>
 
             <div className="space-y-2">
               <Label
-                htmlFor="video-fps"
+                htmlFor={videoFpsInputId}
                 className="text-muted-foreground font-mono text-[10px] tracking-[0.12em] uppercase"
               >
                 Processing FPS
@@ -216,16 +220,17 @@ export function ControlsPanel() {
                 />
 
                 <Input
-                  id="video-fps"
+                  id={videoFpsInputId}
                   type="number"
                   min={1}
                   max={maxFps}
                   value={String(fps)}
                   disabled={isRunning}
+                  aria-describedby={videoFpsHintId}
                   onChange={(event) => {
                     const value = Number.parseInt(event.target.value, 10);
                     if (Number.isFinite(value)) {
-                      setFps(value);
+                      setFps(Math.min(Math.max(value, 1), maxFps));
                     }
                   }}
                   className="w-16 rounded-md text-center"
