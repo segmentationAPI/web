@@ -5,6 +5,7 @@ import { user } from "@segmentation/db/schema/auth";
 import { eq } from "drizzle-orm";
 import {
   SegmentationClient,
+  type JobDownload,
   type JobRequest,
   type JobResponse,
   type JobStatus,
@@ -51,6 +52,16 @@ export async function createJob(jobRequest: JobRequest): Promise<JobResponse> {
 export async function getJobStatus(jobId: string): Promise<JobStatus> {
   const segmentationClient = await createAuthenticatedSegmentationClient();
   return segmentationClient.getJobStatus(jobId);
+}
+
+export async function createJobDownload(jobId: string): Promise<JobDownload> {
+  const segmentationClient = await createAuthenticatedSegmentationClient();
+  return segmentationClient.createJobDownload(jobId);
+}
+
+export async function getJobDownload(jobId: string): Promise<JobDownload> {
+  const segmentationClient = await createAuthenticatedSegmentationClient();
+  return segmentationClient.getJobDownload(jobId);
 }
 
 export async function createPresignRequest(

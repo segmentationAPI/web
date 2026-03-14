@@ -1,6 +1,9 @@
 export { SegmentationClient } from "./client";
 export {
   AccountResponseSchema,
+  EmptyObjectSchema,
+  JobDownloadResponseSchema,
+  JobDownloadStatusSchema,
   JobListItemResponseSchema,
   JobListResponseSchema,
   JobSummaryStatusSchema,
@@ -20,6 +23,8 @@ export {
 } from "./schemas";
 export type {
   AccountResponse,
+  JobDownload,
+  JobDownloadStatus,
   JobRequest,
   JobResponse,
   JobListItemResponse,

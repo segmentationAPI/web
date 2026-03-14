@@ -2,6 +2,8 @@ import { API_BASE_URL, ASSETS_BASE_URL } from "./constants";
 import { toJobStatus } from "./mappers/job-status.mapper";
 import {
   AccountResponseSchema,
+  EmptyObjectSchema,
+  JobDownloadResponseSchema,
   JobListResponseSchema,
   JobRequestSchema,
   JobResponseSchema,
@@ -12,6 +14,7 @@ import {
 } from "./schemas";
 import type {
   AccountResponse,
+  JobDownload,
   JobRequest,
   JobListResponse,
   JobResponse,
@@ -79,6 +82,34 @@ export class SegmentationClient {
     });
 
     return toJobStatus(result);
+  }
+
+  async createJobDownload(jobId: string): Promise<JobDownload> {
+    const url = `${API_BASE_URL}/jobs/${jobId}/download`;
+    return postRequest({
+      url,
+      init: {
+        headers: {
+          "x-api-key": this.apiKey,
+        },
+      },
+      body: {},
+      requestSchema: EmptyObjectSchema,
+      responseSchema: JobDownloadResponseSchema,
+    });
+  }
+
+  async getJobDownload(jobId: string): Promise<JobDownload> {
+    const url = `${API_BASE_URL}/jobs/${jobId}/download`;
+    return getRequest({
+      url,
+      init: {
+        headers: {
+          "x-api-key": this.apiKey,
+        },
+      },
+      responseSchema: JobDownloadResponseSchema,
+    });
   }
 
   async listJobs(params: ListJobsParams = {}): Promise<JobListResponse> {

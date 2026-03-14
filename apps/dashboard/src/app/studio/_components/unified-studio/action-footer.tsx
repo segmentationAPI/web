@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Download, Loader2, Sparkles } from "lucide-react";
 import type { PresignRequest } from "@segmentationapi/sdk";
 import Link from "next/link";
@@ -13,6 +14,7 @@ import {
   useInputTasks,
   useIsValidInput,
   useFps,
+  useJobId,
   usePrompts,
   useSetJobId,
   useSetJobStatus,
@@ -20,7 +22,7 @@ import {
   useSetTotalItems,
   useUpdateInputTask,
 } from "../../_store/studio.store";
-import { createJob, createPresignRequest } from "../../actions";
+import { createJob, createJobDownload, createPresignRequest, getJobDownload } from "../../actions";
 import {
   buildStudioJobRequest,
   ensurePreparedTasks,
@@ -35,6 +37,10 @@ type SubmitInputTask = {
   taskId?: string;
 };
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function ActionFooter({
   billingState,
   hasActiveApiKey,
@@ -45,21 +51,35 @@ export function ActionFooter({
   const isValidInput = useIsValidInput();
   const inputTasks = useInputTasks();
   const fps = useFps();
+  const jobId = useJobId();
   const prompts = usePrompts();
   const setJobId = useSetJobId();
   const setJobStatus = useSetJobStatus();
   const status = useStatus();
   const setTotalItems = useSetTotalItems();
   const updateInputTask = useUpdateInputTask();
+  const [isDownloading, setIsDownloading] = useState(false);
+  const downloadRequestIdRef = useRef(0);
 
   const isRunning = isStudioJobRunning(status);
   const billingGate = getBillingGateState(billingState);
   const isBillingBlocked = !billingGate.canRunJobs;
   const isMissingActiveApiKey = !hasActiveApiKey;
   const isRunDisabled = !isValidInput || isRunning || isBillingBlocked || isMissingActiveApiKey;
+  const isDownloadDisabled = !jobId || status !== "completed" || isDownloading;
+  const downloadButtonLabel = isDownloading ? "Preparing Download…" : "Download Artifacts";
+
+  useEffect(() => {
+    return () => {
+      downloadRequestIdRef.current += 1;
+    };
+  }, []);
 
   const handleRunJob = async () => {
     if (!inputTasks.length || !prompts.length || isBillingBlocked || isMissingActiveApiKey) return;
+
+    downloadRequestIdRef.current += 1;
+    setIsDownloading(false);
 
     try {
       const uploadedTasks: SubmitInputTask[] = [...inputTasks];
@@ -93,6 +113,46 @@ export function ActionFooter({
     }
   };
 
+  const handleDownloadArtifacts = async () => {
+    if (!jobId || status !== "completed" || isDownloading) return;
+
+    const requestId = downloadRequestIdRef.current + 1;
+    downloadRequestIdRef.current = requestId;
+    setIsDownloading(true);
+
+    try {
+      let download = await createJobDownload(jobId);
+
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        if (downloadRequestIdRef.current !== requestId) {
+          return;
+        }
+
+        if (download.status === "ready" && download.downloadUrl) {
+          window.location.assign(download.downloadUrl);
+          toast.success("Download started");
+          return;
+        }
+
+        if (download.status === "failed") {
+          throw new Error(download.error ?? "download_failed");
+        }
+
+        await sleep((download.retryAfterSeconds ?? 2) * 1000);
+        download = await getJobDownload(jobId);
+      }
+
+      throw new Error("download_timeout");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to prepare download");
+    } finally {
+      if (downloadRequestIdRef.current === requestId) {
+        setIsDownloading(false);
+      }
+    }
+  };
+
   return (
     <div className="border-border/30 shrink-0 border-t px-4 py-3 sm:px-5">
       <div className="flex flex-wrap items-center gap-3">
@@ -114,14 +174,12 @@ export function ActionFooter({
           type="button"
           variant="outline"
           size="icon-lg"
-          aria-label={"Downloading artifacts"}
-          disabled={false}
-          onClick={() => {
-            // TODO: implement download
-            console.log("Download clicked");
-          }}
+          aria-label={downloadButtonLabel}
+          title={downloadButtonLabel}
+          disabled={isDownloadDisabled}
+          onClick={handleDownloadArtifacts}
         >
-          <Download className="size-4" />
+          {isDownloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
         </Button>
       </div>
 

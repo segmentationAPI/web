@@ -54,6 +54,17 @@ export interface JobStatus {
   readonly tasks: TaskStatus[];
 }
 
+export type JobDownloadStatus = "pending" | "processing" | "ready" | "failed";
+
+export interface JobDownload {
+  readonly jobId: string;
+  readonly status: JobDownloadStatus;
+  readonly expiresAt: string | null;
+  readonly downloadUrl: string | null;
+  readonly retryAfterSeconds: number | null;
+  readonly error: string | null;
+}
+
 export interface ListJobsParams {
   readonly limit?: number;
   readonly nextToken?: string;

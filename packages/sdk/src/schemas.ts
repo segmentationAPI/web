@@ -1,6 +1,7 @@
 import * as z from "zod/mini";
 
 export const JobTypeSchema = z.union([z.literal("image"), z.literal("video")]);
+export const EmptyObjectSchema = z.object({});
 
 export const JobTaskStatusSchema = z.union([
   z.literal("queued"),
@@ -47,6 +48,22 @@ export const JobStatusResponseSchema = z.object({
       error: z.optional(z.string()),
     }),
   ),
+});
+
+export const JobDownloadStatusSchema = z.union([
+  z.literal("pending"),
+  z.literal("processing"),
+  z.literal("ready"),
+  z.literal("failed"),
+]);
+
+export const JobDownloadResponseSchema = z.object({
+  jobId: z.string(),
+  status: JobDownloadStatusSchema,
+  expiresAt: z.union([z.string(), z.null()]),
+  downloadUrl: z.union([z.url(), z.null()]),
+  retryAfterSeconds: z.union([z.number(), z.null()]),
+  error: z.union([z.string(), z.null()]),
 });
 
 export const JobListItemResponseSchema = z.object({
