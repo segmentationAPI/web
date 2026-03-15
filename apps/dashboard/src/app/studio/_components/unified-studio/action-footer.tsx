@@ -41,6 +41,17 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function triggerBrowserDownload(url: string) {
+  const iframe = document.createElement("iframe");
+  iframe.hidden = true;
+  iframe.src = url;
+  document.body.appendChild(iframe);
+
+  window.setTimeout(() => {
+    iframe.remove();
+  }, 60_000);
+}
+
 export function ActionFooter({
   billingState,
   hasActiveApiKey,
@@ -129,7 +140,7 @@ export function ActionFooter({
         }
 
         if (download.status === "ready" && download.downloadUrl) {
-          window.location.assign(download.downloadUrl);
+          triggerBrowserDownload(download.downloadUrl);
           toast.success("Download started");
           return;
         }
