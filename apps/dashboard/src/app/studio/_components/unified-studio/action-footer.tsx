@@ -26,10 +26,18 @@ import { createJob, createJobDownload, createPresignRequest, getJobDownload } fr
 import {
   buildStudioJobRequest,
   ensurePreparedTasks,
+  getStudioActionErrorMessage,
+  getStudioRunDisabledReason,
   isStudioJobRunning,
+  sanitizeStudioPrompts,
   toSupportedContentType,
 } from "../../utils";
 import { putToPresignedS3 } from "@/lib/utils";
+import {
+  ErrorFeedbackMessage,
+  NeutralFeedbackMessage,
+  SuccessFeedbackMessage,
+} from "./feedback-message";
 
 type SubmitInputTask = {
   file: File;
@@ -70,15 +78,32 @@ export function ActionFooter({
   const setTotalItems = useSetTotalItems();
   const updateInputTask = useUpdateInputTask();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [submitPhase, setSubmitPhase] = useState<"idle" | "uploading" | "submitting">("idle");
+  const [submitFeedback, setSubmitFeedback] = useState<string | null>(null);
+  const [submitFeedbackTone, setSubmitFeedbackTone] = useState<"neutral" | "success" | "error" | null>(
+    null,
+  );
   const downloadRequestIdRef = useRef(0);
 
   const isRunning = isStudioJobRunning(status);
   const billingGate = getBillingGateState(billingState);
   const isBillingBlocked = !billingGate.canRunJobs;
   const isMissingActiveApiKey = !hasActiveApiKey;
-  const isRunDisabled = !isValidInput || isRunning || isBillingBlocked || isMissingActiveApiKey;
+  const isSubmitting = submitPhase !== "idle";
+  const isRunDisabled =
+    !isValidInput || isRunning || isBillingBlocked || isMissingActiveApiKey || isSubmitting;
   const isDownloadDisabled = !jobId || status !== "completed" || isDownloading;
   const downloadButtonLabel = isDownloading ? "Preparing Download…" : "Download Artifacts";
+  const hasPrompts = sanitizeStudioPrompts(prompts).length > 0;
+  const disabledReason = getStudioRunDisabledReason({
+    hasBillingBlock: isBillingBlocked,
+    hasActiveApiKey,
+    hasInputs: inputTasks.length > 0,
+    hasPrompts,
+    isRunning: isRunning || isSubmitting,
+  });
+  const runButtonLabel =
+    submitPhase === "uploading" ? "Uploading…" : submitPhase === "submitting" ? "Queueing…" : "Run Job";
 
   useEffect(() => {
     return () => {
@@ -87,10 +112,18 @@ export function ActionFooter({
   }, []);
 
   const handleRunJob = async () => {
-    if (!inputTasks.length || !prompts.length || isBillingBlocked || isMissingActiveApiKey) return;
+    const preparedPrompts = sanitizeStudioPrompts(prompts);
+
+    if (!inputTasks.length || !preparedPrompts.length || isBillingBlocked || isMissingActiveApiKey) {
+      return;
+    }
 
     downloadRequestIdRef.current += 1;
     setIsDownloading(false);
+    setSubmitPhase("uploading");
+    setSubmitFeedback("Uploading input assets before queueing the job.");
+    setSubmitFeedbackTone("neutral");
+    const submitToastId = toast.loading("Uploading assets…");
 
     try {
       const uploadedTasks: SubmitInputTask[] = [...inputTasks];
@@ -110,17 +143,31 @@ export function ActionFooter({
         }
       }
 
+      setSubmitPhase("submitting");
+      setSubmitFeedback("Submitting the job to the queue.");
+      setSubmitFeedbackTone("neutral");
+      toast.loading("Queueing job…", { id: submitToastId });
+
       const preparedTasks = ensurePreparedTasks(uploadedTasks);
-      const jobRequest = buildStudioJobRequest(preparedTasks, prompts, fps);
+      const jobRequest = buildStudioJobRequest(preparedTasks, preparedPrompts, fps);
       const jobResponse = await createJob(jobRequest);
 
       setJobId(jobResponse.jobId);
       setJobStatus("queued");
       setTotalItems(jobResponse.totalItems);
-      toast.success("Job submitted");
+      setSubmitFeedback("Job queued. Refresh preview to check for progress.");
+      setSubmitFeedbackTone("success");
+      toast.success(`Job queued with ${jobResponse.totalItems} ${jobResponse.totalItems === 1 ? "task" : "tasks"}.`, {
+        id: submitToastId,
+      });
     } catch (error) {
       console.error(error);
-      toast.error("Failed to submit job");
+      const message = getStudioActionErrorMessage("submit", error);
+      setSubmitFeedback(message);
+      setSubmitFeedbackTone("error");
+      toast.error(message, { id: submitToastId });
+    } finally {
+      setSubmitPhase("idle");
     }
   };
 
@@ -130,18 +177,22 @@ export function ActionFooter({
     const requestId = downloadRequestIdRef.current + 1;
     downloadRequestIdRef.current = requestId;
     setIsDownloading(true);
+    const downloadToastId = toast.loading("Preparing artifacts for download…");
 
     try {
       let download = await createJobDownload(jobId);
 
       for (let attempt = 0; attempt < 60; attempt += 1) {
         if (downloadRequestIdRef.current !== requestId) {
+          toast.dismiss(downloadToastId);
           return;
         }
 
         if (download.status === "ready" && download.downloadUrl) {
           triggerBrowserDownload(download.downloadUrl);
-          toast.success("Download started");
+          toast.success("Download started. Your browser should open the artifact archive.", {
+            id: downloadToastId,
+          });
           return;
         }
 
@@ -156,7 +207,7 @@ export function ActionFooter({
       throw new Error("download_timeout");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to prepare download");
+      toast.error(getStudioActionErrorMessage("download", error), { id: downloadToastId });
     } finally {
       if (downloadRequestIdRef.current === requestId) {
         setIsDownloading(false);
@@ -168,15 +219,15 @@ export function ActionFooter({
     <div className="border-border/30 shrink-0 border-t px-4 py-3 sm:px-5">
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" disabled={isRunDisabled} onClick={handleRunJob} size="lg">
-          {isRunning ? (
+          {isRunning || isSubmitting ? (
             <>
               <Loader2 className="size-3.5 animate-spin" />
-              Running…
+              {runButtonLabel}
             </>
           ) : (
             <>
               <Sparkles className="size-3.5" />
-              Run Job
+              {runButtonLabel}
             </>
           )}
         </Button>
@@ -193,6 +244,17 @@ export function ActionFooter({
           {isDownloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
         </Button>
       </div>
+
+      {disabledReason ? <NeutralFeedbackMessage className="mt-2">{disabledReason}</NeutralFeedbackMessage> : null}
+      {!disabledReason && submitFeedbackTone === "success" && submitFeedback ? (
+        <SuccessFeedbackMessage className="mt-2">{submitFeedback}</SuccessFeedbackMessage>
+      ) : null}
+      {!disabledReason && submitFeedbackTone === "neutral" && submitFeedback ? (
+        <NeutralFeedbackMessage className="mt-2">{submitFeedback}</NeutralFeedbackMessage>
+      ) : null}
+      {!disabledReason && submitFeedbackTone === "error" && submitFeedback ? (
+        <ErrorFeedbackMessage className="mt-2">{submitFeedback}</ErrorFeedbackMessage>
+      ) : null}
 
       {isBillingBlocked ? (
         <Alert className="border-primary/25 bg-primary/8 mt-3 rounded-[1rem] border px-3 py-3">
@@ -227,8 +289,6 @@ export function ActionFooter({
           </AlertDescription>
         </Alert>
       ) : null}
-
-      {/* TODO: implement upload progress*/}
     </div>
   );
 }

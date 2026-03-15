@@ -2,6 +2,7 @@
 
 import { Film, ImageIcon, Plus, Upload } from "lucide-react";
 import { useRef } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DeleteIconButton } from "@/components/ui/delete-icon-button";
 import { Input } from "@/components/ui/input";
@@ -64,9 +65,11 @@ export function ControlsPanel() {
                 </Label>
                 <Input
                   id={inputId}
+                  name={inputId}
                   value={prompt}
                   onChange={(event) => setPrompt(index, event.target.value)}
-                  placeholder="your prompt"
+                  placeholder="Describe the output…"
+                  autoComplete="off"
                   disabled={isRunning}
                   className="rounded-md"
                 />
@@ -116,11 +119,24 @@ export function ControlsPanel() {
           ref={fileInputRef}
           type="file"
           multiple
+          name="studio-assets"
           accept="image/*,video/*"
           onChange={(event) => {
             if (!event.target.files) return;
 
-            addFiles(event.target.files);
+            void addFiles(event.target.files).then((result) => {
+              if (result.addedCount > 0) {
+                toast.success(
+                  result.addedCount === 1
+                    ? "1 file added to the studio"
+                    : `${result.addedCount} files added to the studio`,
+                );
+              }
+
+              for (const error of result.errors) {
+                toast.error(error);
+              }
+            });
             event.currentTarget.value = "";
           }}
           className="hidden"
@@ -221,11 +237,14 @@ export function ControlsPanel() {
 
                 <Input
                   id={videoFpsInputId}
+                  name={videoFpsInputId}
                   type="number"
                   min={1}
                   max={maxFps}
                   value={String(fps)}
                   disabled={isRunning}
+                  autoComplete="off"
+                  inputMode="numeric"
                   aria-describedby={videoFpsHintId}
                   onChange={(event) => {
                     const value = Number.parseInt(event.target.value, 10);

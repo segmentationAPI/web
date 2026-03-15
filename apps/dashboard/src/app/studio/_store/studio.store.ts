@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import type { JobStatus } from "@segmentationapi/sdk";
 import { parseVideoSourceFps } from "../../../lib/video-fps-parser";
-import { deriveStudioInputType, deriveStudioRunStatus, summarizeJobStatus } from "../utils";
-import type { StudioRunStatus } from "../types";
+import { deriveStudioInputType, sanitizeStudioPrompts, summarizeJobStatus } from "../utils";
+import type { StudioRunStatus, StudioSelectionResult } from "../types";
 
 interface InputTask {
   file: File;
@@ -29,7 +29,7 @@ interface StudioActions {
   addPrompt: () => void;
   setPrompt: (index: number, value: string) => void;
   removePrompt: (index: number) => void;
-  addFiles: (file: FileList) => void;
+  addFiles: (file: FileList) => Promise<StudioSelectionResult>;
   removeFile: (index: number) => void;
   setFps: (fps: number) => void;
   setJobId: (jobId: string) => void;
@@ -70,15 +70,32 @@ export const studioRequestStore = create<StudioState & StudioActions>()((set, ge
     }),
   addFiles: async (files: FileList) => {
     let nextTasks = get().inputTasks;
+    let addedCount = 0;
+    const errors: string[] = [];
 
     for (const file of files) {
       const currentType = deriveStudioInputType(nextTasks);
+      const isImage = file.type.startsWith("image/");
+      const isVideo = file.type.startsWith("video/");
 
-      if (currentType === "image" && !file.type.startsWith("image/")) return;
-      if (currentType === "video" && !file.type.startsWith("video/")) return;
+      if (!isImage && !isVideo) {
+        errors.push(`${file.name} is not supported. Upload JPG, PNG, WEBP, or MP4 files.`);
+        continue;
+      }
+
+      if (currentType === "image" && !isImage) {
+        errors.push(`${file.name} was skipped because image and video inputs cannot be mixed.`);
+        continue;
+      }
+
+      if (currentType === "video" && !isVideo) {
+        errors.push(`${file.name} was skipped because image and video inputs cannot be mixed.`);
+        continue;
+      }
 
       const newTask: InputTask = { file, uploadUrl: undefined, taskId: undefined };
       nextTasks = [...nextTasks, newTask];
+      addedCount += 1;
 
       set((_) => ({ inputTasks: nextTasks }));
 
@@ -90,9 +107,20 @@ export const studioRequestStore = create<StudioState & StudioActions>()((set, ge
         }));
       }
     }
+
+    return { addedCount, errors };
   },
   removeFile: (index: number) =>
-    set((state) => ({ inputTasks: state.inputTasks.filter((_, i) => i !== index) })),
+    set((state) => {
+      const inputTasks = state.inputTasks.filter((_, i) => i !== index);
+      const nextInputType = deriveStudioInputType(inputTasks);
+
+      return {
+        inputTasks,
+        fps: nextInputType === "video" ? state.fps : 0,
+        maxFps: nextInputType === "video" ? state.maxFps : 0,
+      };
+    }),
   setFps: (fps: number) => set((_) => ({ fps })),
   setJobId: (jobId: string) => set((_) => ({ jobId, outputLinks: [] })),
   refreshOutput: (jobStatus: JobStatus) => {
@@ -129,7 +157,9 @@ export const useMaxFps = () => studioRequestStore((state) => state.maxFps);
 export const useSetFps = () => studioRequestStore((state) => state.setFps);
 
 export const useIsValidInput = () =>
-  studioRequestStore((state) => state.inputTasks.length > 0 && state.prompts.length > 0);
+  studioRequestStore(
+    (state) => state.inputTasks.length > 0 && sanitizeStudioPrompts(state.prompts).length > 0,
+  );
 
 export const useOutputLinks = () => studioRequestStore((state) => state.outputLinks);
 export const useJobId = () => studioRequestStore((state) => state.jobId);
@@ -140,6 +170,8 @@ export const useTotalItems = () => studioRequestStore((state) => state.totalItem
 export const useSetTotalItems = () => studioRequestStore((state) => state.setTotalItems);
 export const useSucceededItems = () => studioRequestStore((state) => state.succeededItems);
 export const useFailedItems = () => studioRequestStore((state) => state.failedItems);
+export const useQueuedItems = () => studioRequestStore((state) => state.queuedItems);
+export const useRunningItems = () => studioRequestStore((state) => state.runningItems);
 export const useRefreshOutput = () => studioRequestStore((state) => state.refreshOutput);
 export const useUpdateInputTask = () => studioRequestStore((state) => state.updateInputTask);
 export const useSetOutputLinks = () => studioRequestStore((state) => state.setOutputLinks);

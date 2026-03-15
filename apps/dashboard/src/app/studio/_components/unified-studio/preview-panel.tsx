@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, RefreshCw, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -10,6 +10,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Button } from "@/components/ui/button";
 import { SectionLabel } from "@/components/studio/studio-status-primitives";
 import {
   useInputType,
@@ -19,22 +20,39 @@ import {
   useSetOutputLinks,
 } from "../../_store/studio.store";
 import MediaPreview from "@/components/studio/media-preview";
-import { Button } from "@/components/ui/button";
 import { getJobStatus, getOutputManifest } from "../../actions";
 import {
   extractManifestPreviewUrls,
+  getStudioActionErrorMessage,
   hasTerminalStudioItems,
 } from "../../utils";
+import {
+  ErrorFeedbackMessage,
+  NeutralFeedbackMessage,
+  SuccessFeedbackMessage,
+} from "./feedback-message";
 
 function EmptyPreview() {
   const jobId = useJobId();
   const refreshOutput = useRefreshOutput();
   const setOutputLinks = useSetOutputLinks();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState<{
+    tone: "neutral" | "success" | "danger";
+    text: string;
+  } | null>(null);
 
   const handleRefreshOutput = async () => {
-    if (!jobId) {
+    if (!jobId || isRefreshing) {
       return;
     }
+
+    setIsRefreshing(true);
+    setRefreshMessage({
+      tone: "neutral",
+      text: "Checking the latest job status.",
+    });
+    const refreshToastId = toast.loading("Checking the latest job status…");
 
     try {
       const latestStatus = await getJobStatus(jobId);
@@ -46,10 +64,31 @@ function EmptyPreview() {
           outputManifest.items.map((item) => item.previewUrl),
         );
         setOutputLinks(previewUrls);
+        setRefreshMessage({
+          tone: previewUrls.length > 0 ? "success" : "neutral",
+          text:
+            previewUrls.length > 0
+              ? "Preview updated with the latest outputs."
+              : "The job finished, but preview assets are not available yet.",
+        });
+        toast.success(
+          previewUrls.length > 0 ? "Preview updated." : "Job finished, but preview assets are not available yet.",
+          { id: refreshToastId },
+        );
+      } else {
+        setRefreshMessage({
+          tone: "neutral",
+          text: "Status updated. The job is still running.",
+        });
+        toast.success("Status updated. The job is still running.", { id: refreshToastId });
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to refresh preview");
+      const message = getStudioActionErrorMessage("refresh", error);
+      setRefreshMessage({ tone: "danger", text: message });
+      toast.error(message, { id: refreshToastId });
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -69,14 +108,33 @@ function EmptyPreview() {
             onClick={handleRefreshOutput}
             className="mt-1 gap-2"
             aria-label="Refresh job status"
+            disabled={isRefreshing}
           >
-            <RefreshCw className="size-3.5" />
-            Refresh preview
+            {isRefreshing ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin" />
+                Refreshing…
+              </>
+            ) : (
+              <>
+                <RefreshCw className="size-3.5" />
+                Refresh preview
+              </>
+            )}
           </Button>
         ) : (
           <EmptyTitle className="text-foreground/80">No preview yet</EmptyTitle>
         )}
         <EmptyDescription>Upload media and add prompts to get started.</EmptyDescription>
+        {refreshMessage?.tone === "danger" ? (
+          <ErrorFeedbackMessage className="mt-3">{refreshMessage.text}</ErrorFeedbackMessage>
+        ) : null}
+        {refreshMessage?.tone === "neutral" ? (
+          <NeutralFeedbackMessage className="mt-3">{refreshMessage.text}</NeutralFeedbackMessage>
+        ) : null}
+        {refreshMessage?.tone === "success" ? (
+          <SuccessFeedbackMessage className="mt-3">{refreshMessage.text}</SuccessFeedbackMessage>
+        ) : null}
       </EmptyHeader>
     </Empty>
   );
@@ -111,7 +169,7 @@ export function PreviewPanel() {
 
           {hasMultipleOutputs ? (
             <div className="border-border/50 bg-background/70 flex items-center justify-between rounded-lg border px-3 py-2">
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground text-xs tabular-nums">
                 Output {selectedIndex + 1} of {outputLinks.length}
               </span>
               <div className="flex items-center gap-2">
