@@ -143,3 +143,20 @@ export const PresignResponseSchema = z.object({
   taskId: z.string(),
   expiresIn: z.number(),
 });
+
+export const PlaygroundSegmentRequestSchema = z.object({
+  taskId: z.string(),
+  prompts: z.array(z.string()),
+  threshold: z.optional(z.number()),
+  maskThreshold: z.optional(z.number()),
+});
+
+export const PlaygroundMaskSchema = z.object({
+  maskIndex: z.number(),
+  confidence: z.optional(z.union([z.number(), z.null()])),
+  pngBase64: z.string(),
+});
+
+export const PlaygroundSegmentResponseSchema = z.object({
+  masks: z.array(PlaygroundMaskSchema),
+});

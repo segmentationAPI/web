@@ -134,3 +134,20 @@ export interface PresignResponse {
   readonly taskId: string;
   readonly expiresIn: number;
 }
+
+export interface PlaygroundSegmentRequest {
+  readonly taskId: string;
+  readonly prompts: string[];
+  readonly threshold?: number;
+  readonly maskThreshold?: number;
+}
+
+export interface PlaygroundMask {
+  readonly maskIndex: number;
+  readonly confidence?: number | null;
+  readonly pngBase64: string;
+}
+
+export interface PlaygroundSegmentResponse {
+  readonly masks: PlaygroundMask[];
+}

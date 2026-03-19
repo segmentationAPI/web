@@ -9,6 +9,8 @@ import {
   JobResponseSchema,
   JobStatusResponseSchema,
   OutputManifestSchema,
+  PlaygroundSegmentRequestSchema,
+  PlaygroundSegmentResponseSchema,
   PresignRequestSchema,
   PresignResponseSchema,
 } from "./schemas";
@@ -22,6 +24,8 @@ import type {
   JobStatusResponse,
   ListJobsParams,
   OutputManifest,
+  PlaygroundSegmentRequest,
+  PlaygroundSegmentResponse,
   PresignRequest,
   PresignResponse,
 } from "./types";
@@ -141,6 +145,23 @@ export class SegmentationClient {
       body: request,
       requestSchema: PresignRequestSchema,
       responseSchema: PresignResponseSchema,
+    });
+  }
+
+  async createPlaygroundSegment(
+    request: PlaygroundSegmentRequest,
+  ): Promise<PlaygroundSegmentResponse> {
+    const url = `${API_BASE_URL}/playground/segment`;
+    return postRequest({
+      url,
+      init: {
+        headers: {
+          "x-api-key": this.apiKey,
+        },
+      },
+      body: request,
+      requestSchema: PlaygroundSegmentRequestSchema,
+      responseSchema: PlaygroundSegmentResponseSchema,
     });
   }
 
