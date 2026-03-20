@@ -27,7 +27,7 @@ import { isStudioJobRunning } from "../../utils";
 
 const FILE_INPUT_ID = "studio-file-input";
 
-export function ControlsPanel() {
+export function ControlsPanel({ isPlaygroundMode }: { isPlaygroundMode: boolean }) {
   const inputType = useInputType();
   const prompts = usePrompts();
   const setPrompt = useSetPrompt();
@@ -42,6 +42,7 @@ export function ControlsPanel() {
   const setFps = useSetFps();
 
   const isRunning = isStudioJobRunning(status);
+  const hasReachedPlaygroundLimit = isPlaygroundMode && inputTasks.length >= 1;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoFpsInputId = "video-fps";
@@ -118,9 +119,9 @@ export function ControlsPanel() {
           id={FILE_INPUT_ID}
           ref={fileInputRef}
           type="file"
-          multiple
+          multiple={!isPlaygroundMode}
           name="studio-assets"
-          accept="image/*,video/*"
+          accept={isPlaygroundMode ? "image/*" : "image/*,video/*"}
           onChange={(event) => {
             if (!event.target.files) return;
 
@@ -153,8 +154,12 @@ export function ControlsPanel() {
               <Upload className="size-4" />
             </div>
             <div className="text-center">
-              <p className="text-foreground/80 text-xs font-medium">Upload media</p>
-              <p className="text-muted-foreground mt-0.5 text-[11px]">Images or video</p>
+              <p className="text-foreground/80 text-xs font-medium">
+                {isPlaygroundMode ? "Upload image" : "Upload media"}
+              </p>
+              <p className="text-muted-foreground mt-0.5 text-[11px]">
+                {isPlaygroundMode ? "Single image only" : "Images or video"}
+              </p>
             </div>
           </button>
         ) : (
@@ -187,17 +192,19 @@ export function ControlsPanel() {
                 </div>
               ))}
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isRunning}
-              className="text-muted-foreground w-full"
-            >
-              <Plus className="size-3" />
-              Add files
-            </Button>
+            {!hasReachedPlaygroundLimit ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isRunning}
+                className="text-muted-foreground w-full"
+              >
+                <Plus className="size-3" />
+                Add files
+              </Button>
+            ) : null}
           </div>
         )}
       </div>

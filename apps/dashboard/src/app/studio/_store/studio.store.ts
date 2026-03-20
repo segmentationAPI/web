@@ -23,6 +23,7 @@ interface StudioState {
   runningItems: number;
   succeededItems: number;
   failedItems: number;
+  playgroundMasks: string[];
 }
 
 interface StudioActions {
@@ -38,6 +39,8 @@ interface StudioActions {
   refreshOutput: (jobStatus: JobStatus) => void;
   updateInputTask: (index: number, taskId: string, uploadUrl: string) => void;
   setOutputLinks: (outputLinks: string[]) => void;
+  setPlaygroundMasks: (masks: string[]) => void;
+  clearPlaygroundMasks: () => void;
 }
 
 const DEFAULT_PROMPTS = [""];
@@ -138,6 +141,9 @@ export const studioRequestStore = create<StudioState & StudioActions>()((set, ge
       ),
     })),
   setOutputLinks: (outputLinks: string[]) => set((_) => ({ outputLinks })),
+  playgroundMasks: [],
+  setPlaygroundMasks: (masks: string[]) => set((_) => ({ playgroundMasks: masks })),
+  clearPlaygroundMasks: () => set((_) => ({ playgroundMasks: [] })),
 }));
 
 export const usePrompts = () => studioRequestStore((state) => state.prompts);
@@ -175,3 +181,6 @@ export const useRunningItems = () => studioRequestStore((state) => state.running
 export const useRefreshOutput = () => studioRequestStore((state) => state.refreshOutput);
 export const useUpdateInputTask = () => studioRequestStore((state) => state.updateInputTask);
 export const useSetOutputLinks = () => studioRequestStore((state) => state.setOutputLinks);
+export const usePlaygroundMasks = () => studioRequestStore((state) => state.playgroundMasks);
+export const useSetPlaygroundMasks = () => studioRequestStore((state) => state.setPlaygroundMasks);
+export const useClearPlaygroundMasks = () => studioRequestStore((state) => state.clearPlaygroundMasks);

@@ -1,5 +1,6 @@
 import { requirePageSession } from "@/lib/server/page-auth";
 import { getBillingSummaryForUser, getActiveApiKeyForuser } from "@/lib/server/queries";
+import { getBillingGateState } from "@/lib/billing-presentation";
 
 import { DashboardPageShell, DashboardPanelShell } from "@/components/dashboard-page-shell";
 
@@ -15,6 +16,8 @@ export async function StudioPageContent() {
     getActiveApiKeyForuser(session.user.id),
   ]);
   const hasActiveApiKey = activeApiKey !== null;
+  const billingGate = getBillingGateState(billingState);
+  const isPlaygroundMode = !billingGate.hasBillingSetup;
 
   return (
     <DashboardPageShell className="h-full min-h-0 max-w-300 overflow-hidden py-3 sm:py-4">
@@ -22,11 +25,11 @@ export async function StudioPageContent() {
         <StatusHeader />
 
         <div className="grid min-h-0 flex-1 xl:grid-cols-[320px_minmax(0,1fr)]">
-          <ControlsPanel />
-          <PreviewPanel />
+          <ControlsPanel isPlaygroundMode={isPlaygroundMode} />
+          <PreviewPanel isPlaygroundMode={isPlaygroundMode} />
         </div>
 
-        <ActionFooter billingState={billingState} hasActiveApiKey={hasActiveApiKey} />
+        <ActionFooter billingState={billingState} hasActiveApiKey={hasActiveApiKey} isPlaygroundMode={isPlaygroundMode} />
       </DashboardPanelShell>
     </DashboardPageShell>
   );

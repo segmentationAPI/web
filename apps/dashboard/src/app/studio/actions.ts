@@ -10,6 +10,8 @@ import {
   type JobResponse,
   type JobStatus,
   type OutputManifest,
+  type PlaygroundSegmentRequest,
+  type PlaygroundSegmentResponse,
   type PresignRequest,
   type PresignResponse,
 } from "@segmentationapi/sdk";
@@ -75,4 +77,11 @@ export async function createPresignRequest(
 export async function getOutputManifest(jobId: string): Promise<OutputManifest> {
   const segmentationClient = await createAuthenticatedSegmentationClient();
   return segmentationClient.getOutputManifest(jobId);
+}
+
+export async function createPlaygroundSegment(
+  request: PlaygroundSegmentRequest,
+): Promise<PlaygroundSegmentResponse> {
+  const segmentationClient = await createAuthenticatedSegmentationClient();
+  return segmentationClient.createPlaygroundSegment(request);
 }
