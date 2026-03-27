@@ -211,6 +211,10 @@ export function getStudioActionErrorMessage(
       return "The upload session expired before submission completed. Try running the job again.";
     }
 
+    if (message === "HTTP 429" || message === "HTTP 503") {
+      return "The playground is busy right now. Try again in a moment.";
+    }
+
     return "Failed to submit the job. Try again.";
   }
 
