@@ -23,26 +23,13 @@ import {
 } from "../../_store/studio.store";
 import MediaPreview from "@/components/studio/media-preview";
 import { getJobStatus, getOutputManifest } from "../../actions";
-import {
-  extractManifestPreviewUrls,
-  getStudioActionErrorMessage,
-  hasTerminalStudioItems,
-} from "../../utils";
-import {
-  ErrorFeedbackMessage,
-  NeutralFeedbackMessage,
-  SuccessFeedbackMessage,
-} from "./feedback-message";
+import { getStudioActionErrorMessage, hasTerminalStudioItems, extractManifestPreviewUrls } from "../../utils";
 
 function EmptyPreview() {
   const jobId = useJobId();
   const refreshOutput = useRefreshOutput();
   const setOutputLinks = useSetOutputLinks();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [refreshMessage, setRefreshMessage] = useState<{
-    tone: "neutral" | "success" | "danger";
-    text: string;
-  } | null>(null);
 
   const handleRefreshOutput = async () => {
     if (!jobId || isRefreshing) {
@@ -50,11 +37,6 @@ function EmptyPreview() {
     }
 
     setIsRefreshing(true);
-    setRefreshMessage({
-      tone: "neutral",
-      text: "Checking the latest job status.",
-    });
-    const refreshToastId = toast.loading("Checking the latest job status…");
 
     try {
       const latestStatus = await getJobStatus(jobId);
@@ -66,29 +48,11 @@ function EmptyPreview() {
           outputManifest.items.map((item) => item.previewUrl),
         );
         setOutputLinks(previewUrls);
-        setRefreshMessage({
-          tone: previewUrls.length > 0 ? "success" : "neutral",
-          text:
-            previewUrls.length > 0
-              ? "Preview updated with the latest outputs."
-              : "The job finished, but preview assets are not available yet.",
-        });
-        toast.success(
-          previewUrls.length > 0 ? "Preview updated." : "Job finished, but preview assets are not available yet.",
-          { id: refreshToastId },
-        );
-      } else {
-        setRefreshMessage({
-          tone: "neutral",
-          text: "Status updated. The job is still running.",
-        });
-        toast.success("Status updated. The job is still running.", { id: refreshToastId });
       }
     } catch (error) {
       console.error(error);
       const message = getStudioActionErrorMessage("refresh", error);
-      setRefreshMessage({ tone: "danger", text: message });
-      toast.error(message, { id: refreshToastId });
+      toast.error(message);
     } finally {
       setIsRefreshing(false);
     }
@@ -128,15 +92,6 @@ function EmptyPreview() {
           <EmptyTitle className="text-foreground/80">No preview yet</EmptyTitle>
         )}
         <EmptyDescription>Upload media and add prompts to get started.</EmptyDescription>
-        {refreshMessage?.tone === "danger" ? (
-          <ErrorFeedbackMessage className="mt-3">{refreshMessage.text}</ErrorFeedbackMessage>
-        ) : null}
-        {refreshMessage?.tone === "neutral" ? (
-          <NeutralFeedbackMessage className="mt-3">{refreshMessage.text}</NeutralFeedbackMessage>
-        ) : null}
-        {refreshMessage?.tone === "success" ? (
-          <SuccessFeedbackMessage className="mt-3">{refreshMessage.text}</SuccessFeedbackMessage>
-        ) : null}
       </EmptyHeader>
     </Empty>
   );

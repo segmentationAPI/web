@@ -40,11 +40,6 @@ import {
   toSupportedContentType,
 } from "../../utils";
 import { putToPresignedS3 } from "@/lib/utils";
-import {
-  ErrorFeedbackMessage,
-  NeutralFeedbackMessage,
-  SuccessFeedbackMessage,
-} from "./feedback-message";
 
 type SubmitInputTask = {
   file: File;
@@ -89,10 +84,6 @@ export function ActionFooter({
   const updateInputTask = useUpdateInputTask();
   const [isDownloading, setIsDownloading] = useState(false);
   const [submitPhase, setSubmitPhase] = useState<"idle" | "uploading" | "submitting">("idle");
-  const [submitFeedback, setSubmitFeedback] = useState<string | null>(null);
-  const [submitFeedbackTone, setSubmitFeedbackTone] = useState<"neutral" | "success" | "error" | null>(
-    null,
-  );
   const downloadRequestIdRef = useRef(0);
 
   const isRunning = isStudioJobRunning(status);
@@ -138,9 +129,6 @@ export function ActionFooter({
     }
 
     setSubmitPhase("uploading");
-    setSubmitFeedback("Uploading input image.");
-    setSubmitFeedbackTone("neutral");
-    const submitToastId = toast.loading("Uploading image…");
 
     try {
       const inputTask = inputTasks[0];
@@ -155,9 +143,6 @@ export function ActionFooter({
       }
 
       setSubmitPhase("submitting");
-      setSubmitFeedback("Running segmentation in playground mode.");
-      setSubmitFeedbackTone("neutral");
-      toast.loading("Processing…", { id: submitToastId });
 
       const response = await createPlaygroundSegment({
         taskId,
@@ -166,20 +151,10 @@ export function ActionFooter({
 
       setPlaygroundMasks(response.masks.map((mask) => mask.pngBase64));
       setJobStatus("completed");
-      setSubmitFeedback(
-        `Playground finished — ${response.masks.length} ${response.masks.length === 1 ? "mask" : "masks"} returned.`,
-      );
-      setSubmitFeedbackTone("success");
-      toast.success(
-        `${response.masks.length} ${response.masks.length === 1 ? "mask" : "masks"} generated.`,
-        { id: submitToastId },
-      );
     } catch (error) {
       console.error(error);
       const message = getStudioActionErrorMessage("submit", error);
-      setSubmitFeedback(message);
-      setSubmitFeedbackTone("error");
-      toast.error(message, { id: submitToastId });
+      toast.error(message);
     } finally {
       setSubmitPhase("idle");
     }
@@ -195,9 +170,6 @@ export function ActionFooter({
     downloadRequestIdRef.current += 1;
     setIsDownloading(false);
     setSubmitPhase("uploading");
-    setSubmitFeedback("Uploading input assets before queueing the job.");
-    setSubmitFeedbackTone("neutral");
-    const submitToastId = toast.loading("Uploading assets…");
 
     try {
       const uploadedTasks: SubmitInputTask[] = [...inputTasks];
@@ -218,9 +190,6 @@ export function ActionFooter({
       }
 
       setSubmitPhase("submitting");
-      setSubmitFeedback("Submitting the job to the queue.");
-      setSubmitFeedbackTone("neutral");
-      toast.loading("Queueing job…", { id: submitToastId });
 
       const preparedTasks = ensurePreparedTasks(uploadedTasks);
       const jobRequest = buildStudioJobRequest(preparedTasks, preparedPrompts, fps);
@@ -229,17 +198,10 @@ export function ActionFooter({
       setJobId(jobResponse.jobId);
       setJobStatus("queued");
       setTotalItems(jobResponse.totalItems);
-      setSubmitFeedback("Job queued. Refresh preview to check for progress.");
-      setSubmitFeedbackTone("success");
-      toast.success(`Job queued with ${jobResponse.totalItems} ${jobResponse.totalItems === 1 ? "task" : "tasks"}.`, {
-        id: submitToastId,
-      });
     } catch (error) {
       console.error(error);
       const message = getStudioActionErrorMessage("submit", error);
-      setSubmitFeedback(message);
-      setSubmitFeedbackTone("error");
-      toast.error(message, { id: submitToastId });
+      toast.error(message);
     } finally {
       setSubmitPhase("idle");
     }
@@ -251,22 +213,17 @@ export function ActionFooter({
     const requestId = downloadRequestIdRef.current + 1;
     downloadRequestIdRef.current = requestId;
     setIsDownloading(true);
-    const downloadToastId = toast.loading("Preparing artifacts for download…");
 
     try {
       let download = await createJobDownload(jobId);
 
       for (let attempt = 0; attempt < 60; attempt += 1) {
         if (downloadRequestIdRef.current !== requestId) {
-          toast.dismiss(downloadToastId);
           return;
         }
 
         if (download.status === "ready" && download.downloadUrl) {
           triggerBrowserDownload(download.downloadUrl);
-          toast.success("Download started. Your browser should open the artifact archive.", {
-            id: downloadToastId,
-          });
           return;
         }
 
@@ -281,7 +238,7 @@ export function ActionFooter({
       throw new Error("download_timeout");
     } catch (error) {
       console.error(error);
-      toast.error(getStudioActionErrorMessage("download", error), { id: downloadToastId });
+      toast.error(getStudioActionErrorMessage("download", error));
     } finally {
       if (downloadRequestIdRef.current === requestId) {
         setIsDownloading(false);
@@ -325,21 +282,6 @@ export function ActionFooter({
           </Button>
         ) : null}
       </div>
-
-      {!isPlaygroundMode ? (
-        <>
-          {disabledReason ? <NeutralFeedbackMessage className="mt-2">{disabledReason}</NeutralFeedbackMessage> : null}
-          {!disabledReason && submitFeedbackTone === "success" && submitFeedback ? (
-            <SuccessFeedbackMessage className="mt-2">{submitFeedback}</SuccessFeedbackMessage>
-          ) : null}
-          {!disabledReason && submitFeedbackTone === "neutral" && submitFeedback ? (
-            <NeutralFeedbackMessage className="mt-2">{submitFeedback}</NeutralFeedbackMessage>
-          ) : null}
-          {!disabledReason && submitFeedbackTone === "error" && submitFeedback ? (
-            <ErrorFeedbackMessage className="mt-2">{submitFeedback}</ErrorFeedbackMessage>
-          ) : null}
-        </>
-      ) : null}
 
       {isPlaygroundMode ? (
         <Alert className="border-amber-400/25 bg-amber-500/8 mt-3 rounded-[1rem] border px-3 py-3">
