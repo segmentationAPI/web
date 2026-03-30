@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Empty,

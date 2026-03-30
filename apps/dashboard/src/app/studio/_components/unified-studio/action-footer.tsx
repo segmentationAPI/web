@@ -102,67 +102,20 @@ export function ActionFooter({
     hasPrompts,
     isRunning: isRunning || isSubmitting,
   });
-  const runButtonLabel = isPlaygroundMode
-    ? submitPhase === "uploading"
-      ? "Uploading…"
-      : submitPhase === "submitting"
-        ? "Processing…"
-        : "Run Playground"
-    : submitPhase === "uploading"
+  const runButtonLabel =
+    submitPhase === "uploading"
       ? "Uploading…"
       : submitPhase === "submitting"
         ? "Queueing…"
-        : "Run Job";
+        : isPlaygroundMode
+          ? "Run Playground"
+          : "Run Job";
 
   useEffect(() => {
     return () => {
       downloadRequestIdRef.current += 1;
     };
   }, []);
-
-  const handleRunPlayground = async () => {
-    const preparedPrompts = sanitizeStudioPrompts(prompts);
-
-    if (!inputTasks.length || !preparedPrompts.length || isMissingActiveApiKey) {
-      return;
-    }
-
-    setSubmitPhase("uploading");
-
-    try {
-      const inputTask = inputTasks[0];
-      let taskId = inputTask.taskId;
-
-      if (!taskId || !inputTask.uploadUrl) {
-        const request: PresignRequest = { contentType: toSupportedContentType(inputTask.file) };
-        const response = await createPresignRequest(request);
-        await putToPresignedS3(response.uploadUrl, inputTask.file);
-        updateInputTask(0, response.taskId, response.uploadUrl);
-        taskId = response.taskId;
-      }
-
-      setSubmitPhase("submitting");
-
-      const preparedTasks = ensurePreparedTasks([
-        { ...inputTask, taskId: taskId!, uploadUrl: inputTask.uploadUrl || "dummy" },
-      ]);
-      const jobRequest = buildStudioJobRequest(preparedTasks, preparedPrompts, fps);
-      const jobResponse = await createPlaygroundJob({
-        ...jobRequest,
-        type: "image",
-      });
-
-      setJobId(jobResponse.jobId);
-      setJobStatus("queued");
-      setTotalItems(jobResponse.totalItems);
-    } catch (error) {
-      console.error(error);
-      const message = getStudioActionErrorMessage("submit", error);
-      toast.error(message);
-    } finally {
-      setSubmitPhase("idle");
-    }
-  };
 
   const handleRunJob = async () => {
     const preparedPrompts = sanitizeStudioPrompts(prompts);
@@ -197,7 +150,9 @@ export function ActionFooter({
 
       const preparedTasks = ensurePreparedTasks(uploadedTasks);
       const jobRequest = buildStudioJobRequest(preparedTasks, preparedPrompts, fps);
-      const jobResponse = await createJob(jobRequest);
+      const jobResponse = isPlaygroundMode
+        ? await createPlaygroundJob(jobRequest)
+        : await createJob(jobRequest);
 
       setJobId(jobResponse.jobId);
       setJobStatus("queued");
@@ -256,7 +211,7 @@ export function ActionFooter({
         <Button
           type="button"
           disabled={isRunDisabled}
-          onClick={isPlaygroundMode ? handleRunPlayground : handleRunJob}
+          onClick={handleRunJob}
           size="lg"
         >
           {isRunning || isSubmitting ? (
