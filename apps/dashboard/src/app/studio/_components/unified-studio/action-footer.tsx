@@ -18,7 +18,6 @@ import {
   usePrompts,
   useSetJobId,
   useSetJobStatus,
-  useSetPlaygroundMasks,
   useStatus,
   useSetTotalItems,
   useUpdateInputTask,
@@ -26,7 +25,7 @@ import {
 import {
   createJob,
   createJobDownload,
-  createPlaygroundSegment,
+  createPlaygroundJob,
   createPresignRequest,
   getJobDownload,
 } from "../../actions";
@@ -78,7 +77,7 @@ export function ActionFooter({
   const prompts = usePrompts();
   const setJobId = useSetJobId();
   const setJobStatus = useSetJobStatus();
-  const setPlaygroundMasks = useSetPlaygroundMasks();
+
   const status = useStatus();
   const setTotalItems = useSetTotalItems();
   const updateInputTask = useUpdateInputTask();
@@ -144,13 +143,18 @@ export function ActionFooter({
 
       setSubmitPhase("submitting");
 
-      const response = await createPlaygroundSegment({
-        taskId,
-        prompts: preparedPrompts,
+      const preparedTasks = ensurePreparedTasks([
+        { ...inputTask, taskId: taskId!, uploadUrl: inputTask.uploadUrl || "dummy" },
+      ]);
+      const jobRequest = buildStudioJobRequest(preparedTasks, preparedPrompts, fps);
+      const jobResponse = await createPlaygroundJob({
+        ...jobRequest,
+        type: "image",
       });
 
-      setPlaygroundMasks(response.masks.map((mask) => mask.pngBase64));
-      setJobStatus("completed");
+      setJobId(jobResponse.jobId);
+      setJobStatus("queued");
+      setTotalItems(jobResponse.totalItems);
     } catch (error) {
       console.error(error);
       const message = getStudioActionErrorMessage("submit", error);

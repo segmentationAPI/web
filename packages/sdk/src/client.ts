@@ -148,10 +148,8 @@ export class SegmentationClient {
     });
   }
 
-  async createPlaygroundSegment(
-    request: PlaygroundSegmentRequest,
-  ): Promise<PlaygroundSegmentResponse> {
-    const url = `${API_BASE_URL}/playground/segment`;
+  async createPlaygroundJob(job: JobRequest): Promise<JobResponse> {
+    const url = `${API_BASE_URL}/playground/jobs`;
     return postRequest({
       url,
       init: {
@@ -159,9 +157,9 @@ export class SegmentationClient {
           "x-api-key": this.apiKey,
         },
       },
-      body: request,
-      requestSchema: PlaygroundSegmentRequestSchema,
-      responseSchema: PlaygroundSegmentResponseSchema,
+      body: job,
+      requestSchema: JobRequestSchema,
+      responseSchema: JobResponseSchema,
     });
   }
 
