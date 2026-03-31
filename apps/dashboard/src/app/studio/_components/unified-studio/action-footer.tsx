@@ -33,7 +33,6 @@ import {
   buildStudioJobRequest,
   ensurePreparedTasks,
   getStudioActionErrorMessage,
-  getStudioRunDisabledReason,
   isStudioJobRunning,
   sanitizeStudioPrompts,
   toSupportedContentType,
@@ -94,14 +93,6 @@ export function ActionFooter({
     !isValidInput || isRunning || isBillingBlocked || isMissingActiveApiKey || isSubmitting;
   const isDownloadDisabled = !jobId || status !== "completed" || isDownloading;
   const downloadButtonLabel = isDownloading ? "Preparing Download…" : "Download Artifacts";
-  const hasPrompts = sanitizeStudioPrompts(prompts).length > 0;
-  const disabledReason = getStudioRunDisabledReason({
-    hasBillingBlock: isBillingBlocked,
-    hasActiveApiKey,
-    hasInputs: inputTasks.length > 0,
-    hasPrompts,
-    isRunning: isRunning || isSubmitting,
-  });
   const runButtonLabel =
     submitPhase === "uploading"
       ? "Uploading…"
@@ -120,7 +111,12 @@ export function ActionFooter({
   const handleRunJob = async () => {
     const preparedPrompts = sanitizeStudioPrompts(prompts);
 
-    if (!inputTasks.length || !preparedPrompts.length || isBillingBlocked || isMissingActiveApiKey) {
+    if (
+      !inputTasks.length ||
+      !preparedPrompts.length ||
+      isBillingBlocked ||
+      isMissingActiveApiKey
+    ) {
       return;
     }
 
@@ -208,12 +204,7 @@ export function ActionFooter({
   return (
     <div className="border-border/30 shrink-0 border-t px-4 py-3 sm:px-5">
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          disabled={isRunDisabled}
-          onClick={handleRunJob}
-          size="lg"
-        >
+        <Button type="button" disabled={isRunDisabled} onClick={handleRunJob} size="lg">
           {isRunning || isSubmitting ? (
             <>
               <Loader2 className="size-3.5 animate-spin" />
@@ -237,20 +228,24 @@ export function ActionFooter({
             disabled={isDownloadDisabled}
             onClick={handleDownloadArtifacts}
           >
-            {isDownloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+            {isDownloading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
           </Button>
         ) : null}
       </div>
 
       {isPlaygroundMode ? (
-        <Alert className="border-amber-400/25 bg-amber-500/8 mt-3 rounded-[1rem] border px-3 py-3">
+        <Alert className="mt-3 rounded-[1rem] border border-amber-400/25 bg-amber-500/8 px-3 py-3">
           <AlertTriangle className="mt-0.5 size-4 text-amber-300" aria-hidden />
           <AlertTitle className="font-mono text-[11px] tracking-[0.14em] uppercase">
             Playground Mode
           </AlertTitle>
           <AlertDescription>
-            You are using playground mode with limited features. Attach a credit card to unlock batch
-            processing, video support, and downloadable artifacts.
+            You are using playground mode with limited features. Attach a credit card to unlock
+            batch processing, video support, and downloadable artifacts.
           </AlertDescription>
           <AlertAction className="static mt-3 sm:absolute sm:mt-0">
             <Link
@@ -288,7 +283,7 @@ export function ActionFooter({
           </AlertAction>
         </Alert>
       ) : isMissingActiveApiKey ? (
-        <Alert className="border-amber-400/25 bg-amber-500/8 mt-3 rounded-[1rem] border px-3 py-3">
+        <Alert className="mt-3 rounded-[1rem] border border-amber-400/25 bg-amber-500/8 px-3 py-3">
           <AlertTriangle className="mt-0.5 size-4 text-amber-300" aria-hidden />
           <AlertTitle className="font-mono text-[11px] tracking-[0.14em] uppercase">
             Active API Key Required

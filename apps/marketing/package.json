@@ -5,7 +5,12 @@
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "pnpm exec oxlint --type-aware --type-check .",
+    "lint:fix": "pnpm exec oxlint --type-aware --type-check --fix .",
+    "format": "pnpm exec oxfmt --write .",
+    "format:check": "pnpm exec oxfmt --check .",
+    "check-types": "pnpm exec tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

@@ -10,11 +10,7 @@ type LoginSearchParams = {
   error?: string;
 };
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<LoginSearchParams>;
-}) {
+export default function LoginPage({ searchParams }: { searchParams: Promise<LoginSearchParams> }) {
   return (
     <Suspense fallback={<LoginFallback />}>
       <LoginContent searchParams={searchParams} />
@@ -22,11 +18,7 @@ export default function LoginPage({
   );
 }
 
-async function LoginContent({
-  searchParams,
-}: {
-  searchParams: Promise<LoginSearchParams>;
-}) {
+async function LoginContent({ searchParams }: { searchParams: Promise<LoginSearchParams> }) {
   const [requestHeaders, resolvedSearchParams] = await Promise.all([headers(), searchParams]);
   const session = await auth.api.getSession({
     headers: requestHeaders,

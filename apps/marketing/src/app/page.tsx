@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { env } from "@segmentation/env/marketing";
 import { ArrowRight } from "lucide-react";
 

@@ -26,10 +26,14 @@ export async function StudioPageContent() {
 
         <div className="grid min-h-0 flex-1 xl:grid-cols-[320px_minmax(0,1fr)]">
           <ControlsPanel isPlaygroundMode={isPlaygroundMode} />
-          <PreviewPanel isPlaygroundMode={isPlaygroundMode} />
+          <PreviewPanel />
         </div>
 
-        <ActionFooter billingState={billingState} hasActiveApiKey={hasActiveApiKey} isPlaygroundMode={isPlaygroundMode} />
+        <ActionFooter
+          billingState={billingState}
+          hasActiveApiKey={hasActiveApiKey}
+          isPlaygroundMode={isPlaygroundMode}
+        />
       </DashboardPanelShell>
     </DashboardPageShell>
   );

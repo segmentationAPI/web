@@ -141,7 +141,10 @@ export function BillingPageContent({ billingState }: { billingState: DynamoBilli
         {!presentation.isReady ? (
           <p className="text-muted-foreground text-xs leading-6">
             Studio remains locked until billing is ready. Manage this from{" "}
-            <Link href={presentation.ctaHref} className="text-foreground underline underline-offset-4">
+            <Link
+              href={presentation.ctaHref}
+              className="text-foreground underline underline-offset-4"
+            >
               Billing
             </Link>
             .

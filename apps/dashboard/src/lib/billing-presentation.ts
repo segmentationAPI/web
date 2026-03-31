@@ -15,11 +15,10 @@ export type BillingGateState = {
 export function getBillingGateState(billingState: DynamoBillingState | null): BillingGateState {
   const hasBillingSetup = Boolean(
     billingState?.stripeCustomerId ||
-      billingState?.stripeSubscriptionId ||
-      billingState?.stripeSubscriptionStatus,
+    billingState?.stripeSubscriptionId ||
+    billingState?.stripeSubscriptionStatus,
   );
   const usageEnabled = billingState?.accessStatus === "allowed";
-  const canRunJobs = hasBillingSetup && usageEnabled;
 
   if (!hasBillingSetup) {
     return {

@@ -21,7 +21,11 @@ import {
 } from "../../_store/studio.store";
 import MediaPreview from "@/components/studio/media-preview";
 import { getJobStatus, getOutputManifest } from "../../actions";
-import { getStudioActionErrorMessage, hasTerminalStudioItems, extractManifestPreviewUrls } from "../../utils";
+import {
+  getStudioActionErrorMessage,
+  hasTerminalStudioItems,
+  extractManifestPreviewUrls,
+} from "../../utils";
 
 function EmptyPreview() {
   const jobId = useJobId();
@@ -95,8 +99,7 @@ function EmptyPreview() {
   );
 }
 
-
-export function PreviewPanel({ isPlaygroundMode }: { isPlaygroundMode: boolean }) {
+export function PreviewPanel() {
   const outputLinks = useOutputLinks();
   const inputType = useInputType();
   const [selectedIndex, setSelectedIndex] = useState(0);

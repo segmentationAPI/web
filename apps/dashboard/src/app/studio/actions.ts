@@ -77,9 +77,7 @@ export async function getOutputManifest(jobId: string): Promise<OutputManifest> 
   return segmentationClient.getOutputManifest(jobId);
 }
 
-export async function createPlaygroundJob(
-  request: JobRequest,
-): Promise<JobResponse> {
+export async function createPlaygroundJob(request: JobRequest): Promise<JobResponse> {
   const segmentationClient = await createAuthenticatedSegmentationClient();
   return segmentationClient.createPlaygroundJob(request);
 }

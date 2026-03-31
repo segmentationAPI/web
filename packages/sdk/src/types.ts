@@ -134,4 +134,3 @@ export interface PresignResponse {
   readonly taskId: string;
   readonly expiresIn: number;
 }
-

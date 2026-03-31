@@ -339,10 +339,9 @@ export default function JobsPage() {
             <span className="text-foreground font-mono text-sm">/v1/jobs/{"{jobId}"}</span>
           </div>
           <p>
-            Fetch full details for a single job including per-task status. Each task moves
-            through <DocsInlineCode>queued</DocsInlineCode> →{" "}
-            <DocsInlineCode>processing</DocsInlineCode> → <DocsInlineCode>success</DocsInlineCode> |{" "}
-            <DocsInlineCode>failed</DocsInlineCode>.
+            Fetch full details for a single job including per-task status. Each task moves through{" "}
+            <DocsInlineCode>queued</DocsInlineCode> → <DocsInlineCode>processing</DocsInlineCode> →{" "}
+            <DocsInlineCode>success</DocsInlineCode> | <DocsInlineCode>failed</DocsInlineCode>.
           </p>
 
           <DocsCodeBlock code={getJobRequest} label="Request" />

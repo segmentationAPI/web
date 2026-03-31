@@ -1,9 +1,6 @@
 import "server-only";
 
-import {
-  SegmentationClient,
-  type JobListItemResponse,
-} from "@segmentationapi/sdk";
+import { SegmentationClient, type JobListItemResponse } from "@segmentationapi/sdk";
 import { db } from "@segmentation/db";
 import { apiKey } from "@segmentation/db/schema/app";
 import { desc, eq } from "drizzle-orm";
@@ -27,9 +24,7 @@ function parseSdkDate(value: string) {
   return Number.isNaN(parsed.getTime()) ? new Date(0) : parsed;
 }
 
-function toListedJobSummary(
-  job: JobListItemResponse,
-): ListedJobSummary {
+function toListedJobSummary(job: JobListItemResponse): ListedJobSummary {
   return {
     id: job.jobId,
     modality: job.type === "video" ? "video" : "image",

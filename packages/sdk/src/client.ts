@@ -9,8 +9,6 @@ import {
   JobResponseSchema,
   JobStatusResponseSchema,
   OutputManifestSchema,
-  PlaygroundSegmentRequestSchema,
-  PlaygroundSegmentResponseSchema,
   PresignRequestSchema,
   PresignResponseSchema,
 } from "./schemas";
@@ -24,8 +22,6 @@ import type {
   JobStatusResponse,
   ListJobsParams,
   OutputManifest,
-  PlaygroundSegmentRequest,
-  PlaygroundSegmentResponse,
   PresignRequest,
   PresignResponse,
 } from "./types";

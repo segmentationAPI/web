@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { toast } from "sonner";
 
@@ -27,7 +27,7 @@ export default function UserMenu() {
   const [isSavingApiKey, setIsSavingApiKey] = useState(false);
   const lastSavedValueRef = useRef<string | null>(null);
 
-  async function handleSetActiveApiKey(apiKey: string) {
+  const handleSetActiveApiKey = useEffectEvent(async (apiKey: string) => {
     setError(null);
     setIsSavingApiKey(true);
 
@@ -53,7 +53,7 @@ export default function UserMenu() {
     } finally {
       setIsSavingApiKey(false);
     }
-  }
+  });
 
   useEffect(() => {
     const trimmedValue = activeApiKeyInput.trim();
@@ -144,7 +144,7 @@ export default function UserMenu() {
               variant="ghost"
               className="text-destructive hover:bg-destructive/10 hover:text-destructive w-full justify-start rounded-md"
               onClick={() => {
-                authClient.signOut({
+                void authClient.signOut({
                   fetchOptions: {
                     onSuccess: () => {
                       router.push("/");

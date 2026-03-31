@@ -10,6 +10,12 @@
     }
   },
   "scripts": {
+    "build": "pnpm exec tsc -p tsconfig.json",
+    "lint": "pnpm exec oxlint --type-aware --type-check .",
+    "lint:fix": "pnpm exec oxlint --type-aware --type-check --fix .",
+    "format": "pnpm exec oxfmt --write .",
+    "format:check": "pnpm exec oxfmt --check .",
+    "check-types": "pnpm exec tsc --noEmit -p tsconfig.json",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",

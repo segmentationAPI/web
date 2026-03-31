@@ -5,7 +5,12 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "pnpm exec oxlint --type-aware --type-check .",
+    "lint:fix": "pnpm exec oxlint --type-aware --type-check --fix .",
+    "format": "pnpm exec oxfmt --write .",
+    "format:check": "pnpm exec oxfmt --check .",
+    "check-types": "pnpm exec tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1006.0",

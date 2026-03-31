@@ -1,7 +1,3 @@
 {
-  "plugins": ["import", "typescript", "eslint", "react", "react-perf", "nextjs", "oxc"],
-  "options": {
-    "typeAware": true,
-    "typeCheck": true
-  }
+  "plugins": ["import", "typescript", "eslint", "react", "react-perf", "nextjs", "oxc"]
 }
