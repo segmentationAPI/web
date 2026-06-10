@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+import { getAllBlogPosts } from "@/lib/blog";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Use production URL if available, fallback to Vercel preview URLs, then localhost
   const baseUrl =
     process.env.NEXT_PUBLIC_MARKETING_URL ||
@@ -13,6 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     "",
     "/pricing",
+    "/blog",
     "/docs",
     "/docs/authentication",
     "/docs/jobs",
@@ -20,10 +23,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/docs/upload",
   ];
 
-  return routes.map((route) => ({
-    url: `${baseUrl}${route}`,
-    lastModified: new Date(),
-    changeFrequency: route === "" ? "yearly" : "monthly",
-    priority: route === "" ? 1 : 0.8,
+  const staticRoutes: MetadataRoute.Sitemap = routes.map((route) => {
+    const isHome = route === "";
+
+    return {
+      url: `${baseUrl}${route}`,
+      lastModified: new Date(),
+      changeFrequency: isHome ? "yearly" : "monthly",
+      priority: isHome ? 1 : 0.8,
+    };
+  });
+
+  const blogRoutes = (await getAllBlogPosts()).map((post) => ({
+    url: `${baseUrl}${post.href}`,
+    lastModified: new Date(post.metadata.updatedAt ?? post.metadata.publishedAt),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
   }));
+
+  return [...staticRoutes, ...blogRoutes];
 }

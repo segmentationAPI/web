@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, Menu } from "lucide-react";
@@ -12,6 +13,7 @@ import { Button } from "./ui/button";
 const marketingLinks = [
   { href: "/#features", label: "Features" },
   { href: "/docs", label: "Docs" },
+  { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
 ] as const;
 
@@ -45,7 +47,7 @@ export default function MarketingMobileNav({ appUrl }: { appUrl: string }) {
             {marketingLinks.map((link) => (
               <Link
                 key={link.href}
-                href={link.href}
+                href={link.href as Route}
                 onClick={() => setOpen(false)}
                 className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl px-3 py-2.5 font-mono text-sm tracking-[0.12em] uppercase transition-colors"
               >

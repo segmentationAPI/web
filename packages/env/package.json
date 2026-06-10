@@ -15,14 +15,14 @@
     "check-types": "pnpm exec tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@t3-oss/env-core": "^0.13.10",
-    "@t3-oss/env-nextjs": "^0.13.10",
+    "@t3-oss/env-core": "^0.13.11",
+    "@t3-oss/env-nextjs": "^0.13.11",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@segmentation/config": "workspace:*",
-    "@types/node": "^25.4.0",
+    "@types/node": "^25.9.2",
     "typescript": "catalog:"
   }
 }

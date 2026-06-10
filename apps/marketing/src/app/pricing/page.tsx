@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import TokenPricingCard from "@/components/token-pricing-card";
-import { FeatureStatCard, ToneChip } from "@/components/marketing-primitives";
+import { FeatureStatCard } from "@/components/marketing-primitives";
 import { Card, CardContent } from "@/components/ui/card";
 import { Cpu, Database, Eye, Gauge, ScanSearch, ShieldCheck, Sparkles } from "lucide-react";
 
@@ -57,10 +57,6 @@ export default function PricingPage() {
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 pt-6 pb-20 sm:gap-10 sm:px-8 sm:pt-8">
       <section className="reveal space-y-5 sm:space-y-6">
-        <ToneChip>
-          <Sparkles className="h-4 w-4" />
-          Pricing
-        </ToneChip>
         <div className="space-y-3 sm:space-y-4">
           <h1 className="font-display text-3xl tracking-tight sm:text-5xl lg:text-6xl">
             Token pricing that stays predictable.

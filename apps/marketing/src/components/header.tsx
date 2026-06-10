@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { Route } from "next";
 import Link from "next/link";
 
 import { env } from "@segmentation/env/marketing";
@@ -34,6 +35,9 @@ export default function Header() {
           </Link>
           <Link href="/docs" className="hover:text-foreground transition-colors">
             Docs
+          </Link>
+          <Link href={"/blog" as Route} className="hover:text-foreground transition-colors">
+            Blog
           </Link>
           <Link href="/pricing" className="hover:text-foreground transition-colors">
             Pricing

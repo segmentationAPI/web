@@ -1,0 +1,58 @@
+export const metadata = {
+  title: "How to plan a production SAM 3 segmentation workflow",
+  description:
+    "A practical checklist for turning prompt-based segmentation into a reliable product workflow.",
+  publishedAt: "2026-06-10",
+  tags: ["SAM 3", "API"],
+  published: true,
+};
+
+# How to plan a production SAM 3 segmentation workflow
+
+Prompt-based segmentation is easy to demo and harder to operate at product scale. The teams that get reliable results usually design the workflow around three constraints: upload reliability, repeatable prompts, and reviewable outputs.
+
+SegmentationAPI keeps those pieces close together so engineering teams can ship segmentation features without first building GPU orchestration, asset storage, or preview tooling.
+
+## Start with stable inputs
+
+The best segmentation systems make input handling boring:
+
+- Upload images and video through short-lived URLs instead of sending large files through your app server.
+- Store a task ID as soon as the upload is accepted.
+- Keep the original media available long enough for QA, audits, and customer support.
+
+This gives your product a durable handoff point before inference starts.
+
+<Callout title="Production note">
+  Treat upload completion as the boundary between user interaction and background processing. Your
+  UI can stay responsive while the segmentation job runs asynchronously.
+</Callout>
+
+## Make prompts reusable
+
+SAM 3 prompts work best when they are treated as product configuration, not one-off strings. Name the prompt, version it, and record which prompt was used for each job.
+
+| Prompt target | Example prompt       | Why it helps                                         |
+| ------------- | -------------------- | ---------------------------------------------------- |
+| Ecommerce     | `foreground product` | Removes background clutter for catalog tooling.      |
+| Media review  | `person`             | Keeps moderation and redaction workflows consistent. |
+| Annotation    | `vehicle`            | Speeds up downstream labeling without manual masks.  |
+
+## Return outputs that humans can inspect
+
+Production segmentation is not only about the mask file. Teams also need previews, status, confidence metadata, and a way to retry or compare results.
+
+With SegmentationAPI, the normal flow is:
+
+1. Request a presigned upload URL.
+2. Submit one or more task IDs with prompts.
+3. Poll the job until the masks and previews are ready.
+4. Store the returned result URLs with your own product object.
+
+That pattern keeps your application focused on product logic while the segmentation pipeline handles model execution and output packaging.
+
+## Keep the first integration small
+
+Launch with one well-defined segmentation target before expanding to every media workflow. A narrow first use case makes prompt quality, latency expectations, and review UX much easier to tune.
+
+When the first workflow is stable, add additional prompts and media types using the same upload-then-segment foundation.
