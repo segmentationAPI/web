@@ -31,7 +31,7 @@
     "@segmentation/config": "workspace:*",
     "@types/node": "^25.4.0",
     "lefthook": "^2.1.3",
-    "oxfmt": "^0.37.0",
+    "oxfmt": "catalog:",
     "oxlint": "^1.52.0",
     "oxlint-tsgolint": "^0.16.0",
     "turbo": "^2.8.16",
