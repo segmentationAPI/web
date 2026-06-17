@@ -58,9 +58,9 @@ export default function AuthenticationPage() {
         <DocsProse>
           <DocsH2>API Key Header</DocsH2>
           <p>
-            Include the <DocsInlineCode>x-api-key</DocsInlineCode> header on every request to{" "}
-            <DocsInlineCode>/v1/uploads/presign</DocsInlineCode> and{" "}
-            <DocsInlineCode>/v1/jobs</DocsInlineCode> endpoints.
+            Include the <DocsInlineCode>x-api-key</DocsInlineCode> header on every request to the{" "}
+            <DocsInlineCode>/v1/*</DocsInlineCode> endpoints — presign, job creation, status,
+            listing, and downloads all require it.
           </p>
 
           <DocsCodeBlock code={exampleHeader} label="Example request" />

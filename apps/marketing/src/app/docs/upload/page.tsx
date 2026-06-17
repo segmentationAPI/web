@@ -223,12 +223,27 @@ export default function UploadFlowPage() {
                   </code>
                   {", "}
                   <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    video/quicktime
+                  </code>
+                  {", "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
                     video/webm
+                  </code>
+                  {", "}
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    video/x-matroska
                   </code>
                 </TableCell>
               </TableRow>
             </TableBody>
           </Table>
+
+          <DocsCallout>
+            Any <DocsInlineCode>image/*</DocsInlineCode> or <DocsInlineCode>video/*</DocsInlineCode>{" "}
+            MIME type is accepted — the types above are the common, well-tested ones. The{" "}
+            <DocsInlineCode>Content-Type</DocsInlineCode> you presign with is what your PUT must
+            send.
+          </DocsCallout>
         </DocsProse>
       </DocsSection>
 

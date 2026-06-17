@@ -1,6 +1,7 @@
 import {
   BookOpen,
   CloudUpload,
+  Download,
   FlaskConical,
   Layers,
   ShieldCheck,
@@ -40,9 +41,16 @@ export const docsPages = [
   {
     href: "/docs/jobs",
     title: "Jobs",
-    description: "Create segmentation jobs, track status, and retrieve finished results.",
+    description: "Create segmentation jobs, track status, and list job history.",
     group: "API Reference",
     icon: Layers,
+  },
+  {
+    href: "/docs/results",
+    title: "Results",
+    description: "Request the results archive, poll until ready, and read the output manifest.",
+    group: "API Reference",
+    icon: Download,
   },
   {
     href: "/docs/sam3-alternatives",

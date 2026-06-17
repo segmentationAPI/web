@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { CloudUpload, Layers, ShieldCheck, FlaskConical, ArrowRight } from "lucide-react";
+import { CloudUpload, Layers, ShieldCheck, FlaskConical, Download, ArrowRight } from "lucide-react";
 
 import { docsPages } from "@/components/docs-config";
 import { DocsPageNav } from "@/components/docs-page-nav";
@@ -24,6 +24,7 @@ const sectionIcons = {
   "/docs/authentication": ShieldCheck,
   "/docs/upload": CloudUpload,
   "/docs/jobs": Layers,
+  "/docs/results": Download,
   "/docs/sam3-alternatives": FlaskConical,
 } as const;
 
@@ -55,6 +56,16 @@ const endpoints = [
     path: "/v1/jobs/{jobId}",
     description: "Retrieve per-item status for a specific job.",
   },
+  {
+    method: "POST" as const,
+    path: "/v1/jobs/{jobId}/download",
+    description: "Request a downloadable results archive once a job has succeeded.",
+  },
+  {
+    method: "GET" as const,
+    path: "/v1/jobs/{jobId}/download",
+    description: "Poll archive readiness and get the presigned download URL.",
+  },
 ];
 
 export default function DocsOverviewPage() {
@@ -67,7 +78,7 @@ export default function DocsOverviewPage() {
           <>
             SegmentationAPI provides a simple upload-then-segment workflow powered by Meta&apos;s
             SAM 3. Upload media, submit segmentation jobs with text prompts, and retrieve
-            high-quality masks through four REST endpoints.
+            high-quality masks through a handful of REST endpoints.
           </>
         }
       />
@@ -90,7 +101,13 @@ export default function DocsOverviewPage() {
             <li>
               <strong>Retrieve</strong> — Poll{" "}
               <code className="text-secondary font-mono text-sm">GET /v1/jobs/{"{jobId}"}</code>{" "}
-              until processing completes, then download masks from the result URLs.
+              until the job succeeds, then request a results archive via{" "}
+              <code className="text-secondary font-mono text-sm">
+                POST /v1/jobs/{"{jobId}"}/download
+              </code>{" "}
+              and read{" "}
+              <code className="text-secondary font-mono text-sm">output_manifest.json</code> from
+              the downloaded zip.
             </li>
           </ul>
         </DocsProse>

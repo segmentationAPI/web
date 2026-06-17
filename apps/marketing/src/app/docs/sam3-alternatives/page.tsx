@@ -521,7 +521,7 @@ export default function Sam3AlternativesPage() {
         </DocsProse>
       </DocsSection>
 
-      <DocsPageNav prev={{ href: "/docs/jobs", title: "Jobs" }} />
+      <DocsPageNav prev={{ href: "/docs/results", title: "Results" }} />
     </>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import {
   Table,
@@ -48,13 +49,14 @@ const createVideoJob = `curl -X POST \\
     "type": "video",
     "tasks": ["0001_e5f6g7h8"],
     "prompts": ["person"],
+    "scoreThreshold": 0.5,
+    "fps": 6,
     "generatePreview": true
   }'`;
 
 const createJobResponse = `{
   "jobId": "job-abc-987",
   "type": "image",
-  "status": "queued",
   "totalItems": 1
 }`;
 
@@ -67,7 +69,7 @@ const listJobsResponse = `{
     {
       "jobId": "job-abc-987",
       "type": "image",
-      "status": "completed",
+      "status": "success",
       "totalItems": 1,
       "createdAt": "2026-03-07T12:00:00Z",
       "updatedAt": "2026-03-07T12:01:00Z"
@@ -84,6 +86,7 @@ const getJobResponse = `{
   "userId": "user-123",
   "jobId": "job-abc-987",
   "type": "image",
+  "error": "",
   "tasks": [
     {
       "taskId": "0000_a1b2c3d4",
@@ -120,9 +123,18 @@ export default function JobsPage() {
             <DocsInlineCode>&quot;video&quot;</DocsInlineCode>), a{" "}
             <DocsInlineCode>tasks</DocsInlineCode> array of task IDs from the upload flow, and a{" "}
             <DocsInlineCode>prompts</DocsInlineCode> array with at least one non-empty text phrase.
+            Image and video jobs accept different tuning parameters — see the dedicated tables
+            below.
           </p>
 
-          <DocsH3>Request Body</DocsH3>
+          <DocsCallout>
+            <strong>Fields are validated per job type.</strong> Sending a parameter that
+            doesn&apos;t belong to the job&apos;s <DocsInlineCode>type</DocsInlineCode> (for example{" "}
+            <DocsInlineCode>maskThreshold</DocsInlineCode> on a video job) is rejected with a{" "}
+            <DocsInlineCode>400</DocsInlineCode>.
+          </DocsCallout>
+
+          <DocsH3>Common Fields</DocsH3>
           <Table className="my-4">
             <TableHeader>
               <TableRow className="border-border/30 hover:bg-transparent">
@@ -176,7 +188,8 @@ export default function JobsPage() {
                 </TableCell>
                 <TableCell className="text-muted-foreground">Yes</TableCell>
                 <TableCell className="text-muted-foreground">
-                  1–100 task IDs from presign uploads
+                  Task IDs from presign uploads. Up to 100 for image jobs;{" "}
+                  <strong>exactly one</strong> for video jobs.
                 </TableCell>
               </TableRow>
               <TableRow className="border-border/15">
@@ -192,39 +205,7 @@ export default function JobsPage() {
                 </TableCell>
                 <TableCell className="text-muted-foreground">Yes</TableCell>
                 <TableCell className="text-muted-foreground">
-                  Text prompts for segmentation targets
-                </TableCell>
-              </TableRow>
-              <TableRow className="border-border/15">
-                <TableCell>
-                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                    threshold
-                  </code>
-                </TableCell>
-                <TableCell>
-                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                    number
-                  </code>
-                </TableCell>
-                <TableCell className="text-muted-foreground">No</TableCell>
-                <TableCell className="text-muted-foreground">
-                  Detection confidence threshold (0–1, image only)
-                </TableCell>
-              </TableRow>
-              <TableRow className="border-border/15">
-                <TableCell>
-                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                    maskThreshold
-                  </code>
-                </TableCell>
-                <TableCell>
-                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
-                    number
-                  </code>
-                </TableCell>
-                <TableCell className="text-muted-foreground">No</TableCell>
-                <TableCell className="text-muted-foreground">
-                  Mask binarization threshold (0–1, image only)
+                  At least one non-empty text prompt for segmentation targets
                 </TableCell>
               </TableRow>
               <TableRow className="border-border/15">
@@ -240,7 +221,151 @@ export default function JobsPage() {
                 </TableCell>
                 <TableCell className="text-muted-foreground">No</TableCell>
                 <TableCell className="text-muted-foreground">
-                  Generate overlay preview image/video
+                  Default <DocsInlineCode>false</DocsInlineCode>. When true, renders a preview
+                  artifact — a composited PNG overlay for images, or a baked MP4 for video.
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+
+          <DocsH3>Image Parameters</DocsH3>
+          <Table className="my-4">
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Field
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Type
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Default
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Description
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    threshold
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    number
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">0.5</TableCell>
+                <TableCell className="text-muted-foreground">
+                  Detection confidence threshold (0–1). Higher keeps fewer, more confident
+                  detections.
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    maskThreshold
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    number
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">0.5</TableCell>
+                <TableCell className="text-muted-foreground">
+                  Mask binarization threshold (0–1).
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+
+          <DocsH3>Video Parameters</DocsH3>
+          <Table className="my-4">
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Field
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Type
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Default
+                </TableHead>
+                <TableHead className="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Description
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    scoreThreshold
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    number
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">0.0</TableCell>
+                <TableCell className="text-muted-foreground">
+                  Per-object detection score threshold (0–1).
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    fps
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    number
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">—</TableCell>
+                <TableCell className="text-muted-foreground">
+                  Sample the video at this frame rate (&gt; 0). Mutually exclusive with{" "}
+                  <DocsInlineCode>numFrames</DocsInlineCode>.
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    numFrames
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    integer
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">—</TableCell>
+                <TableCell className="text-muted-foreground">
+                  Sample exactly this many evenly-spaced frames (&gt; 0). Mutually exclusive with{" "}
+                  <DocsInlineCode>fps</DocsInlineCode>.
+                </TableCell>
+              </TableRow>
+              <TableRow className="border-border/15">
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    maxFrames
+                  </code>
+                </TableCell>
+                <TableCell>
+                  <code className="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    integer
+                  </code>
+                </TableCell>
+                <TableCell className="text-muted-foreground">—</TableCell>
+                <TableCell className="text-muted-foreground">
+                  Upper bound on the number of frames processed (&gt; 0).
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -341,7 +466,13 @@ export default function JobsPage() {
           <p>
             Fetch full details for a single job including per-task status. Each task moves through{" "}
             <DocsInlineCode>queued</DocsInlineCode> → <DocsInlineCode>processing</DocsInlineCode> →{" "}
-            <DocsInlineCode>success</DocsInlineCode> | <DocsInlineCode>failed</DocsInlineCode>.
+            <DocsInlineCode>success</DocsInlineCode> | <DocsInlineCode>failed</DocsInlineCode>. This
+            response carries no mask data — poll it until the job succeeds, then retrieve masks via
+            the{" "}
+            <Link href="/docs/results" className="text-primary underline underline-offset-3">
+              Results
+            </Link>{" "}
+            flow.
           </p>
 
           <DocsCodeBlock code={getJobRequest} label="Request" />
@@ -392,7 +523,7 @@ export default function JobsPage() {
                   </code>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  All tasks completed — masks are available
+                  Finished — request the results archive to download masks
                 </TableCell>
               </TableRow>
               <TableRow className="border-border/15">
@@ -417,7 +548,7 @@ export default function JobsPage() {
 
       <DocsPageNav
         prev={{ href: "/docs/upload", title: "Upload Flow" }}
-        next={{ href: "/docs/sam3-alternatives", title: "SAM3 Alternatives" }}
+        next={{ href: "/docs/results", title: "Results" }}
       />
     </>
   );
