@@ -1,10 +1,16 @@
 import type { MetadataRoute } from "next";
 
 import { getAllBlogPosts } from "@/lib/blog";
-import { getBaseUrl } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = getBaseUrl();
+  // Use production URL if available, fallback to Vercel preview URLs, then localhost
+  const baseUrl =
+    process.env.NEXT_PUBLIC_MARKETING_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000");
 
   const routes = [
     "",
@@ -13,7 +19,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/docs",
     "/docs/authentication",
     "/docs/jobs",
-    "/docs/results",
     "/docs/sam3-alternatives",
     "/docs/upload",
   ];
