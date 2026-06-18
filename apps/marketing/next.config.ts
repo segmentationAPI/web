@@ -16,9 +16,6 @@ const nextConfig: NextConfig = {
     remotePatterns: [new URL("https://assets.segmentationapi.com/images/**")],
   },
   pageExtensions: ["js", "jsx", "ts", "tsx", "mdx"],
-  images: {
-    remotePatterns: [{ protocol: "https", hostname: "assets.segmentationapi.com" }],
-  },
 };
 
 export default withMDX(nextConfig);
