@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   reactCompiler: true,
   cacheComponents: true,
+  images: {
+    remotePatterns: [new URL("https://assets.segmentationapi.com/images/**")],
+  },
   pageExtensions: ["js", "jsx", "ts", "tsx", "mdx"],
 };
 

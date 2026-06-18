@@ -32,7 +32,10 @@ export const metadata = {
 
 ## Images and MDX components
 
-- Prefer images stored in `apps/marketing/public` and referenced with root-relative paths like `/blog/example.png`.
+- Prefer shared blog images hosted from `https://assets.segmentationapi.com/images/`.
+- Store blog image objects in the `segmentationapi-blog-assets` S3 bucket under the `images/` prefix. For example, `s3://segmentationapi-blog-assets/images/example.webp` is served at `https://assets.segmentationapi.com/images/example.webp`.
+- AVIF files are fine for blog assets; upload them with the `image/avif` content type.
+- Local-only images can still live in `apps/marketing/public` and be referenced with root-relative paths like `/blog/example.png`.
 - Markdown images are supported. If width and height are needed, use the global MDX `Image` component:
 
 ```mdx
