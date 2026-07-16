@@ -62,11 +62,9 @@ function triggerBrowserDownload(url: string) {
 
 export function ActionFooter({
   billingState,
-  hasActiveApiKey,
   isPlaygroundMode,
 }: {
   billingState: DynamoBillingState | null;
-  hasActiveApiKey: boolean;
   isPlaygroundMode: boolean;
 }) {
   const isValidInput = useIsValidInput();
@@ -87,10 +85,8 @@ export function ActionFooter({
   const isRunning = isStudioJobRunning(status);
   const billingGate = getBillingGateState(billingState);
   const isBillingBlocked = !isPlaygroundMode && !billingGate.canRunJobs;
-  const isMissingActiveApiKey = !hasActiveApiKey;
   const isSubmitting = submitPhase !== "idle";
-  const isRunDisabled =
-    !isValidInput || isRunning || isBillingBlocked || isMissingActiveApiKey || isSubmitting;
+  const isRunDisabled = !isValidInput || isRunning || isBillingBlocked || isSubmitting;
   const isDownloadDisabled = !jobId || status !== "completed" || isDownloading;
   const downloadButtonLabel = isDownloading ? "Preparing Download…" : "Download Artifacts";
   const runButtonLabel =
@@ -111,12 +107,7 @@ export function ActionFooter({
   const handleRunJob = async () => {
     const preparedPrompts = sanitizeStudioPrompts(prompts);
 
-    if (
-      !inputTasks.length ||
-      !preparedPrompts.length ||
-      isBillingBlocked ||
-      isMissingActiveApiKey
-    ) {
+    if (!inputTasks.length || !preparedPrompts.length || isBillingBlocked) {
       return;
     }
 
@@ -281,17 +272,6 @@ export function ActionFooter({
               {billingGate.ctaLabel}
             </Link>
           </AlertAction>
-        </Alert>
-      ) : isMissingActiveApiKey ? (
-        <Alert className="mt-3 rounded-[1rem] border border-amber-400/25 bg-amber-500/8 px-3 py-3">
-          <AlertTriangle className="mt-0.5 size-4 text-amber-300" aria-hidden />
-          <AlertTitle className="font-mono text-[11px] tracking-[0.14em] uppercase">
-            Active API Key Required
-          </AlertTitle>
-          <AlertDescription>
-            Set the active API key on your account before using Studio. Open the user menu in the
-            top-right corner, paste your key, and save it there.
-          </AlertDescription>
         </Alert>
       ) : null}
     </div>

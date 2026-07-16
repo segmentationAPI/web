@@ -5,9 +5,9 @@ import { db } from "@segmentation/db";
 import { apiKey } from "@segmentation/db/schema/app";
 import { desc, eq } from "drizzle-orm";
 import type { JobListItem, OverviewData } from "@/lib/dashboard-types";
+import { ensureActiveApiKeyForUser } from "@/lib/server/api-key-management";
 import { getDynamoBillingState, getDynamoUsageForLast24Hours } from "@/lib/server/aws/dynamo";
 import { DEFAULT_PAGE_SIZE } from "@/lib/server/constants";
-import { user } from "@segmentation/db/schema/auth";
 
 type ListedJobSummary = {
   createdAt: Date;
@@ -37,20 +37,11 @@ function toListedJobSummary(job: JobListItemResponse): ListedJobSummary {
 }
 
 async function getSegmentationClientForUser(userId: string) {
-  const activeApiKey = await getActiveApiKeyForuser(userId);
-
-  if (!activeApiKey) {
-    return null;
-  }
-
+  const activeApiKey = await ensureActiveApiKeyForUser(userId);
   return SegmentationClient.create(activeApiKey);
 }
 
-async function listAllSdkJobs(segmentationClient: SegmentationClient | null) {
-  if (!segmentationClient) {
-    return [];
-  }
-
+async function listAllSdkJobs(segmentationClient: SegmentationClient) {
   const jobs: ListedJobSummary[] = [];
   let nextToken: string | undefined;
 
@@ -151,10 +142,6 @@ export async function getJobSummaryForUser(params: {
 }): Promise<JobListItem | null> {
   const segmentationClient = await getSegmentationClientForUser(params.userId);
 
-  if (!segmentationClient) {
-    return null;
-  }
-
   const jobs = await listAllSdkJobs(segmentationClient);
   const job = jobs.find((candidate) => candidate.id === params.jobId);
 
@@ -177,18 +164,4 @@ export async function getJobSummaryForUser(params: {
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
   };
-}
-
-export async function getActiveApiKeyForuser(userId: string): Promise<string | null> {
-  const results = await db
-    .select({ apiKey: user.activeApiKey })
-    .from(user)
-    .where(eq(user.id, userId));
-  const result = results.at(0);
-
-  if (!result || !result.apiKey) {
-    return null;
-  }
-
-  return result.apiKey;
 }

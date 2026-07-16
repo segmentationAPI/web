@@ -108,6 +108,29 @@ export async function putDynamoApiKey(params: {
   );
 }
 
+export async function isDynamoApiKeyActive(params: {
+  accountId: string;
+  keyHash: string;
+  keyId: string;
+}) {
+  const response = await dynamoClient.send(
+    new GetItemCommand({
+      TableName: env.AWS_DYNAMO_API_KEYS_TABLE,
+      Key: marshall({ keyId: params.keyId }),
+    }),
+  );
+
+  if (!response.Item) {
+    return false;
+  }
+
+  const item = unmarshall(response.Item);
+
+  return (
+    item.accountId === params.accountId && item.keyHash === params.keyHash && item.revoked === false
+  );
+}
+
 export async function getDynamoBillingState(accountId: string): Promise<DynamoBillingState | null> {
   const response = await dynamoClient.send(
     new GetItemCommand({

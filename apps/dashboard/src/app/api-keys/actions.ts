@@ -2,13 +2,13 @@
 
 import { db } from "@segmentation/db";
 import { apiKey, type ApiKey } from "@segmentation/db/schema/app";
-import { env } from "@segmentation/env/dashboard";
+import { user } from "@segmentation/db/schema/auth";
 import { and, eq } from "drizzle-orm";
-import { createHmac, randomBytes, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { putDynamoApiKey, setDynamoApiKeyRevoked } from "@/lib/server/aws/dynamo";
+import { setDynamoApiKeyRevoked } from "@/lib/server/aws/dynamo";
+import { createApiKeyForUser, getApiKeyIdFromPlainTextKey } from "@/lib/server/api-key-management";
 import { requirePageSession } from "@/lib/server/page-auth";
 
 const createApiKeyPayloadSchema = z.object({
@@ -39,32 +39,6 @@ type RevokeApiKeyActionResult =
       ok: false;
     };
 
-function generateApiKeySecret() {
-  return randomBytes(24).toString("hex");
-}
-
-function buildApiKeyIdentitySegment(params: { accountId: string; keyId: string }) {
-  if (params.accountId.includes(":") || params.keyId.includes(":")) {
-    throw new Error("API key identifiers must not contain ':'");
-  }
-
-  return `${params.accountId}:${params.keyId}`;
-}
-
-function buildPlainTextApiKey(params: { accountId: string; keyId: string }) {
-  const keySecret = generateApiKeySecret();
-  const identitySegment = buildApiKeyIdentitySegment({
-    accountId: params.accountId,
-    keyId: params.keyId,
-  });
-
-  return `sk_live_${identitySegment}_${keySecret}`;
-}
-
-function hashApiKey(secret: string) {
-  return createHmac("sha256", env.API_KEY_HMAC_SECRET).update(secret).digest("hex");
-}
-
 export async function createApiKeyAction(
   input: z.input<typeof createApiKeyPayloadSchema>,
 ): Promise<CreateApiKeyActionResult> {
@@ -79,42 +53,24 @@ export async function createApiKeyAction(
   }
 
   const label = parsed.data.label || "Primary key";
-  const keyId = `key_${randomUUID()}`;
-  const plainTextKey = buildPlainTextApiKey({
-    accountId: session.user.id,
-    keyId,
-  });
-  const keyHash = hashApiKey(plainTextKey);
 
   try {
-    await db.insert(apiKey).values({
-      id: keyId,
-      keyHash,
-      keyPrefix: keyId,
+    const created = await createApiKeyForUser({
       label,
-      revoked: false,
+      makeActive: true,
       userId: session.user.id,
     });
 
-    try {
-      await putDynamoApiKey({
-        accountId: session.user.id,
-        keyHash,
-        keyId,
-        keyPrefix: keyId,
-        revoked: false,
-      });
-    } catch (dynamoError) {
-      try {
-        await db
-          .delete(apiKey)
-          .where(and(eq(apiKey.userId, session.user.id), eq(apiKey.id, keyId)));
-      } catch (cleanupError) {
-        console.error("Failed to cleanup API key after Dynamo write error", cleanupError);
-      }
+    revalidatePath("/");
+    revalidatePath("/api-keys");
+    revalidatePath("/history");
+    revalidatePath("/studio");
 
-      throw dynamoError;
-    }
+    return {
+      apiKey: created.apiKey,
+      ok: true,
+      plainTextKey: created.plainTextKey,
+    };
   } catch (error) {
     console.error("Failed to create API key", error);
     return {
@@ -122,27 +78,6 @@ export async function createApiKeyAction(
       ok: false,
     };
   }
-
-  const [createdKey] = await db
-    .select()
-    .from(apiKey)
-    .where(and(eq(apiKey.userId, session.user.id), eq(apiKey.id, keyId)))
-    .limit(1);
-
-  if (!createdKey) {
-    return {
-      error: "Failed to load created API key",
-      ok: false,
-    };
-  }
-
-  revalidatePath("/api-keys");
-
-  return {
-    apiKey: createdKey,
-    ok: true,
-    plainTextKey,
-  };
 }
 
 export async function revokeApiKeyAction(
@@ -162,8 +97,10 @@ export async function revokeApiKeyAction(
     .select({
       id: apiKey.id,
       revoked: apiKey.revoked,
+      activeApiKey: user.activeApiKey,
     })
     .from(apiKey)
+    .innerJoin(user, eq(user.id, apiKey.userId))
     .where(and(eq(apiKey.userId, session.user.id), eq(apiKey.id, parsed.data.keyId)))
     .limit(1);
 
@@ -193,6 +130,15 @@ export async function revokeApiKeyAction(
         revokedAt: new Date(),
       })
       .where(and(eq(apiKey.userId, session.user.id), eq(apiKey.id, parsed.data.keyId)));
+
+    if (getApiKeyIdFromPlainTextKey(existingKey.activeApiKey ?? "") === parsed.data.keyId) {
+      await db
+        .update(user)
+        .set({
+          activeApiKey: null,
+        })
+        .where(eq(user.id, session.user.id));
+    }
   } catch (error) {
     console.error("Failed to revoke API key", error);
     return {
@@ -202,6 +148,8 @@ export async function revokeApiKeyAction(
   }
 
   revalidatePath("/api-keys");
+  revalidatePath("/history");
+  revalidatePath("/studio");
 
   return {
     ok: true,

@@ -1,8 +1,5 @@
 "use server";
 
-import { db } from "@segmentation/db";
-import { user } from "@segmentation/db/schema/auth";
-import { eq } from "drizzle-orm";
 import {
   SegmentationClient,
   type JobDownload,
@@ -13,34 +10,13 @@ import {
   type PresignRequest,
   type PresignResponse,
 } from "@segmentationapi/sdk";
+import { ensureActiveApiKeyForUser } from "@/lib/server/api-key-management";
 import { requirePageSession } from "@/lib/server/page-auth";
 
 async function createAuthenticatedSegmentationClient() {
   const session = await requirePageSession();
-
-  const results = await db
-    .select({ apiKey: user.activeApiKey })
-    .from(user)
-    .where(eq(user.id, session.user.id));
-  const result = results.at(0);
-
-  if (!result?.apiKey) {
-    throw new Error("No active API key found for user");
-  }
-
-  return SegmentationClient.create(result.apiKey);
-}
-
-export async function setUserApiKey(apiKey: string) {
-  const session = await requirePageSession();
-  const userId = session.user.id;
-
-  await db
-    .update(user)
-    .set({
-      activeApiKey: apiKey,
-    })
-    .where(eq(user.id, userId));
+  const activeApiKey = await ensureActiveApiKeyForUser(session.user.id);
+  return SegmentationClient.create(activeApiKey);
 }
 
 export async function createJob(jobRequest: JobRequest): Promise<JobResponse> {

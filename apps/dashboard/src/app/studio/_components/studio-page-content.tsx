@@ -1,5 +1,5 @@
 import { requirePageSession } from "@/lib/server/page-auth";
-import { getBillingSummaryForUser, getActiveApiKeyForuser } from "@/lib/server/queries";
+import { getBillingSummaryForUser } from "@/lib/server/queries";
 import { getBillingGateState } from "@/lib/billing-presentation";
 
 import { DashboardPageShell, DashboardPanelShell } from "@/components/dashboard-page-shell";
@@ -11,11 +11,7 @@ import { StatusHeader } from "./unified-studio/status-header";
 
 export async function StudioPageContent() {
   const session = await requirePageSession();
-  const [billingState, activeApiKey] = await Promise.all([
-    getBillingSummaryForUser(session.user.id),
-    getActiveApiKeyForuser(session.user.id),
-  ]);
-  const hasActiveApiKey = activeApiKey !== null;
+  const billingState = await getBillingSummaryForUser(session.user.id);
   const billingGate = getBillingGateState(billingState);
   const isPlaygroundMode = !billingGate.hasBillingSetup;
 
@@ -29,11 +25,7 @@ export async function StudioPageContent() {
           <PreviewPanel />
         </div>
 
-        <ActionFooter
-          billingState={billingState}
-          hasActiveApiKey={hasActiveApiKey}
-          isPlaygroundMode={isPlaygroundMode}
-        />
+        <ActionFooter billingState={billingState} isPlaygroundMode={isPlaygroundMode} />
       </DashboardPanelShell>
     </DashboardPageShell>
   );

@@ -25,7 +25,6 @@ type StudioTaskSummary = {
 
 type StudioDisabledState = {
   hasBillingBlock: boolean;
-  hasActiveApiKey: boolean;
   hasInputs: boolean;
   hasPrompts: boolean;
   isRunning: boolean;
@@ -103,7 +102,7 @@ export function getStudioStatusDescription(summary: StudioTaskSummary) {
 }
 
 export function getStudioRunDisabledReason(state: StudioDisabledState) {
-  if (state.hasBillingBlock || !state.hasActiveApiKey) {
+  if (state.hasBillingBlock) {
     return null;
   }
 
