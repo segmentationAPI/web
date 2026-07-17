@@ -1,0 +1,13 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+type Props = HTMLAttributes<"table">;
+
+const { class: className, ...props } = Astro.props;
+---
+
+<div class="border-primary/20 my-8 overflow-x-auto rounded-2xl border">
+  <table class:list={["w-full border-collapse text-sm", className]} {...props}>
+    <slot />
+  </table>
+</div>

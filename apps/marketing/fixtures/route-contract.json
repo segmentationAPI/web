@@ -1,0 +1,84 @@
+{
+  "origin": "https://www.segmentationapi.com",
+  "routes": [
+    {
+      "path": "/",
+      "title": "SegmentationAPI | SAM 3 API-as-a-Service",
+      "description": "Production-grade API platform for Meta's Segment Anything Model 3. Fast masks, vector output, and enterprise-ready reliability."
+    },
+    {
+      "path": "/pricing",
+      "title": "SegmentationAPI Pricing | SAM 3 API",
+      "description": "Simple token pricing for SegmentationAPI's SAM 3 API: 1 token per processed image or video frame, with each token costing $0.02."
+    },
+    {
+      "path": "/blog",
+      "title": "Blog | SegmentationAPI",
+      "description": "Product notes, implementation guides, and segmentation engineering articles from SegmentationAPI."
+    },
+    {
+      "path": "/blog/build-a-natural-language-background-remover",
+      "title": "Build a natural-language background remover in 100 lines | SegmentationAPI Blog",
+      "description": "A step-by-step guide to building a background remover you control with plain English using SAM 3 text prompts. Full code included."
+    },
+    {
+      "path": "/blog/sam-3-api-production-guide",
+      "title": "How to plan a production SAM 3 segmentation workflow | SegmentationAPI Blog",
+      "description": "A practical checklist for turning prompt-based segmentation into a reliable product workflow."
+    },
+    {
+      "path": "/docs",
+      "title": "Documentation | SegmentationAPI",
+      "description": "Complete API reference for SegmentationAPI — upload media, create segmentation jobs, and retrieve results with SAM 3."
+    },
+    {
+      "path": "/docs/authentication",
+      "title": "Authentication | SegmentationAPI Docs",
+      "description": "API key authentication, required headers, and rate limits for SegmentationAPI endpoints."
+    },
+    {
+      "path": "/docs/jobs",
+      "title": "Jobs | SegmentationAPI Docs",
+      "description": "Create async image and video segmentation jobs, list job history, and retrieve per-item results."
+    },
+    {
+      "path": "/docs/results",
+      "title": "Results | SegmentationAPI Docs",
+      "description": "Request a results archive, poll until it is ready, and read output_manifest.json to retrieve image and video segmentation masks."
+    },
+    {
+      "path": "/docs/sam3-alternatives",
+      "title": "SAM3 Alternatives | SegmentationAPI Docs",
+      "description": "Benchmark comparisons, capability matrices, and deployment trade-offs for SAM 3 and its leading alternatives.",
+      "keywords": "sam3 alternatives, sam3 alternative, segment anything alternatives, SAM 3 vs YOLO, SAM 3 vs RF-DETR, SAM 3 vs SAM 2"
+    },
+    {
+      "path": "/docs/upload",
+      "title": "Upload Flow | SegmentationAPI Docs",
+      "description": "Request presigned upload URLs, upload files to S3, and manage task IDs for segmentation jobs."
+    }
+  ],
+  "publishedBlogSlugs": [
+    "build-a-natural-language-background-remover",
+    "sam-3-api-production-guide"
+  ],
+  "staticAssets": ["/after.jpg", "/before.jpg", "/favicon.ico", "/logo.png", "/spider-man.mp4"],
+  "navigation": {
+    "header": ["/#features", "/docs", "/blog", "/pricing"],
+    "docs": [
+      "/docs",
+      "/docs/authentication",
+      "/docs/upload",
+      "/docs/jobs",
+      "/docs/results",
+      "/docs/sam3-alternatives"
+    ]
+  },
+  "unknownRouteStatus": 404,
+  "unpublishedPostStatus": 404,
+  "knownLegacyOmissions": [
+    "The Next.js sitemap omitted /docs/results.",
+    "The Next.js app did not define canonical or default social-image metadata.",
+    "The Next.js robots and sitemap handlers allowed preview-host fallbacks."
+  ]
+}

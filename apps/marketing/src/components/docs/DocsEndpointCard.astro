@@ -1,0 +1,6 @@
+---
+import type { HTMLAttributes } from "astro/types";
+type Props = HTMLAttributes<"div">;
+const { class: className, ...props } = Astro.props;
+---
+<div class:list={["border-primary/22 bg-[#090c12a6] rounded-2xl border transition-[border-color,background] duration-200 hover:border-primary/45 hover:bg-[#0c1018b3]", className]} {...props}><div class="p-4 break-words sm:p-5"><slot /></div></div>

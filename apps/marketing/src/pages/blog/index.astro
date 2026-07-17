@@ -1,0 +1,62 @@
+---
+import { ArrowRight, CalendarDays } from "@lucide/astro";
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { formatBlogDate, getPublishedBlogPosts } from "@/lib/blog";
+
+const posts = await getPublishedBlogPosts();
+---
+
+<BaseLayout
+  title="Blog | SegmentationAPI"
+  description="Product notes, implementation guides, and segmentation engineering articles from SegmentationAPI."
+>
+  <main class="mx-auto flex w-full max-w-300 flex-col gap-10 px-4 pt-8 pb-24 sm:px-8 sm:pt-12">
+    <section class="reveal max-w-3xl space-y-5">
+      <div class="space-y-4">
+        <h1 class="font-display text-4xl leading-[1.05] tracking-[-0.04em] sm:text-6xl">
+          Segmentation notes for teams shipping visual AI.
+        </h1>
+        <p class="text-muted-foreground max-w-2xl text-base leading-[1.75] lg:text-lg">
+          Practical guidance on SAM 3, production segmentation workflows, and the API patterns
+          behind reliable mask generation.
+        </p>
+      </div>
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-2" aria-label="Blog posts">
+      {posts.map((post, index) => (
+        <a href={`/blog/${post.id}`} class="group">
+          <article
+            class="group-hover:border-secondary/55 reveal border-primary/40 h-full rounded-2xl border bg-[linear-gradient(152deg,rgba(255,112,63,0.14),transparent_38%),linear-gradient(326deg,rgba(57,213,201,0.09),transparent_45%),rgba(9,12,18,0.8)] p-5 shadow-none backdrop-blur-[14px] transition-colors duration-200 sm:p-6"
+            style={`animation-delay: ${180 + index * 80}ms`}
+          >
+            <div class="flex h-full flex-col gap-5">
+              <div class="text-muted-foreground flex flex-wrap items-center gap-3">
+                <span class="inline-flex items-center gap-2 font-mono text-[0.7rem] tracking-[0.14em] uppercase">
+                  <CalendarDays class="text-primary h-3.5 w-3.5" aria-hidden="true" />
+                  {formatBlogDate(post.data.publishedAt)}
+                </span>
+                {post.data.tags.map((tag) => (
+                  <span class="border-primary/25 bg-primary/10 rounded-full border px-2.5 py-1 font-mono text-[0.62rem] tracking-[0.12em] uppercase">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <div class="space-y-3">
+                <h2 class="font-display text-2xl leading-[1.08] tracking-[-0.03em] sm:text-3xl">
+                  {post.data.title}
+                </h2>
+                <p class="text-muted-foreground text-sm leading-[1.7]">{post.data.description}</p>
+              </div>
+              <span class="text-secondary mt-auto inline-flex items-center gap-2 font-mono text-[0.68rem] tracking-[0.15em] uppercase">
+                Read article
+                <ArrowRight class="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+              </span>
+            </div>
+          </article>
+        </a>
+      ))}
+    </section>
+  </main>
+</BaseLayout>

@@ -5,10 +5,10 @@
 This repository is a `pnpm` + Turborepo monorepo.
 
 - `apps/dashboard`: Next.js app (port `3001`), authenticated product surface.
-- `apps/marketing`: Next.js app (port `3000`), public-facing site.
+- `apps/marketing`: Astro static site (port `3000` in development), public-facing site.
 - `packages/auth`: Better Auth integration and auth utilities.
 - `packages/db`: Drizzle schema, config, and DB scripts.
-- `packages/env`: Runtime env validation per app (`dashboard.ts`, `marketing.ts`).
+- `packages/env`: Runtime environment validation for the dashboard.
 - `packages/config`: shared config package scaffold.
 
 Primary source lives under each package/app `src/` directory.

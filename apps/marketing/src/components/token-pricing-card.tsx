@@ -3,9 +3,6 @@
 import { Calculator } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { GlassCard, ToneChip } from "@/components/marketing-primitives";
-import { Card, CardContent } from "@/components/ui/card";
-
 const minCents = 2;
 const maxCents = 10000;
 
@@ -26,37 +23,40 @@ export default function TokenPricingCard() {
   const sliderProgress = ((cents - minCents) / (maxCents - minCents)) * 100;
 
   return (
-    <GlassCard className="reveal rounded-[1.6rem] p-6 sm:p-8" style={{ animationDelay: "560ms" }}>
-      <ToneChip className="text-muted-foreground border-none bg-transparent px-0 py-0 text-xs">
+    <section
+      className="reveal border-primary/40 bg-card text-card-foreground rounded-[1.6rem] border bg-[linear-gradient(152deg,rgba(255,112,63,0.14),transparent_38%),linear-gradient(326deg,rgba(57,213,201,0.09),transparent_45%),rgba(9,12,18,0.8)] p-6 shadow-[0_24px_70px_rgba(5,7,12,0.7),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[14px] sm:p-8"
+      style={{ animationDelay: "560ms" }}
+    >
+      <div className="text-muted-foreground inline-flex items-center gap-[0.45rem] px-0 py-0 font-mono text-xs tracking-[0.16em] uppercase">
         <Calculator className="text-secondary h-4 w-4" />
         Token Calculator
-      </ToneChip>
+      </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <Card className="border-border/70 bg-background/55 rounded-2xl py-0">
-          <CardContent className="p-4">
+        <div className="border-border/70 bg-background/55 rounded-2xl border py-0">
+          <div className="p-4">
             <p className="text-muted-foreground text-xs tracking-[0.14em] uppercase">Price</p>
             <p className="font-display mt-2 text-4xl">{usdFormatter.format(price)}</p>
             <p className="text-muted-foreground mt-2 text-xs">
               Move the slider to estimate token balance.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-border/70 bg-background/55 rounded-2xl py-0">
-          <CardContent className="p-4">
+        <div className="border-border/70 bg-background/55 rounded-2xl border py-0">
+          <div className="p-4">
             <p className="text-muted-foreground text-xs tracking-[0.14em] uppercase">Tokens</p>
             <p className="font-display mt-2 text-4xl">{integerFormatter.format(tokens)}</p>
             <p className="text-muted-foreground mt-2 text-xs">
               At this balance you can process {integerFormatter.format(tokens)} images, or{" "}
               {integerFormatter.format(tokens)} video frames.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      <Card className="border-border/70 bg-background/45 mt-6 rounded-2xl py-0">
-        <CardContent className="p-4">
+      <div className="border-border/70 bg-background/45 mt-6 rounded-2xl border py-0">
+        <div className="p-4">
           <input
             type="range"
             min={minCents}
@@ -74,8 +74,8 @@ export default function TokenPricingCard() {
             <span>{usdFormatter.format(minCents / 100)}</span>
             <span>{usdFormatter.format(maxCents / 100)}</span>
           </div>
-        </CardContent>
-      </Card>
-    </GlassCard>
+        </div>
+      </div>
+    </section>
   );
 }

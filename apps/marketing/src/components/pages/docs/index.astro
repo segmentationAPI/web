@@ -1,0 +1,134 @@
+---
+import { ArrowRight, CloudUpload, Download, FlaskConical, Layers, ShieldCheck } from "@lucide/astro";
+
+import { docsPages } from "@/components/docs-config";
+import DocsEndpointCard from "@/components/docs/DocsEndpointCard.astro";
+import DocsH2 from "@/components/docs/DocsH2.astro";
+import DocsMethodBadge from "@/components/docs/DocsMethodBadge.astro";
+import DocsPageNav from "@/components/docs/DocsPageNav.astro";
+import DocsPageHeader from "@/components/docs/DocsPageHeader.astro";
+import DocsProse from "@/components/docs/DocsProse.astro";
+import DocsSection from "@/components/docs/DocsSection.astro";
+
+const sectionIcons = {
+  "/docs/authentication": ShieldCheck,
+  "/docs/upload": CloudUpload,
+  "/docs/jobs": Layers,
+  "/docs/results": Download,
+  "/docs/sam3-alternatives": FlaskConical,
+} as const;
+
+const sections = docsPages
+  .filter((page) => page.href !== "/docs")
+  .map((page) => ({
+    ...page,
+    icon: sectionIcons[page.href as keyof typeof sectionIcons],
+  }));
+
+const endpoints = [
+  {
+    method: "POST" as const,
+    path: "/v1/uploads/presign",
+    description: "Request a short-lived presigned upload URL and receive a task ID.",
+  },
+  {
+    method: "POST" as const,
+    path: "/v1/jobs",
+    description: "Queue an async image or video segmentation job.",
+  },
+  {
+    method: "GET" as const,
+    path: "/v1/jobs",
+    description: "List paginated jobs for the authenticated account.",
+  },
+  {
+    method: "GET" as const,
+    path: "/v1/jobs/{jobId}",
+    description: "Retrieve per-item status for a specific job.",
+  },
+  {
+    method: "POST" as const,
+    path: "/v1/jobs/{jobId}/download",
+    description: "Request a downloadable results archive once a job has succeeded.",
+  },
+  {
+    method: "GET" as const,
+    path: "/v1/jobs/{jobId}/download",
+    description: "Poll archive readiness and get the presigned download URL.",
+  },
+];
+
+---
+
+      <DocsPageHeader
+        current="Overview"
+        title="Documentation">
+            SegmentationAPI provides a simple upload-then-segment workflow powered by Meta&apos;s
+            SAM 3. Upload media, submit segmentation jobs with text prompts, and retrieve
+            high-quality masks through a handful of REST endpoints.
+</DocsPageHeader>
+
+      <DocsSection>
+        <DocsH2>Quick Start</DocsH2>
+        <DocsProse>
+          <p>The integration flow consists of three steps:</p>
+          <ul>
+            <li>
+              <strong>Upload</strong> — Request a presigned URL from 
+              <code class="text-secondary font-mono text-sm">POST /v1/uploads/presign</code>,
+              then PUT your file directly to S3.
+            </li>
+            <li>
+              <strong>Segment</strong> — Submit the returned task ID(s) with text prompts to 
+              <code class="text-secondary font-mono text-sm">POST /v1/jobs</code> to queue a
+              segmentation job.
+            </li>
+            <li>
+              <strong>Retrieve</strong> — Poll 
+              <code class="text-secondary font-mono text-sm">GET /v1/jobs/{"{jobId}"}</code> 
+              until the job succeeds, then request a results archive via 
+              <code class="text-secondary font-mono text-sm">
+                POST /v1/jobs/{"{jobId}"}/download
+              </code> 
+              and read 
+              <code class="text-secondary font-mono text-sm">output_manifest.json</code> from
+              the downloaded zip.
+            </li>
+          </ul>
+        </DocsProse>
+      </DocsSection>
+
+      <DocsSection>
+        <DocsH2>Endpoints</DocsH2>
+        <div class="grid gap-3 sm:grid-cols-2">
+          {endpoints.map((ep) => (
+            <DocsEndpointCard>
+              <div class="mb-2 flex items-center gap-2.5">
+                <DocsMethodBadge method={ep.method} />
+                <span class="text-foreground font-mono text-sm">{ep.path}</span>
+              </div>
+              <p class="text-muted-foreground text-sm">{ep.description}</p>
+            </DocsEndpointCard>
+          ))}
+        </div>
+      </DocsSection>
+
+      <DocsSection>
+        <DocsH2>Explore</DocsH2>
+        <div class="grid gap-3 sm:grid-cols-2">
+          {sections.map(({ icon: Icon, ...section }) => (
+            <DocsEndpointCard class="group">
+              <a href={section.href} class="flex flex-col">
+                <div class="mb-2 flex items-center gap-2.5">
+                  <Icon class="text-primary h-4 w-4 opacity-70" aria-hidden="true" />
+                  <span class="font-display text-base font-semibold">{section.title}</span>
+                  <ArrowRight class="text-muted-foreground ml-auto h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+                </div>
+                <p class="text-muted-foreground text-sm">{section.description}</p>
+              </a>
+            </DocsEndpointCard>
+          ))}
+        </div>
+      </DocsSection>
+
+      <DocsPageNav next={{ href: "/docs/authentication", title: "Authentication" }} />

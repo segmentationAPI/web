@@ -1,0 +1,16 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+type Props = HTMLAttributes<"div">;
+const { class: className, ...props } = Astro.props;
+---
+
+<div
+  class:list={[
+    "border-primary/40 bg-card text-card-foreground flex flex-col gap-4 overflow-hidden border bg-[linear-gradient(152deg,rgba(255,112,63,0.14),transparent_38%),linear-gradient(326deg,rgba(57,213,201,0.09),transparent_45%),rgba(9,12,18,0.8)] shadow-[0_24px_70px_rgba(5,7,12,0.7),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[14px]",
+    className,
+  ]}
+  {...props}
+>
+  <slot />
+</div>

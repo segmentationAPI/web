@@ -1,0 +1,86 @@
+---
+import { ArrowRight } from "@lucide/astro";
+
+import { LiveDemo } from "@/components/live-demo";
+import GlassCard from "@/components/marketing/GlassCard.astro";
+import MarketingButton from "@/components/marketing/MarketingButton.astro";
+import MetricCard from "@/components/marketing/MetricCard.astro";
+import ToneChip from "@/components/marketing/ToneChip.astro";
+import { VideoDemo } from "@/components/video-demo";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { appUrl } from "@/lib/site";
+---
+
+<BaseLayout>
+  <main class="mx-auto flex w-full max-w-300 flex-col gap-20 px-4 pt-8 pb-24 sm:gap-28 sm:px-8 lg:gap-36">
+    <section class="grid gap-8 sm:gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+      <div class="reveal space-y-8" style="animation-delay: 120ms">
+        <div class="space-y-5">
+          <h1 class="font-display text-[1.75rem] leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+            Ship pixel-perfect segmentation at machine speed.
+          </h1>
+          <p class="text-muted-foreground max-w-xl text-base leading-relaxed lg:text-lg">
+            One API for auto-labelling, annotation tools, and video segmentation — powered by Meta's
+            Segment Anything Model 3.
+          </p>
+        </div>
+
+        <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <MarketingButton href={appUrl} class="w-full sm:w-auto">
+            Start Building
+            <ArrowRight class="h-4 w-4" aria-hidden="true" />
+          </MarketingButton>
+          <MarketingButton href="/docs" variant="ghost" class="w-full sm:w-auto">
+            View Docs
+          </MarketingButton>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 sm:gap-3">
+          <MetricCard value="500ms" label="per image" />
+          <MetricCard value="2.4B+" label="masks generated" />
+          <MetricCard value="99.99%" label="uptime SLA" />
+        </div>
+      </div>
+
+      <LiveDemo client:visible />
+    </section>
+
+    <section id="features" class="reveal mx-auto flex w-full max-w-4xl flex-col items-center gap-10 scroll-mt-24">
+      <div class="space-y-4 text-center">
+        <ToneChip class="mx-auto">
+          <span class="bg-secondary h-1.5 w-1.5 rounded-full"></span>
+          Video Segmentation
+        </ToneChip>
+        <h2 class="font-display text-2xl tracking-tight sm:text-3xl md:text-5xl">
+          Frame-by-frame,
+          <span class="bg-[linear-gradient(108deg,#ffcb9e_4%,#39d5c9_52%,#ffeecc_94%)] bg-clip-text text-transparent">
+            fully automatic.
+          </span>
+        </h2>
+        <p class="text-muted-foreground mx-auto max-w-xl text-base leading-relaxed lg:text-lg">
+          Track and segment objects across every frame of a video with a single text prompt — no
+          manual annotation required.
+        </p>
+      </div>
+      <VideoDemo client:visible />
+    </section>
+
+    <GlassCard class="reveal rounded-2xl p-6 text-center sm:rounded-[2rem] sm:p-14">
+      <h2 class="font-display text-2xl sm:text-3xl md:text-5xl">
+        Plug in once. Segment anything everywhere.
+      </h2>
+      <p class="text-muted-foreground mx-auto mt-4 max-w-xl">
+        Launch your first request in minutes and skip the GPU ops burden entirely.
+      </p>
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
+        <MarketingButton href={appUrl} class="w-full sm:w-auto">
+          Create Account
+          <ArrowRight class="h-4 w-4" aria-hidden="true" />
+        </MarketingButton>
+          <MarketingButton href="/docs" variant="ghost" class="w-full sm:w-auto">
+            Explore Docs
+          </MarketingButton>
+      </div>
+    </GlassCard>
+  </main>
+</BaseLayout>

@@ -1,0 +1,16 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Page not found | SegmentationAPI" description="The requested page could not be found.">
+  <main class="mx-auto grid w-full max-w-3xl place-items-center px-4 py-28 text-center sm:px-8">
+    <div>
+      <p class="text-primary font-mono text-sm tracking-[0.2em] uppercase">404</p>
+      <h1 class="font-display mt-4 text-4xl sm:text-6xl">Page not found.</h1>
+      <p class="text-muted-foreground mt-4">The page may have moved or never existed.</p>
+      <a href="/" class="bg-primary text-primary-foreground mt-8 inline-flex rounded-xl px-5 py-3 font-semibold">
+        Return home
+      </a>
+    </div>
+  </main>
+</BaseLayout>

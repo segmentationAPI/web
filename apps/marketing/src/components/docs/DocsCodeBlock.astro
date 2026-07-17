@@ -1,0 +1,16 @@
+---
+import { Check, Copy } from "@lucide/astro";
+interface Props { code: string; label?: string; class?: string }
+const { code, label, class: className } = Astro.props;
+---
+<div class={className}>
+  {label && <p class="text-muted-foreground mt-1 mb-2 inline-flex items-center gap-1.5 font-mono text-[0.65rem] tracking-[0.14em] uppercase">{label}</p>}
+  <div data-code-block class="group border-primary/18 relative my-4 overflow-x-auto rounded-xl border bg-[rgba(6,8,13,0.9)] px-[0.9rem] py-[0.85rem] font-mono text-[0.72rem] leading-[1.7] text-[#f2c5a0] sm:rounded-2xl sm:px-5 sm:py-[1.15rem] sm:text-[0.78rem]">
+    <button type="button" data-copy-code class="border-border/30 bg-background/60 text-muted-foreground hover:text-foreground absolute top-3 right-3 grid h-7 w-7 place-items-center rounded-md border opacity-0 transition-all group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 [&[data-copied=true]_.check-icon]:block [&[data-copied=true]_.copy-icon]:hidden" aria-label="Copy code">
+      <Copy class="copy-icon h-3.5 w-3.5" aria-hidden="true" />
+      <Check class="check-icon hidden h-3.5 w-3.5 text-green-400" aria-hidden="true" />
+    </button>
+    <pre class="m-0"><code class="whitespace-pre">{code}</code></pre>
+    <span data-copy-status aria-live="polite" class="sr-only"></span>
+  </div>
+</div>

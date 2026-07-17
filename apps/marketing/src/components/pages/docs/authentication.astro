@@ -1,0 +1,141 @@
+---
+import Table from "@/components/table/Table.astro";
+import TableBody from "@/components/table/TableBody.astro";
+import TableCell from "@/components/table/TableCell.astro";
+import TableHead from "@/components/table/TableHead.astro";
+import TableHeader from "@/components/table/TableHeader.astro";
+import TableRow from "@/components/table/TableRow.astro";
+import DocsCodeBlock from "@/components/docs/DocsCodeBlock.astro";
+import DocsPageNav from "@/components/docs/DocsPageNav.astro";
+import DocsPageHeader from "@/components/docs/DocsPageHeader.astro";
+import DocsCallout from "@/components/docs/DocsCallout.astro";
+import DocsH2 from "@/components/docs/DocsH2.astro";
+import DocsInlineCode from "@/components/docs/DocsInlineCode.astro";
+import DocsProse from "@/components/docs/DocsProse.astro";
+import DocsSection from "@/components/docs/DocsSection.astro";
+
+const exampleHeader = `curl -X POST https://api.segmentationapi.com/v1/uploads/presign \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: YOUR_SEGMENTATION_API_KEY" \\
+  -d '{"contentType": "image/png"}'`;
+
+const errorResponse = `{
+  "error": "Unauthorized",
+  "message": "Missing or invalid API key"
+}`;
+
+---
+
+      <DocsPageHeader
+        current="Authentication"
+        title="Authentication">
+            All SegmentationAPI requests are authenticated using API keys passed in the request
+            header. Keys are scoped to your account and can be managed from the 
+            <a href="/" class="text-primary underline underline-offset-3">
+              dashboard
+            </a>
+            .
+</DocsPageHeader>
+
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>API Key Header</DocsH2>
+          <p>
+            Include the <DocsInlineCode>x-api-key</DocsInlineCode> header on every request to the 
+            <DocsInlineCode>/v1/*</DocsInlineCode> endpoints — presign, job creation, status,
+            listing, and downloads all require it.
+          </p>
+
+          <DocsCodeBlock code={exampleHeader} label="Example request" />
+
+          <DocsCallout>
+            <strong>Keep keys secret.</strong> Never expose API keys in client-side code or public
+            repositories. Use environment variables or a secrets manager.
+          </DocsCallout>
+        </DocsProse>
+      </DocsSection>
+
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Error Responses</DocsH2>
+          <p>
+            If the API key is missing, malformed, or revoked, the API returns a 
+            <DocsInlineCode>401 Unauthorized</DocsInlineCode> response:
+          </p>
+          <DocsCodeBlock code={errorResponse} label="401 Unauthorized" />
+        </DocsProse>
+      </DocsSection>
+
+      <DocsSection>
+        <DocsProse>
+          <DocsH2>Request Rules</DocsH2>
+          <Table class="my-4">
+            <TableHeader>
+              <TableRow class="border-border/30 hover:bg-transparent">
+                <TableHead class="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Rule
+                </TableHead>
+                <TableHead class="font-mono text-[0.68rem] tracking-widest uppercase">
+                  Detail
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow class="border-border/15">
+                <TableCell class="text-muted-foreground">Header name</TableCell>
+                <TableCell>
+                  <code class="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    x-api-key
+                  </code>
+                </TableCell>
+              </TableRow>
+              <TableRow class="border-border/15">
+                <TableCell class="text-muted-foreground">Required on</TableCell>
+                <TableCell>
+                  All 
+                  <code class="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    /v1/*
+                  </code> 
+                  endpoints
+                </TableCell>
+              </TableRow>
+              <TableRow class="border-border/15">
+                <TableCell class="text-muted-foreground">Job tasks limit</TableCell>
+                <TableCell>
+                  1–100 task IDs per 
+                  <code class="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    POST /v1/jobs
+                  </code>
+                </TableCell>
+              </TableRow>
+              <TableRow class="border-border/15">
+                <TableCell class="text-muted-foreground">Prompts</TableCell>
+                <TableCell>
+                  At least one non-empty string in the 
+                  <code class="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    prompts
+                  </code> 
+                  array
+                </TableCell>
+              </TableRow>
+              <TableRow class="border-border/15">
+                <TableCell class="text-muted-foreground">Pagination</TableCell>
+                <TableCell>
+                  <code class="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    limit
+                  </code> 
+                  up to 100; cursor via 
+                  <code class="bg-secondary/10 text-secondary rounded px-1.5 py-0.5 font-mono text-xs">
+                    nextToken
+                  </code>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </DocsProse>
+      </DocsSection>
+
+      <DocsPageNav
+        prev={{ href: "/docs", title: "Overview" }}
+        next={{ href: "/docs/upload", title: "Upload Flow" }}
+      />

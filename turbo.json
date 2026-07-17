@@ -10,8 +10,13 @@
     "marketing#build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", ".next/**"],
-      "env": ["NEXT_PUBLIC_APP_URL"]
+      "outputs": ["dist/**"],
+      "env": [
+        "PUBLIC_MARKETING_URL",
+        "PUBLIC_APP_URL",
+        "PUBLIC_CF_WEB_ANALYTICS_TOKEN",
+        "CF_PAGES_BRANCH"
+      ]
     },
     "web#build": {
       "dependsOn": ["^build"],
@@ -48,6 +53,10 @@
     },
     "check-types": {
       "dependsOn": ["^check-types"]
+    },
+    "validate-static": {
+      "dependsOn": ["build"],
+      "cache": false
     },
     "dev": {
       "cache": false,

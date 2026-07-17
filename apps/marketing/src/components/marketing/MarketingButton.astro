@@ -1,0 +1,22 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"a"> {
+  variant?: "primary" | "ghost";
+}
+
+const { variant = "primary", class: className, ...props } = Astro.props;
+---
+
+<a
+  class:list={[
+    "inline-flex h-auto items-center justify-center gap-1.5 rounded-[0.85rem] border px-4 py-3 text-sm whitespace-nowrap transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-px",
+    variant === "primary"
+      ? "border-primary/65 from-primary to-[#ff9351] bg-linear-to-r font-semibold text-[#1c110d] shadow-[0_10px_30px_rgba(255,112,63,0.35)] hover:shadow-[0_14px_36px_rgba(255,112,63,0.45)]"
+      : "border-primary/42 bg-[#080b11bf] font-medium text-foreground hover:border-secondary/60",
+    className,
+  ]}
+  {...props}
+>
+  <slot />
+</a>

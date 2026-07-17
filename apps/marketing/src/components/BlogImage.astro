@@ -1,0 +1,28 @@
+---
+interface Props {
+  src: string;
+  alt: string;
+  width: number | string;
+  height: number | string;
+  title?: string;
+  class?: string;
+}
+
+const { src, alt, width, height, title, class: className } = Astro.props;
+const remoteImageHosts = new Set(["assets.segmentationapi.com"]);
+
+if (/^https?:\/\//.test(src) && !remoteImageHosts.has(new URL(src).hostname)) {
+  throw new Error(`Unsupported remote blog image host: ${new URL(src).hostname}`);
+}
+---
+
+<img
+  src={src}
+  alt={alt}
+  width={Number(width)}
+  height={Number(height)}
+  title={title}
+  loading="lazy"
+  decoding="async"
+  class:list={["border-primary/20 my-8 h-auto w-full rounded-2xl border", className]}
+/>

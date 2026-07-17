@@ -1,0 +1,105 @@
+---
+import { Cpu, Database, Eye, Gauge, ScanSearch, ShieldCheck, Sparkles } from "@lucide/astro";
+
+import FeatureStatCard from "@/components/marketing/FeatureStatCard.astro";
+
+const highlightFeatures = [
+  {
+    title: "Asset retention",
+    description:
+      "All input and output images stay available for at least 30 days, so teams can review, audit, and revisit results without building storage infrastructure first.",
+    icon: Database,
+    kicker: "Retained assets",
+    stat: "30 days",
+  },
+  {
+    title: "Preview generation",
+    description:
+      "Rendered previews are generated automatically for processed outputs, keeping product, ops, and annotation review loops fast from day one.",
+    icon: Eye,
+    kicker: "Review-ready",
+    stat: "Included",
+  },
+];
+
+const supportFeatures = [
+  {
+    title: "Model upgrades",
+    description: "SAM 3 releases roll into your account automatically.",
+    icon: Sparkles,
+  },
+  {
+    title: "Request observability",
+    description: "Standard request and response observability is built in.",
+    icon: Gauge,
+  },
+  {
+    title: "Output fidelity controls",
+    description: "Mask confidence metadata and vector output formats are included.",
+    icon: ScanSearch,
+  },
+  {
+    title: "Secure delivery",
+    description: "Signed requests and secure key authentication are standard.",
+    icon: ShieldCheck,
+  },
+];
+---
+
+<section class="reveal space-y-5 sm:space-y-6">
+  <div class="space-y-3 sm:space-y-4">
+    <h1 class="font-display text-3xl tracking-tight sm:text-5xl lg:text-6xl">
+      Token pricing that stays predictable.
+    </h1>
+    <p class="text-muted-foreground max-w-3xl text-sm sm:text-base lg:text-lg">
+      1 token covers 1 processed image or 1 processed video frame. Each token costs $0.02. Use the
+      calculator and examples below to estimate your spend.
+    </p>
+  </div>
+</section>
+
+<slot />
+
+<section
+  class="reveal border-primary/40 overflow-hidden rounded-[2rem] border bg-[radial-gradient(circle_at_top_right,rgba(57,213,201,0.12),transparent_28%),radial-gradient(circle_at_12%_18%,rgba(255,112,63,0.14),transparent_30%),linear-gradient(180deg,rgba(10,12,19,0.92),rgba(7,9,15,0.96))] shadow-[0_24px_70px_rgba(5,7,12,0.65),inset_0_1px_0_rgba(255,255,255,0.05)]"
+  style="animation-delay: 680ms"
+>
+  <div class="p-5 md:p-7">
+    <p class="text-muted-foreground inline-flex items-center gap-2 font-mono text-[0.72rem] tracking-[0.18em] uppercase">
+      <Cpu class="text-primary h-4 w-4" aria-hidden="true" />
+      Included in every account
+    </p>
+  </div>
+
+  <div class="grid gap-6 px-5 pb-5 md:gap-8 md:px-7 md:pb-7 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
+    <div class="max-w-[40rem]">
+      <h2 class="font-display text-[2rem] leading-none tracking-[-0.04em] md:text-[3rem]">
+        You are not only paying for inference.
+      </h2>
+      <p class="text-muted-foreground mt-4 max-w-[36rem] text-[0.98rem] leading-[1.7]">
+        The platform pieces teams normally end up adding later are already bundled into every
+        account, with retained assets and preview generation positioned front and center.
+      </p>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2">
+      {highlightFeatures.map((feature) => <FeatureStatCard {...feature} />)}
+    </div>
+  </div>
+
+  <div class="grid gap-3 px-5 pb-5 md:grid-cols-2 md:gap-x-6 md:gap-y-4 md:px-7 md:pb-7">
+    {supportFeatures.map(({ icon: Icon, ...feature }) => (
+      <article class="border-primary/20 border-t bg-transparent py-0 shadow-none ring-0">
+        <div class="grid grid-cols-[auto_1fr] items-start gap-3 px-0 pt-4 pb-0">
+          <Icon class="text-secondary mt-0.5 h-4 w-4" aria-hidden="true" />
+          <div>
+            <h3 class="font-display text-base leading-[1.1]">{feature.title}</h3>
+            <p class="text-muted-foreground mt-1.5 text-[0.88rem] leading-[1.55]">
+              {feature.description}
+            </p>
+          </div>
+        </div>
+      </article>
+    ))}
+  </div>
+</section>

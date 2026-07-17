@@ -1,0 +1,125 @@
+---
+import { Menu } from "@lucide/astro";
+
+import { docsNavGroups } from "@/components/docs-config";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+interface Props {
+  title: string;
+  description: string;
+  keywords?: string[];
+}
+
+const { title, description, keywords } = Astro.props;
+const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
+---
+
+<BaseLayout title={title} description={description} keywords={keywords}>
+  <div class="grid min-h-0 md:grid-cols-[17rem_minmax(0,1fr)]">
+    <aside class="border-primary/15 bg-[#06070db3] hidden border-r px-3 py-5 backdrop-blur-xl md:block">
+      <p class="font-display px-3 pb-4 text-sm font-semibold tracking-wide">Documentation</p>
+      <nav aria-label="Documentation">
+        {docsNavGroups.map((group) => (
+          <section class="mb-5">
+            <h2 class="text-muted-foreground px-3 pb-2 font-mono text-[0.6rem] tracking-[0.18em] uppercase">
+              {group.title}
+            </h2>
+            <ul class="space-y-1">
+              {group.items.map((item) => (
+                <li>
+                  <a
+                    href={item.href}
+                    aria-current={pathname === item.href ? "page" : undefined}
+                    class:list={[
+                      "flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
+                      pathname === item.href
+                        ? "bg-primary/15 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    ]}
+                  >
+                    <item.icon class="h-4 w-4 opacity-70" aria-hidden="true" />
+                    {item.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </nav>
+    </aside>
+
+    <main class="min-w-0">
+      <div class="mx-auto w-full max-w-4xl px-4 pt-6 pb-16 sm:px-8 sm:pt-10 sm:pb-20">
+        <slot />
+      </div>
+    </main>
+
+    <details class="group fixed right-5 bottom-5 z-50 md:hidden">
+      <summary
+        class="border-primary/50 from-primary/90 to-primary/70 text-primary-foreground grid h-12 w-12 cursor-pointer list-none place-items-center rounded-full border bg-linear-to-br shadow-[0_8px_32px_rgba(255,112,63,0.4)] [&::-webkit-details-marker]:hidden"
+        aria-label="Open documentation navigation"
+      >
+        <Menu class="h-5 w-5" aria-hidden="true" />
+      </summary>
+      <nav
+        aria-label="Mobile documentation"
+        class="border-primary/30 bg-card absolute right-0 bottom-14 max-h-[70svh] w-72 overflow-y-auto rounded-2xl border p-4 shadow-2xl"
+      >
+        {docsNavGroups.map((group) => (
+          <section class="mb-4 last:mb-0">
+            <h2 class="text-muted-foreground px-2 pb-2 font-mono text-[0.6rem] tracking-[0.18em] uppercase">
+              {group.title}
+            </h2>
+            {group.items.map((item) => (
+              <a
+                href={item.href}
+                aria-current={pathname === item.href ? "page" : undefined}
+                class:list={[
+                  "flex items-center gap-2 rounded-xl px-2 py-2 text-sm",
+                  pathname === item.href ? "bg-primary/15 text-primary" : "text-muted-foreground",
+                ]}
+              >
+                <item.icon class="h-4 w-4" aria-hidden="true" />
+                {item.title}
+              </a>
+            ))}
+          </section>
+        ))}
+      </nav>
+    </details>
+  </div>
+
+  <script>
+    const resetTimers = new WeakMap<Element, number>();
+
+    document.addEventListener("click", async (event) => {
+      const button = (event.target as Element).closest<HTMLButtonElement>("[data-copy-code]");
+      if (!button) return;
+
+      const block = button.closest("[data-code-block]");
+      const code = block?.querySelector("code")?.textContent;
+      const status = block?.querySelector<HTMLElement>("[data-copy-status]");
+      if (!code || !status) return;
+
+      try {
+        await navigator.clipboard.writeText(code);
+        button.setAttribute("aria-label", "Code copied");
+        button.dataset.copied = "true";
+        status.textContent = "Code copied to clipboard.";
+
+        const previousTimer = resetTimers.get(button);
+        if (previousTimer) window.clearTimeout(previousTimer);
+        resetTimers.set(
+          button,
+          window.setTimeout(() => {
+            button.setAttribute("aria-label", "Copy code");
+            delete button.dataset.copied;
+            status.textContent = "";
+          }, 2000),
+        );
+      } catch {
+        status.textContent = "Clipboard copy failed.";
+      }
+    });
+  </script>
+</BaseLayout>

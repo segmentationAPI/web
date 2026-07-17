@@ -1,0 +1,16 @@
+---
+import PricingContent from "@/components/pages/PricingContent.astro";
+import TokenPricingCard from "@/components/token-pricing-card";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="SegmentationAPI Pricing | SAM 3 API"
+  description="Simple token pricing for SegmentationAPI's SAM 3 API: 1 token per processed image or video frame, with each token costing $0.02."
+>
+  <main class="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 pt-6 pb-20 sm:gap-10 sm:px-8 sm:pt-8">
+    <PricingContent>
+      <TokenPricingCard client:visible />
+    </PricingContent>
+  </main>
+</BaseLayout>

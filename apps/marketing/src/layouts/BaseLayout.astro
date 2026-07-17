@@ -1,0 +1,107 @@
+---
+import Header from "@/components/Header.astro";
+import { isProductionDeployment, marketingUrl } from "@/lib/site";
+import "@/styles.css";
+
+type OpenGraphType = "website" | "article";
+
+interface Props {
+  title?: string;
+  description?: string;
+  pathname?: string;
+  image?: string;
+  openGraphType?: OpenGraphType;
+  publishedAt?: string;
+  updatedAt?: string;
+  tags?: string[];
+  keywords?: string[];
+}
+
+const {
+  title = "SegmentationAPI | SAM 3 API-as-a-Service",
+  description = "Production-grade API platform for Meta's Segment Anything Model 3. Fast masks, vector output, and enterprise-ready reliability.",
+  pathname = Astro.url.pathname,
+  image = "/logo.png",
+  openGraphType = "website",
+  publishedAt,
+  updatedAt,
+  tags = [],
+  keywords = [],
+} = Astro.props;
+
+const canonical = new URL(pathname, marketingUrl).href;
+const socialImage = new URL(image, marketingUrl).href;
+const analyticsToken = import.meta.env.PUBLIC_CF_WEB_ANALYTICS_TOKEN;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": openGraphType === "article" ? "Article" : "WebPage",
+  name: title,
+  description,
+  url: canonical,
+  ...(openGraphType === "article" && {
+    datePublished: publishedAt,
+    dateModified: updatedAt ?? publishedAt,
+    keywords: tags,
+  }),
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    {keywords.length > 0 && <meta name="keywords" content={keywords.join(", ")} />}
+    {!isProductionDeployment && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="canonical" href={canonical} />
+    <link rel="sitemap" href="/sitemap.xml" />
+    <link rel="preload" href="/fonts/syne-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link
+      rel="preload"
+      href="/fonts/public-sans-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/space-mono-400-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content={openGraphType} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:width" content="1024" />
+    <meta property="og:image:height" content="1024" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+    {publishedAt && <meta property="article:published_time" content={publishedAt} />}
+    {updatedAt && <meta property="article:modified_time" content={updatedAt} />}
+    {tags.map((tag) => <meta property="article:tag" content={tag} />)}
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="marketing-shell grid min-h-svh grid-rows-[auto_1fr]">
+      <Header />
+      <slot />
+    </div>
+    {analyticsToken && isProductionDeployment && (
+      <script
+        is:inline
+        defer
+        src="https://static.cloudflareinsights.com/beacon.min.js"
+        data-cf-beacon={JSON.stringify({ token: analyticsToken })}
+      />
+    )}
+  </body>
+</html>

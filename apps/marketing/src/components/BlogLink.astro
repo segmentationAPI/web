@@ -1,0 +1,21 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+type Props = HTMLAttributes<"a">;
+
+const { href, class: className, ...props } = Astro.props;
+const isExternal = Boolean(href && /^https?:\/\//.test(String(href)));
+---
+
+<a
+  href={href}
+  target={isExternal ? "_blank" : undefined}
+  rel={isExternal ? "noreferrer" : undefined}
+  class:list={[
+    "text-primary hover:text-secondary underline underline-offset-4 transition-colors",
+    className,
+  ]}
+  {...props}
+>
+  <slot />
+</a>

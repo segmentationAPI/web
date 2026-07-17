@@ -1,0 +1,6 @@
+---
+import type { HTMLAttributes } from "astro/types";
+type Props = HTMLAttributes<"aside">;
+const { class: className, ...props } = Astro.props;
+---
+<aside role="note" class:list={["border-secondary/30 bg-secondary/6 my-6 rounded-[0.85rem] border px-5 py-4 text-sm leading-[1.65] text-[color-mix(in_srgb,var(--foreground)_82%,transparent)]", className]} {...props}><div class="[&_strong]:text-secondary text-sm leading-[1.65] [&_p:not(:last-child)]:mb-0"><slot /></div></aside>

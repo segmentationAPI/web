@@ -1,19 +1,11 @@
-import {
-  BookOpen,
-  CloudUpload,
-  Download,
-  FlaskConical,
-  Layers,
-  ShieldCheck,
-  type LucideIcon,
-} from "lucide-react";
+import { BookOpen, CloudUpload, Download, FlaskConical, Layers, ShieldCheck } from "@lucide/astro";
 
 export type DocsPage = {
   href: string;
   title: string;
   description: string;
   group: "Getting Started" | "API Reference" | "Resources";
-  icon: LucideIcon;
+  icon: typeof BookOpen;
 };
 
 export const docsPages = [

@@ -1,0 +1,22 @@
+---
+import { ChevronLeft, ChevronRight } from "@lucide/astro";
+
+interface NavLink { href: string; title: string }
+interface Props { prev?: NavLink; next?: NavLink }
+const { prev, next } = Astro.props;
+---
+
+<nav aria-label="Pagination" class="border-primary/18 mt-16 grid grid-cols-1 gap-3 border-t pt-8 min-[480px]:grid-cols-2 min-[480px]:gap-4">
+  {prev ? (
+    <a href={prev.href} class="border-primary/18 bg-[#090c1280] hover:border-primary/40 hover:bg-[#0c101899] flex flex-col gap-1 rounded-[0.85rem] border p-4 no-underline transition-[border-color,background] duration-200">
+      <span class="text-muted-foreground font-mono text-[0.6rem] tracking-[0.16em] uppercase"><ChevronLeft class="mb-px inline h-3 w-3" aria-hidden="true" /> Previous</span>
+      <span class="font-display text-foreground text-[0.95rem] font-semibold">{prev.title}</span>
+    </a>
+  ) : <span aria-hidden="true" class="hidden min-[480px]:block"></span>}
+  {next ? (
+    <a href={next.href} class="border-primary/18 bg-[#090c1280] hover:border-primary/40 hover:bg-[#0c101899] flex flex-col gap-1 rounded-[0.85rem] border p-4 text-right no-underline transition-[border-color,background] duration-200 min-[480px]:col-start-2">
+      <span class="text-muted-foreground font-mono text-[0.6rem] tracking-[0.16em] uppercase">Next <ChevronRight class="mb-px inline h-3 w-3" aria-hidden="true" /></span>
+      <span class="font-display text-foreground text-[0.95rem] font-semibold">{next.title}</span>
+    </a>
+  ) : <span aria-hidden="true" class="hidden min-[480px]:block"></span>}
+</nav>

@@ -1,0 +1,61 @@
+---
+import { ArrowRight, Menu } from "@lucide/astro";
+
+import { appUrl } from "@/lib/site";
+
+const links = [
+  { href: "/#features", label: "Features" },
+  { href: "/docs", label: "Docs" },
+  { href: "/blog", label: "Blog" },
+  { href: "/pricing", label: "Pricing" },
+];
+---
+
+<header class="border-primary/20 sticky top-0 z-50 border-b bg-[#06070de6] backdrop-blur-xl">
+  <div class="mx-auto flex h-[72px] w-full max-w-300 items-center justify-between gap-4 px-4 sm:px-8">
+    <a href="/" class="inline-flex min-w-0 items-center gap-3" aria-label="SegmentationAPI home">
+      <img src="/logo.png" alt="" width="40" height="40" class="h-10 w-10 rounded-xl" />
+      <span class="font-display truncate text-base font-semibold tracking-[-0.02em] sm:text-lg">
+        SegmentationAPI
+      </span>
+    </a>
+
+    <nav aria-label="Primary" class="text-muted-foreground hidden items-center gap-6 text-sm md:flex">
+      {links.map((link) => <a href={link.href} class="hover:text-foreground transition-colors">{link.label}</a>)}
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <a
+        href={appUrl}
+        class="border-primary/65 from-primary to-[#ff9351] text-primary-foreground hidden items-center gap-1.5 rounded-[0.85rem] border bg-linear-to-r px-4 py-2 text-sm font-semibold shadow-[0_10px_30px_rgba(255,112,63,0.3)] sm:inline-flex"
+      >
+        Start Building
+        <ArrowRight class="h-4 w-4" aria-hidden="true" />
+      </a>
+
+      <details class="group relative md:hidden">
+        <summary
+          class="border-primary/35 bg-background/75 grid h-10 w-10 cursor-pointer list-none place-items-center rounded-xl border [&::-webkit-details-marker]:hidden"
+          aria-label="Open navigation"
+        >
+          <Menu class="h-5 w-5" aria-hidden="true" />
+        </summary>
+        <nav
+          aria-label="Mobile primary"
+          class="border-primary/30 bg-card absolute top-12 right-0 flex w-64 flex-col gap-1 rounded-2xl border p-3 shadow-2xl"
+        >
+          {links.map((link) => (
+            <a href={link.href} class="hover:bg-muted rounded-xl px-3 py-2.5 text-sm">{link.label}</a>
+          ))}
+          <a
+            href={appUrl}
+            class="bg-primary text-primary-foreground mt-1 inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-3 text-sm font-semibold"
+          >
+            Start Building
+            <ArrowRight class="h-4 w-4" aria-hidden="true" />
+          </a>
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>

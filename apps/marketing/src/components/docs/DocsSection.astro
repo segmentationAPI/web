@@ -1,0 +1,6 @@
+---
+import type { HTMLAttributes } from "astro/types";
+type Props = HTMLAttributes<"section">;
+const { class: className, ...props } = Astro.props;
+---
+<section class:list={["reveal mt-10", className]} {...props}><slot /></section>

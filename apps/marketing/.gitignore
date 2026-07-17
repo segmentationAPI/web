@@ -11,24 +11,15 @@
 # Testing
 /coverage
 
-# Build outputs
-/.next/
-/out/
-/build/
+# Astro build outputs
+/.astro/
 /dist/
-.vinxi
-.output
-.react-router/
-.tanstack/
-.nitro/
 
 # Deployment
-.vercel
-.netlify
 .wrangler
-.alchemy
+.dev.vars*
 
-# Environment & local files
+# Environment and local files
 .env*
 !.env.example
 .DS_Store
@@ -44,17 +35,8 @@ yarn-error.log*
 
 # TypeScript
 *.tsbuildinfo
-next-env.d.ts
 
 # IDE
 .vscode/*
 !.vscode/extensions.json
 .idea
-
-# Other
-dev-dist
-
-.wrangler
-.dev.vars*
-
-.open-next
