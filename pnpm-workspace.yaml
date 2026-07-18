@@ -9,11 +9,16 @@ catalog:
   typescript: ^5.9.3
   zod: ^4.3.6
 
-onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - '@prisma/engines'
-  - esbuild
-  - lefthook
-  - msw
-  - prisma
-  - sharp
+allowBuilds:
+  '@parcel/watcher': true
+  '@prisma/engines': true
+  esbuild: true
+  lefthook: true
+  msw: true
+  prisma: true
+  sharp: true
+  workerd: true
+
+minimumReleaseAgeExclude:
+  - miniflare@4.20260714.0
+  - wrangler@4.112.0

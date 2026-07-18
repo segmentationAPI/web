@@ -36,6 +36,6 @@
     "oxlint": "^1.74.0",
     "oxlint-tsgolint": "^0.25.0",
     "typescript": "^6.0.3",
-    "wrangler": "^4.111.0"
+    "wrangler": "^4.112.0"
   }
 }
