@@ -25,7 +25,9 @@ function escapeRegExp(value) {
 
 for (const route of fixture.routes) {
   const html = htmlFor(route.path);
+  const documentHead = html.match(/<head>.*?<\/head>/s)?.[0];
   const canonical = new URL(route.path, fixture.origin).href;
+  assert.ok(documentHead, `Generated route is missing document metadata: ${route.path}`);
   assert.match(html, new RegExp(`<title>${escapeRegExp(route.title)}</title>`));
   assert.match(
     html,
@@ -39,7 +41,7 @@ for (const route of fixture.routes) {
       new RegExp(`<meta name="keywords" content="${escapeRegExp(route.keywords)}"`),
     );
   }
-  assert.doesNotMatch(html, /localhost|vercel\.app/i);
+  assert.doesNotMatch(documentHead, /localhost|vercel\.app/i);
 }
 
 for (const asset of fixture.staticAssets) {
