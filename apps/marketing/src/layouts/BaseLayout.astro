@@ -29,7 +29,8 @@ const {
   keywords = [],
 } = Astro.props;
 
-const canonical = new URL(pathname, marketingUrl).href;
+const canonicalPathname = pathname === "/" ? pathname : pathname.replace(/\/$/, "");
+const canonical = new URL(canonicalPathname, marketingUrl).href;
 const socialImage = new URL(image, marketingUrl).href;
 const analyticsToken = import.meta.env.PUBLIC_CF_WEB_ANALYTICS_TOKEN;
 const structuredData = {
